@@ -1,0 +1,50 @@
+"use client";
+
+import { SourceReference } from "@/components/assistant/SourceReference";
+import { useLang } from "@/lib/language";
+import { t } from "@/lib/i18n";
+
+interface ChatBubbleProps {
+  role: "user" | "assistant";
+  content: string;
+  source?: string | null;
+  grounded?: boolean;
+  isFirstOfTurn?: boolean;
+}
+
+export function SasanaAvatar({ size = "md" }: { size?: "md" | "lg" }) {
+  return (
+    <span
+      aria-hidden
+      className={[
+        "flex shrink-0 items-center justify-center rounded-full bg-primary font-display font-semibold text-accent",
+        size === "lg" ? "h-12 w-12 text-lg" : "h-7 w-7 text-xs",
+      ].join(" ")}
+    >
+      S
+    </span>
+  );
+}
+
+export function ChatBubble({ role, content, source, grounded, isFirstOfTurn = true }: ChatBubbleProps) {
+  const { lang } = useLang();
+  const isUser = role === "user";
+
+  return (
+    <li className={`flex items-end gap-2 animate-msgIn ${isUser ? "justify-end" : "justify-start"}`}>
+      {!isUser && (isFirstOfTurn ? <SasanaAvatar /> : <span aria-hidden className="w-7 shrink-0" />)}
+      <div
+        className={[
+          "max-w-[85%] rounded-lg px-4 py-3 md:max-w-[75%]",
+          isUser
+            ? "rounded-br-sm bg-primary text-primary-fg"
+            : "rounded-bl-sm border border-border bg-surface text-text",
+        ].join(" ")}
+      >
+        <span className="sr-only">{t(lang, isUser ? "sr.you" : "sr.assistant")}: </span>
+        <p className="whitespace-pre-wrap text-base">{content}</p>
+        {!isUser && grounded !== undefined && <SourceReference source={source ?? null} grounded={grounded} />}
+      </div>
+    </li>
+  );
+}

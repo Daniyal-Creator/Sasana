@@ -1,0 +1,49 @@
+# dependencies
+/node_modules
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+
+# env files
+# .env.example IS committed on purpose: it documents the required variables
+# with no secret values. Only real, filled-in env files are ignored.
+.env*.local
+.env
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# test output
+/coverage
+
+# deployment
+.vercel
+
+# editors
+.idea
+.vscode
+*.swp
+
+# --- Local development tooling (not part of the product) ---
+# AI agent skills, prompts and configuration. Useful while building, but noise
+# for anyone reading or running the app.
+.claude/
+.agents/
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+
+# Working notes and the local issue tracker. Specs that matter live in docs/.
+.scratch/

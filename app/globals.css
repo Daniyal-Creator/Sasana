@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Token layer companion to tailwind.config.ts. The raw values below are the
+   documented exceptions from design-guardrails §2.2 (single-hue alpha ramps)
+   and the reduced-motion escape hatch (ui-spec §9). */
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-bg font-sans text-base text-text antialiased;
+  }
+  ::selection {
+    @apply bg-primary-tint;
+  }
+  :focus-visible {
+    outline: 2px solid theme(colors.focus);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* Landing hero fills the full viewport; the header overlays it on the
+     landing page (ADR-0001). */
+  .hero-viewport {
+    min-height: 100svh;
+  }
+
+  /* Permitted gradient: landing hero scrim (ADR-0001, guardrails §2.2).
+     Warm ink 42,37,32, alpha only, never animated. Stops are tuned against the
+     actual hero photo: near-clear at the top so the temple and sky stay
+     visible, then strong enough from 40% down that the headline, lead, and
+     scroll cue clear 4.5:1 on their worst pixel. Re-measure if the photo
+     changes. */
+  .hero-scrim {
+    background-image: linear-gradient(
+      to bottom,
+      rgb(42 37 32 / 0.05) 0%,
+      rgb(42 37 32 / 0.6) 40%,
+      rgb(42 37 32 / 0.88) 100%
+    );
+  }
+
+  /* Permitted gradient #1: skeleton shimmer. One hue (--color-surface), alpha only. */
+  .skeleton-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgb(255 253 249 / 0.65) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .skeleton-shimmer {
+    animation: none;
+  }
+}

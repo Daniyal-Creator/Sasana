@@ -1,0 +1,41 @@
+# Local development for the BACKEND ONLY.
+#
+# The frontend deliberately stays out of Docker: Next.js file watching through a
+# Windows bind mount is unreliable, and the frontend developers depend on fast
+# HMR. Run it natively with `npm run dev` inside frontend/.
+
+services:
+  backend:
+    build:
+      # The context is the repository root, not ./backend, so the image can copy
+      # shared/ - the type-only API contract lives outside the backend folder.
+      context: .
+      dockerfile: backend/Dockerfile
+    # Real values (the Gemini key) come from here. This file is git-ignored;
+    # copy backend/.env.example to backend/.env and fill in your own key.
+    env_file: ./backend/.env
+    environment:
+      PORT: 3001
+      # Where the Next.js dev server runs. Add a deployed domain here, comma
+      # separated, when the frontend is hosted somewhere else.
+      ALLOWED_ORIGINS: http://localhost:3000
+    ports:
+      - "3001:3001"
+    # Source is mounted so `tsx watch` picks up edits without rebuilding the
+    # image. node_modules stays inside the container.
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./shared:/app/shared
+    command: npm run dev
+    healthcheck:
+      # The script must stay quoted: unquoted, YAML reads the "? " and ": " in
+      # the ternary as mapping syntax instead of as part of the string.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

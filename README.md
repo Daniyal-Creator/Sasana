@@ -29,54 +29,83 @@ Both features work in **Indonesian and English**.
 
 ## Tech stack
 
-- **Next.js 15** (App Router) + **React 19** + **TypeScript**
-- **Tailwind CSS**
-- **Google Gemini** via `@google/genai` — vision and grounded text
-- **Vitest** for unit and API-route tests
-- Deployed on **Vercel**
+The frontend and the backend are two independent services, each with its own
+`package.json` and its own `node_modules`.
 
-The Gemini API key is read **only** on the server, inside API route handlers. It
-is never bundled into the browser.
+**`frontend/`** — **Next.js 15** (App Router) + **React 19** + **Tailwind CSS**
+
+**`backend/`** — **Hono** on Node, run through **tsx**, containerised with
+**Docker**. Talks to **Google Gemini** via `@google/genai`. Tested with
+**Vitest**.
+
+**`shared/`** — `contract.ts`, the request/response types both sides agree on.
+Types only: every declaration there is erased at compile time, so nothing is
+bundled across the folder boundary and no build configuration is needed. Change
+a type here and TypeScript reports the mismatch on both sides immediately.
+
+The Gemini API key lives **only** in the backend. The browser never receives it.
 
 ---
 
 ## Getting started
 
-**Requirements:** Node.js 18.18 or newer, and npm.
+**Requirements:** Node.js 20.18 or newer, npm, and Docker Desktop.
+
+**1. Give the backend a key.** Copy the example file and fill in your own Gemini
+API key. Get one free (no credit card) at <https://aistudio.google.com/apikey>:
 
 ```bash
-npm install
+cp backend/.env.example backend/.env
 ```
 
-Create a `.env.local` file in the project root and add a Gemini API key. Get one
-free (no credit card) at <https://aistudio.google.com/apikey>:
+Only `GEMINI_API_KEY` is required — everything else has a working default.
+
+**2. Start the backend** (first terminal, from the repository root):
 
 ```bash
-GEMINI_API_KEY=your_key_here
+docker compose up backend
 ```
 
-See [`.env.example`](.env.example) for every supported variable. Only
-`GEMINI_API_KEY` is required — the rest have working defaults.
-
-> The app fails at startup with a clear message if the key is missing. That is
-> deliberate: a misconfigured deploy should break loudly, not silently return
-> errors to users.
+**3. Start the frontend** (second terminal):
 
 ```bash
-npm run dev
+cd frontend && npm install && npm run dev
 ```
 
 Open <http://localhost:3000>.
+
+The frontend calls the backend at <http://localhost:3001>, which is the built-in
+default — `frontend/.env` only matters when the backend runs somewhere else.
+
+> The backend refuses to start, with a clear message, if `GEMINI_API_KEY` is
+> missing. That is deliberate: a misconfigured deploy should break loudly, not
+> silently return errors to users.
+
+**Prefer not to use Docker?** `cd backend && npm install && npm run dev` runs the
+same server directly on your machine.
 
 ---
 
 ## Scripts
 
+Run these from inside `frontend/` or `backend/` — there is no root package.
+
+**`frontend/`**
+
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the development server |
+| `npm run dev` | Start the Next.js dev server on port 3000 |
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
+| `npm run typecheck` | `tsc --noEmit` |
+
+**`backend/`**
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the API on port 3001, reloading on change |
+| `npm start` | Start the API without the watcher |
+| `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | Run tests in watch mode |
 | `npm run test:run` | Run tests once (CI-style) |
 
@@ -88,27 +117,51 @@ quota.
 ## Project structure
 
 ```
-app/            Routes and API handlers
-  api/chat/       POST /api/chat   - Custom Assistant
-  api/vision/     POST /api/vision - Situation Check
-components/     React components, grouped by feature
-lib/            Server logic: Gemini client, knowledge base, prompts,
-                validation, errors, caching, logging
-data/           rules.json - the knowledge base
-__tests__/      Vitest suites
-docs/           PRD, technical / backend / UI specs, ADRs
+frontend/            Next.js app - everything the browser runs
+  src/app/             Pages: /, /check, /assistant, /about
+  src/components/      React components, grouped by feature
+  src/lib/             Client copy (i18n), language state, image handling,
+                       and the backend base URL
+  public/              Static images
+
+backend/             Hono API - everything that touches Gemini
+  src/routes/          POST /api/chat, POST /api/vision
+  src/lib/             Gemini client, knowledge base, prompts, validation,
+                       errors, caching, logging
+  src/data/            rules.json - the knowledge base
+  __tests__/           Vitest suites
+  Dockerfile
+
+shared/              contract.ts - the API types both sides share (types only)
+docs/                PRD, technical / backend / UI specs, ADRs
+docker-compose.yml   Local backend container
 ```
+
+Frontend work never needs a file outside `frontend/`. Changing the shape of an
+API response means changing `shared/contract.ts`, and TypeScript will then flag
+every place on both sides that has to follow.
 
 ---
 
 ## Deployment
 
-Import the repository at [vercel.com](https://vercel.com); Next.js is detected
-automatically. Add `GEMINI_API_KEY` under **Settings → Environment Variables**
-for Production and Preview, then redeploy — environment changes only take effect
-on a new deployment.
+The two services deploy separately, and no host is chosen yet.
 
-`.env.local` is never deployed; it is git-ignored and local to your machine.
+**Frontend** — import the repository at [vercel.com](https://vercel.com) with
+`frontend/` as the root directory; Next.js is detected automatically. Set
+`NEXT_PUBLIC_API_URL` to the deployed backend URL.
+
+**Backend** — `backend/Dockerfile` runs anywhere that accepts a container:
+Railway, Render, Fly.io, Google Cloud Run, or a plain VPS. Set `GEMINI_API_KEY`
+and add the deployed frontend origin to `ALLOWED_ORIGINS`, or the browser will be
+refused by CORS.
+
+Note that the image build context is the **repository root**, not `backend/`,
+because the image also needs `shared/`. `docker-compose.yml` already does this;
+a host that builds the Dockerfile itself has to be told the same.
+
+`.env` files are never deployed and never enter the image; they are git-ignored
+and local to your machine.
 
 ---
 

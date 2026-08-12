@@ -1,0 +1,20 @@
+# Docker reads this from the build context root, which is the repository root
+# (see docker-compose.yml), so it has to cover every folder.
+
+**/node_modules
+**/.next
+**/dist
+
+# Never bake secrets into an image layer. Real values arrive at run time through
+# docker-compose `env_file`.
+**/.env
+**/.env.local
+
+.git
+.claude
+.agents
+.scratch
+frontend
+docs
+*.md
+**/*.tsbuildinfo

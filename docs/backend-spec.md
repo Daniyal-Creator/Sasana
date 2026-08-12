@@ -143,7 +143,7 @@ Both routes: `export const runtime = "nodejs";` (the Node SDK + base64 bodies ne
 | `400` | `invalid_json` / `invalid_input` / `unsupported_media` | bad/absent/non-image input | `{ "error": "<message>", "code": "invalid_input" }` |
 | `413` | `image_too_large` | decoded image > 5 MB | `{ "error": "The photo is larger than 5 MB. Please use a smaller image.", "code": "image_too_large" }` |
 | `429` | `rate_limited` | Gemini quota exceeded after 1 retry | `{ "error": "We're a little busy right now. Please try again in a moment.", "code": "rate_limited" }` |
-| `504` | `timeout` | Gemini exceeded the 9 s app timeout | `{ "error": "Something went wrong analyzing your photo. Please try again.", "code": "timeout" }` |
+| `504` | `timeout` | Gemini exceeded the app timeout (30 s for vision) | `{ "error": "Something went wrong analyzing your photo. Please try again.", "code": "timeout" }` |
 | `502` | `ai_error` | Gemini returned an error / unparseable output | `{ "error": "Something went wrong analyzing your photo. Please try again.", "code": "ai_error" }` |
 | `500` | `internal` | any unexpected error | `{ "error": "Something went wrong. Please try again.", "code": "internal" }` |
 
@@ -220,7 +220,11 @@ contents: [
 
 #### Timeout handling
 
-App-level timeout via `withTimeout(..., 9000 ms)` (`GEMINI_TIMEOUT_MS`), comfortably under Vercel's function ceiling. On expiry the route returns `504 timeout` with a friendly message (never hangs). See `lib/timeout.ts` (§4.5).
+App-level timeout via `withTimeout(..., GEMINI_VISION_TIMEOUT_MS)`, default **30 s**. On expiry the route returns `504 timeout` with a friendly message (never hangs). See `lib/timeout.ts` (§4.5).
+
+Vision and chat are capped separately (`GEMINI_VISION_TIMEOUT_MS` / `GEMINI_CHAT_TIMEOUT_MS`, default 30 s / 15 s) because their latency differs by an order of magnitude. Measured on `gemini-3.6-flash` with a 1024px JPEG: chat is consistently 1.2-1.4 s, vision ranges 2.1 s to 16.9 s, with the slowest runs coming first after a cold process.
+
+> Both used to share a single 9 s cap chosen to sit under Vercel's serverless function ceiling. That constraint disappeared when the backend became its own container, and the cap was rejecting roughly a fifth of vision calls that would have succeeded.
 
 #### Route implementation
 
@@ -917,7 +921,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, { en: string; id: string }> = {
 | `unsupported_media` | 400 | Not JPEG/PNG | No |
 | `image_too_large` | 413 | Decoded image > 5 MB | No (resize) |
 | `rate_limited` | 429 | Gemini quota (after 1 retry) | Yes, later |
-| `timeout` | 504 | > 9 s app timeout | Yes |
+| `timeout` | 504 | Exceeded the app timeout | Yes |
 | `ai_error` | 502 | Gemini error / unparseable | Yes |
 | `kb_error` | 500 | rules.json invalid | No (deploy fix) |
 | `internal` | 500 | Unexpected | Yes |

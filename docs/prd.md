@@ -196,7 +196,7 @@ When a user is near a sacred site, the app automatically shows a location card w
 | Backend            | Next.js API Routes (Node.js)                                                  | Free / open-source        |
 | AI                 | Google Gemini API (latest **Flash** generation: vision + text)                | **Free tier** (see below) |
 | Geolocation        | Browser Geolocation API + Haversine distance (own logic)                      | Free                      |
-| Map (Explore Mode) | Leaflet + OpenStreetMap tiles                                                 | Free                      |
+| Map (Explore Mode) | Inline SVG drawn from design tokens, no tiles and no map library ([ADR-0003](./adr/0003-stylized-svg-map.md)) | Free |
 | Knowledge base     | JSON files (`rules.json`, `temples.json`) + Balinese calendar data for Odalan | Free                      |
 | Hosting            | Vercel                                                                        | Free tier                 |
 | Version control    | GitHub + Git                                                                  | Free                      |
@@ -213,7 +213,7 @@ When a user is near a sacred site, the app automatically shows a location card w
 ```
 [ Browser / User (mobile-first) ]
         |                 |
-        |          Geolocation API + Leaflet map
+        |          Geolocation API + inline SVG map (ADR-0003)
         |          (client-side geofence: Haversine vs temples.json)
    Frontend — Next.js + Tailwind (React components)
         |  internal fetch() to /api/*

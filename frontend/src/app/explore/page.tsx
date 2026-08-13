@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Bell, ScrollText, Compass, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { MapPin, MapPinOff, Bell, ScrollText, Compass, ShieldCheck, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ZoneMap } from "@/components/explore/ZoneMap";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import type { LatLng } from "@/lib/geo";
-import { isInsideZone, hasExitedZone, nearestSite } from "@/lib/geo";
+import { haversineMeters, formatDistance, isInsideZone, hasExitedZone, nearestSite } from "@/lib/geo";
 import { SITES } from "@/data/sites";
 import type { Site } from "@/data/sites";
 
@@ -39,11 +41,20 @@ export default function ExplorePage() {
   const [view, setView] = useState<View>("asking");
   const [position, setPosition] = useState<LatLng | null>(null);
   const [approachSite, setApproachSite] = useState<Site | null>(null);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>(SITES[0].id);
 
   const viewRef = useRef<View>("asking");
   const announced = useRef<Set<string>>(new Set());
   const approachSiteRef = useRef<Site | null>(null);
   const watchId = useRef<number | null>(null);
+
+  const closest = useMemo(() => {
+    if (!position) return [];
+    return [...SITES]
+      .map((site) => ({ site, distanceM: haversineMeters(position, site) }))
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, 3);
+  }, [position]);
 
   function changeView(next: View) {
     viewRef.current = next;
@@ -145,6 +156,69 @@ export default function ExplorePage() {
             {tExplore(lang, "explore.permission.notnow")}
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  if (view === "outside" && position) {
+    return (
+      <div className="mx-auto w-full max-w-tool flex-1 px-4 pb-10 pt-6 sm:px-6">
+        <h1 className="font-display text-h2 font-semibold text-text">
+          {tExplore(lang, "explore.nearby.title")}
+        </h1>
+        <p className="mt-1 text-sm text-text-secondary">{tExplore(lang, "explore.nearby.subtitle")}</p>
+
+        <div className="mt-6">
+          <ZoneMap sites={SITES} position={position} className="h-48 rounded-lg" />
+          <p className="mt-2 text-center text-xs text-text-muted">
+            {tExplore(lang, "explore.map.notToScale")}
+          </p>
+        </div>
+
+        <EmptyState
+          icon={MapPinOff}
+          title={tExplore(lang, "explore.none.title")}
+          description={tExplore(
+            lang,
+            "explore.none.description",
+            closest[0] ? { distance: formatDistance(closest[0].distanceM, lang) } : undefined,
+          )}
+        >
+          <Button variant="secondary" onClick={() => changeView("explore")}>
+            {tExplore(lang, "explore.browse.title")}
+          </Button>
+        </EmptyState>
+
+        <p className="mt-8 text-xs font-medium uppercase tracking-wide text-text-muted">
+          {tExplore(lang, "explore.closest.label")}
+        </p>
+        <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-sm">
+          {closest.map(({ site, distanceM }) => (
+            <li key={site.id}>
+              <Link
+                href={`/explore/${site.id}`}
+                className="flex min-h-11 items-center gap-3 px-4 py-3 transition-colors duration-150 hover:bg-surface-sunken"
+              >
+                <MapPin size={20} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-base font-medium text-text">{site.name}</span>
+                  <span className="block truncate text-sm text-text-secondary">
+                    {site.areaLabel[lang]}
+                  </span>
+                </span>
+                <span className="shrink-0 text-sm text-text-secondary">
+                  {formatDistance(distanceM, lang)}
+                </span>
+                <ChevronRight size={20} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-text-muted">
+          <ShieldCheck size={16} strokeWidth={1.75} aria-hidden />
+          {tExplore(lang, "explore.checked")}
+        </p>
       </div>
     );
   }

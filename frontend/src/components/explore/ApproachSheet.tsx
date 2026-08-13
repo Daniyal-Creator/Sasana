@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Camera, MessageCircle, ShieldCheck } from "lucide-react";
+import { MapPin, Camera, MessageCircle, ShieldCheck, Compass } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomIcon } from "@/components/explore/CustomIcon";
 import { useLang } from "@/lib/language";
@@ -18,9 +18,10 @@ const DRAG_THRESHOLD_PX = 8;
 
 interface ApproachSheetProps {
   site: Site;
+  simulated?: boolean;
 }
 
-export function ApproachSheet({ site }: ApproachSheetProps) {
+export function ApproachSheet({ site, simulated = false }: ApproachSheetProps) {
   const { lang } = useLang();
   const [snap, setSnap] = useState<"peek" | "full">("peek");
   const [dragY, setDragY] = useState<number | null>(null);
@@ -115,6 +116,13 @@ export function ApproachSheet({ site }: ApproachSheetProps) {
           <p className="pt-4 text-base text-text">
             {tExplore(lang, "explore.sheet.sacredArea")} {countText}
           </p>
+
+          {simulated && (
+            <p className="flex items-center gap-2 pt-3 text-xs text-text-muted">
+              <Compass size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
+              {tExplore(lang, "explore.sheet.simulated")}
+            </p>
+          )}
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">

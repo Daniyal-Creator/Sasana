@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MapPin, MapPinOff, Bell, ScrollText, Compass, ShieldCheck, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -38,13 +39,28 @@ function FeatureRow({
 }
 
 export default function ExplorePage() {
+  return (
+    <Suspense fallback={<div className="flex-1" />}>
+      <ExploreInner />
+    </Suspense>
+  );
+}
+
+function ExploreInner() {
   const { lang } = useLang();
-  const [view, setView] = useState<View>("asking");
-  const [position, setPosition] = useState<LatLng | null>(null);
-  const [approachSite, setApproachSite] = useState<Site | null>(null);
+  const searchParams = useSearchParams();
+  const simulateId = searchParams.get("simulate");
+  const simulatedSite = simulateId ? SITES.find((s) => s.id === simulateId) : undefined;
+
+  const [view, setView] = useState<View>(simulatedSite ? "inside" : "asking");
+  const [position, setPosition] = useState<LatLng | null>(
+    simulatedSite ? { lat: simulatedSite.lat, lng: simulatedSite.lng } : null,
+  );
+  const [approachSite, setApproachSite] = useState<Site | null>(simulatedSite ?? null);
+  const [simulated, setSimulated] = useState(Boolean(simulatedSite));
   const [selectedSiteId, setSelectedSiteId] = useState<string>(SITES[0].id);
 
-  const viewRef = useRef<View>("asking");
+  const viewRef = useRef<View>(simulatedSite ? "inside" : "asking");
   const announced = useRef<Set<string>>(new Set());
   const approachSiteRef = useRef<Site | null>(null);
   const watchId = useRef<number | null>(null);
@@ -238,7 +254,7 @@ export default function ExplorePage() {
             {tExplore(lang, "explore.map.notToScale")}
           </p>
         </div>
-        <ApproachSheet site={approachSite} />
+        <ApproachSheet site={approachSite} simulated={simulated} />
       </div>
     );
   }

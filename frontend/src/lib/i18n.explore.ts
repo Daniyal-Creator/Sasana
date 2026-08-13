@@ -7,7 +7,7 @@ import type { Lang } from "@/lib/i18n";
 type Entry = { en: string; id: string };
 
 const dict = {
-  // Screen A — asking for permission
+  // Screen A: asking for permission
   "explore.permission.title": {
     en: "Know the rules before you arrive.",
     id: "Ketahui aturannya sebelum Anda tiba.",
@@ -44,7 +44,7 @@ const dict = {
   "explore.permission.cta": { en: "Turn on location", id: "Aktifkan lokasi" },
   "explore.permission.notnow": { en: "Not now", id: "Nanti saja" },
 
-  // Screen B — no site nearby
+  // Screen B: no site nearby
   "explore.nearby.title": { en: "Nearby", id: "Terdekat" },
   "explore.nearby.subtitle": {
     en: "Customs for the sacred sites around you.",
@@ -65,8 +65,9 @@ const dict = {
     id: "Diperiksa di perangkat Anda. Tidak ada yang disimpan.",
   },
 
-  // Screen C — browsing the map
+  // Screen C: browsing the map
   "explore.browse.title": { en: "Explore sacred sites", id: "Jelajahi situs suci" },
+  "explore.sites.label": { en: "All sites", id: "Semua situs" },
   "explore.card.seeAll": {
     en: "See all customs here",
     id: "Lihat semua adat di sini",
@@ -76,7 +77,7 @@ const dict = {
     id: "Peta skematis {count} situs suci di Bali",
   },
 
-  // Screen D — approaching a site
+  // Screen D: approaching a site
   "explore.sheet.approaching": {
     en: "You are approaching",
     id: "Anda sedang mendekati",
@@ -91,7 +92,7 @@ const dict = {
   "explore.sheet.ask": { en: "Ask", id: "Tanya" },
   "explore.sheet.simulated": { en: "Simulated location", id: "Lokasi simulasi" },
 
-  // Screen E — site detail
+  // Screen E: site detail
   "explore.detail.meta": {
     en: "{region} · {distance} away",
     id: "{region} · berjarak {distance}",

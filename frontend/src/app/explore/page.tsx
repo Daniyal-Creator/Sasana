@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ZoneMap } from "@/components/explore/ZoneMap";
+import { ApproachSheet } from "@/components/explore/ApproachSheet";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import type { LatLng } from "@/lib/geo";
@@ -223,14 +224,96 @@ export default function ExplorePage() {
     );
   }
 
-  if (view === "explore") {
+  if (view === "inside" && approachSite) {
     return (
-      <div className="mx-auto w-full max-w-tool flex-1 px-4 py-10 sm:px-6">
-        <EmptyState icon={Compass} title={tExplore(lang, "explore.browse.title")}>
-          <Button variant="secondary" onClick={() => changeView("asking")}>
-            {tExplore(lang, "explore.permission.cta")}
-          </Button>
-        </EmptyState>
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto w-full max-w-tool min-h-0 flex-1 px-4 pt-4 sm:px-6">
+          <ZoneMap
+            sites={SITES}
+            position={position}
+            selectedSiteId={approachSite.id}
+            className="rounded-lg"
+          />
+          <p className="mt-2 pb-2 text-center text-xs text-text-muted">
+            {tExplore(lang, "explore.map.notToScale")}
+          </p>
+        </div>
+        <ApproachSheet site={approachSite} />
+      </div>
+    );
+  }
+
+  if (view === "explore") {
+    const selected = SITES.find((site) => site.id === selectedSiteId) ?? SITES[0];
+    const selectedDistance = position ? haversineMeters(position, selected) : null;
+    return (
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="mx-auto flex w-full max-w-tool min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6">
+          <h1 className="sr-only">{tExplore(lang, "explore.browse.title")}</h1>
+
+          <ZoneMap
+            sites={SITES}
+            position={position}
+            selectedSiteId={selected.id}
+            onSelectSite={setSelectedSiteId}
+            className="min-h-0 flex-1 rounded-lg"
+          />
+          <p className="mt-2 text-center text-xs text-text-muted">
+            {tExplore(lang, "explore.map.notToScale")}
+          </p>
+
+          <Card className="mt-4">
+            <h2 className="font-display text-h2 font-semibold text-text">{selected.name}</h2>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-text-secondary">
+              <MapPin size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+              {selected.region}
+              {selectedDistance !== null && (
+                <span aria-hidden>·</span>
+              )}
+              {selectedDistance !== null && formatDistance(selectedDistance, lang)}
+            </p>
+            <p className="mt-1 text-sm text-text-secondary">{selected.areaLabel[lang]}</p>
+            <p className="mt-3 text-base text-text">{selected.customs[0].summary[lang]}</p>
+            <div className="mt-4">
+              <Button
+                variant="secondary"
+                icon={ScrollText}
+                href={`/explore/${selected.id}`}
+              >
+                {tExplore(lang, "explore.card.seeAll")}
+              </Button>
+            </div>
+          </Card>
+
+          <div className="mt-6 pb-10">
+            <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
+              {tExplore(lang, "explore.sites.label")}
+            </p>
+            <ul className="mt-2 divide-y divide-border rounded-lg border border-border bg-surface shadow-sm">
+              {SITES.map((site) => (
+                <li key={site.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSiteId(site.id)}
+                    aria-pressed={site.id === selected.id}
+                    className="flex min-h-11 w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-sunken"
+                  >
+                    <MapPin size={20} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-base font-medium text-text">{site.name}</span>
+                      <span className="block truncate text-sm text-text-secondary">
+                        {site.areaLabel[lang]}
+                      </span>
+                    </span>
+                    {site.id === selected.id && (
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
     );
   }

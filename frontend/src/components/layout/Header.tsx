@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -10,12 +11,17 @@ import { t } from "@/lib/i18n";
 function Wordmark({ lang }: { lang: "id" | "en" }) {
   return (
     <Link href="/" className="flex items-center gap-2 rounded-full">
-      <span
+      <Image
+        src="/sasana-logo.png"
+        alt=""
         aria-hidden
-        className="flex h-7 w-7 items-center justify-center rounded-full bg-primary font-display text-sm font-semibold text-accent"
-      >
-        S
-      </span>
+        width={64}
+        height={64}
+        // Eager, but not priority: the landing hero photo is the LCP element and
+        // should keep the preload slot to itself.
+        loading="eager"
+        className="h-8 w-8 shrink-0"
+      />
       <span className="font-display text-lg font-semibold tracking-wide text-text">
         {t(lang, "app.name")}
       </span>

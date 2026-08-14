@@ -49,14 +49,18 @@ export default function LandingPage() {
                 {t(lang, "landing.lead")}
               </p>
 
-              <div className="mt-8 flex w-full max-w-hero flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
-                <Button href="/check" variant="primary" size="lg" icon={Camera}>
+              {/* The 520px measure belongs to the headline and the lead, not to
+                  the actions. Three buttons inside it wrapped their labels to
+                  two lines in a 56px box. Stacked and capped up to lg, then a
+                  full-width row that lets each label stay on one line. */}
+              <div className="mt-9 flex w-full max-w-hero flex-col gap-3 lg:mt-10 lg:max-w-none lg:flex-row lg:justify-center lg:gap-4">
+                <Button href="/check" variant="primary" size="lg" icon={Camera} className="whitespace-nowrap">
                   {t(lang, "cta.check.title")}
                 </Button>
-                <Button href="/assistant" variant="secondary" size="lg" icon={MessageCircle}>
+                <Button href="/assistant" variant="secondary" size="lg" icon={MessageCircle} className="whitespace-nowrap">
                   {t(lang, "cta.assistant.title")}
                 </Button>
-                <Button href="/explore" variant="secondary" size="lg" icon={MapPin}>
+                <Button href="/explore" variant="secondary" size="lg" icon={MapPin} className="whitespace-nowrap">
                   {t(lang, "cta.explore.title")}
                 </Button>
               </div>

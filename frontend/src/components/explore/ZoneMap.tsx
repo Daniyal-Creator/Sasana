@@ -18,8 +18,16 @@ const MAX_LAT = -8.05;
 const VIEW_W = 135;
 const VIEW_H = 85;
 
-const MIN_ZONE_RADIUS = 14;
-const ZONE_PX_PER_KM = 40;
+// Sizes below are in viewBox USER UNITS, not CSS pixels. The map renders around
+// 343px wide, so one unit is roughly 2.5px and anything sized as if it were a
+// pixel value comes out two and a half times too big. Keep that in mind before
+// touching these numbers.
+const MIN_ZONE_RADIUS = 3.5; // about 9px rendered
+const ZONE_UNITS_PER_KM = 8;
+const USER_DOT_R = 2.2;
+const USER_HALO_R = 5;
+const LABEL_FONT = 4.5; // about 11px rendered
+const LABEL_GAP = 3.5;
 
 function project(lat: number, lng: number): { x: number; y: number } {
   const x = ((lng - MIN_LNG) / (MAX_LNG - MIN_LNG)) * VIEW_W;
@@ -49,7 +57,7 @@ export function ZoneMap({
     () =>
       sites.map((site) => {
         const { x, y } = project(site.lat, site.lng);
-        return { site, x, y, r: Math.max(MIN_ZONE_RADIUS, (site.radiusM / 1000) * ZONE_PX_PER_KM) };
+        return { site, x, y, r: Math.max(MIN_ZONE_RADIUS, (site.radiusM / 1000) * ZONE_UNITS_PER_KM) };
       }),
     [sites],
   );
@@ -101,22 +109,28 @@ export function ZoneMap({
 
       {userDot && (
         <>
-          <circle cx={userDot.x} cy={userDot.y} r="16" className="fill-primary" fillOpacity={0.18} />
-          <circle cx={userDot.x} cy={userDot.y} r="6" className="fill-primary" />
+          <circle cx={userDot.x} cy={userDot.y} r={USER_HALO_R} className="fill-primary" fillOpacity={0.18} />
+          <circle cx={userDot.x} cy={userDot.y} r={USER_DOT_R} className="fill-primary" />
         </>
       )}
 
-      {zones.map(({ site, x, y, r }) => (
-        <text
-          key={`label-${site.id}`}
-          x={x}
-          y={y + r + 10}
-          textAnchor="middle"
-          className="fill-text text-xs font-medium"
-        >
-          {site.name}
-        </text>
-      ))}
+      {/* Only the selected Site is labelled. Six labels at a legible size overlap
+          each other and run off the canvas, and the list beside this map already
+          names every Site, which is also what a screen reader reads. */}
+      {zones
+        .filter(({ site }) => site.id === selectedSiteId)
+        .map(({ site, x, y, r }) => (
+          <text
+            key={`label-${site.id}`}
+            x={Math.min(Math.max(x, 2), VIEW_W - 2)}
+            y={Math.min(y + r + LABEL_GAP, VIEW_H - 1)}
+            textAnchor={x < 20 ? "start" : x > VIEW_W - 20 ? "end" : "middle"}
+            style={{ fontSize: LABEL_FONT }}
+            className="fill-text font-medium"
+          >
+            {site.name}
+          </text>
+        ))}
     </svg>
   );
 }

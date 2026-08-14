@@ -27,6 +27,14 @@ export interface Site {
   odalanDates: string[];
 }
 
+// TODO(odalan): every odalanDates array is empty on purpose. Odalan follows the
+// 210-day pawukon cycle, and the placeholder dates that were here first did not
+// correspond to any known odalan for these temples. ADR-0004 says a date we
+// cannot confirm is worse than no date, because a visitor who plans around a
+// wrong ceremony date is misled by the one app that promised to prevent that.
+// Fill these in only from temple management or an official Balinese calendar,
+// and record where each date came from. The notice itself is implemented and
+// verified: put a date within seven days of today into any Site to see it.
 export const SITES: Site[] = [
   {
     id: "pura-tanah-lot",
@@ -37,7 +45,7 @@ export const SITES: Site[] = [
     lng: 115.0868,
     radiusM: 400,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: ["2026-10-14"],
+    odalanDates: [],
     customs: [
       {
         id: "dress",
@@ -122,12 +130,12 @@ export const SITES: Site[] = [
         icon: "dress",
         title: { en: "Dress", id: "Pakaian" },
         summary: {
-          en: "A sarong and sash are required inside the temple.",
-          id: "Sarung dan selendang wajib dikenakan di dalam pura.",
+          en: "A kamen and sash are required inside the temple.",
+          id: "Kamen dan selendang wajib dikenakan di dalam pura.",
         },
         detail: {
-          en: "A sarong and sash are required inside the temple grounds. They are lent or rented at the entrance. Keep shoulders and knees covered.",
-          id: "Sarung dan selendang wajib dikenakan di dalam area pura. Keduanya dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
+          en: "A kamen and sash are required inside the temple grounds. They are lent or rented at the entrance. Keep shoulders and knees covered.",
+          id: "Kamen dan selendang wajib dikenakan di dalam area pura. Keduanya dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
         },
       },
       {
@@ -180,19 +188,19 @@ export const SITES: Site[] = [
     lng: 115.4515,
     radiusM: 500,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: ["2026-09-10"],
+    odalanDates: [],
     customs: [
       {
         id: "dress",
         icon: "dress",
         title: { en: "Dress", id: "Pakaian" },
         summary: {
-          en: "Sarong and sash are required across the complex.",
-          id: "Sarung dan selendang wajib dikenakan di seluruh kompleks.",
+          en: "A kamen and sash are required across the complex.",
+          id: "Kamen dan selendang wajib dikenakan di seluruh kompleks.",
         },
         detail: {
-          en: "Sarong and sash are required across the whole complex, the largest temple in Bali. They are lent or rented at the main entrance.",
-          id: "Sarung dan selendang wajib dikenakan di seluruh kompleks, pura terbesar di Bali. Keduanya dipinjamkan atau disewakan di pintu masuk utama.",
+          en: "A kamen and sash are required across the whole complex, the largest temple in Bali. They are lent or rented at the main entrance.",
+          id: "Kamen dan selendang wajib dikenakan di seluruh kompleks, pura terbesar di Bali. Keduanya dipinjamkan atau disewakan di pintu masuk utama.",
         },
       },
       {
@@ -265,12 +273,12 @@ export const SITES: Site[] = [
         icon: "dress",
         title: { en: "Dress", id: "Pakaian" },
         summary: {
-          en: "A sarong is required to cross the rock arch.",
-          id: "Sarung wajib dikenakan untuk melewati lengkung batu.",
+          en: "A kamen is required to cross the rock arch.",
+          id: "Kamen wajib dikenakan untuk melewati lengkung batu.",
         },
         detail: {
-          en: "A sarong is required to enter the temple over the rock arch. It is lent or rented at the entrance. Keep shoulders and knees covered.",
-          id: "Sarung wajib dikenakan untuk masuk ke pura di atas lengkung batu. Sarung dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
+          en: "A kamen is required to enter the temple over the rock arch. It is lent or rented at the entrance. Keep shoulders and knees covered.",
+          id: "Kamen wajib dikenakan untuk masuk ke pura di atas lengkung batu. Kamen dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
         },
       },
       {
@@ -317,12 +325,12 @@ export const SITES: Site[] = [
         icon: "dress",
         title: { en: "Dress", id: "Pakaian" },
         summary: {
-          en: "A sarong is required before the bathing pools.",
-          id: "Sarung wajib dikenakan sebelum masuk area pemandian.",
+          en: "A kamen is required before the bathing pools.",
+          id: "Kamen wajib dikenakan sebelum masuk area pemandian.",
         },
         detail: {
-          en: "A sarong is required to reach the bathing pools, and is lent or rented at the entrance. Keep your shoulders covered.",
-          id: "Sarung wajib dikenakan untuk mencapai kolam pemandian, dan dipinjamkan atau disewakan di pintu masuk. Jaga bahu tetap tertutup.",
+          en: "A kamen is required to reach the bathing pools, and is lent or rented at the entrance. Keep your shoulders covered.",
+          id: "Kamen wajib dikenakan untuk mencapai kolam pemandian, dan dipinjamkan atau disewakan di pintu masuk. Jaga bahu tetap tertutup.",
         },
       },
       {
@@ -382,12 +390,12 @@ export const SITES: Site[] = [
         icon: "dress",
         title: { en: "Dress", id: "Pakaian" },
         summary: {
-          en: "A sarong and sash are required inside the temple.",
-          id: "Sarung dan selendang wajib dikenakan di dalam pura.",
+          en: "A kamen and sash are required inside the temple.",
+          id: "Kamen dan selendang wajib dikenakan di dalam pura.",
         },
         detail: {
-          en: "A sarong and sash are required inside the temple grounds on the lake. They are lent or rented at the entrance.",
-          id: "Sarung dan selendang wajib dikenakan di dalam area pura di tepi danau. Keduanya dipinjamkan atau disewakan di pintu masuk.",
+          en: "A kamen and sash are required inside the temple grounds on the lake. They are lent or rented at the entrance.",
+          id: "Kamen dan selendang wajib dikenakan di dalam area pura di tepi danau. Keduanya dipinjamkan atau disewakan di pintu masuk.",
         },
       },
       {

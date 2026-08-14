@@ -91,6 +91,8 @@ const dict = {
   "explore.sheet.checkPhoto": { en: "Check my photo", id: "Cek foto saya" },
   "explore.sheet.ask": { en: "Ask", id: "Tanya" },
   "explore.sheet.simulated": { en: "Simulated location", id: "Lokasi simulasi" },
+  "explore.sheet.collapse": { en: "Collapse the panel", id: "Kecilkan panel" },
+  "explore.sheet.expand": { en: "Expand the panel", id: "Perbesar panel" },
 
   // Screen E: site detail
   "explore.detail.meta": {

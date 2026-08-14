@@ -69,7 +69,9 @@ export function ApproachSheet({ site, simulated = false }: ApproachSheetProps) {
     setDragY(null);
   }
 
-  const visibleCustoms = site.customs.slice(0, 3);
+  // The sentence above the list states a count, so the list must show that many.
+  // Truncating to three while claiming five made the sheet contradict itself.
+  const visibleCustoms = site.customs;
   const count = site.customs.length;
   const countText =
     count === 1
@@ -92,7 +94,7 @@ export function ApproachSheet({ site, simulated = false }: ApproachSheetProps) {
       >
         <button
           type="button"
-          aria-label={snap === "full" ? "Collapse" : "Expand"}
+          aria-label={tExplore(lang, snap === "full" ? "explore.sheet.collapse" : "explore.sheet.expand")}
           className="flex h-9 w-full shrink-0 items-center justify-center focus-visible:shadow-focus"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

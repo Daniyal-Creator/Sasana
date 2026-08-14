@@ -39,6 +39,11 @@ const dict = {
     en: "Questions about the rules, answered.",
     id: "Pertanyaan tentang aturan, terjawab.",
   },
+  "cta.explore.title": { en: "Explore Locations", id: "Jelajahi Lokasi" },
+  "cta.explore.desc": {
+    en: "See the customs at a sacred site before you arrive.",
+    id: "Lihat adat di situs suci sebelum Anda tiba.",
+  },
   "how.title": { en: "How it works", id: "Cara kerjanya" },
   "how.step1": { en: "Snap or upload a photo", id: "Ambil atau unggah foto" },
   "how.step2": { en: "Get friendly feedback", id: "Dapatkan masukan yang ramah" },

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Camera, ChevronDown, MessageCircle, ShieldCheck } from "lucide-react";
+import { Camera, ChevronDown, ChevronRight, MapPin, MessageCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Footer } from "@/components/layout/Footer";
 import { useLang } from "@/lib/language";
@@ -49,12 +49,19 @@ export default function LandingPage() {
                 {t(lang, "landing.lead")}
               </p>
 
-              <div className="mt-8 flex w-full max-w-hero flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
-                <Button href="/check" variant="primary" size="lg" icon={Camera}>
+              {/* The 520px measure belongs to the headline and the lead, not to
+                  the actions. Three buttons inside it wrapped their labels to
+                  two lines in a 56px box. Stacked and capped up to lg, then a
+                  full-width row that lets each label stay on one line. */}
+              <div className="mt-9 flex w-full max-w-hero flex-col gap-3 lg:mt-10 lg:max-w-none lg:flex-row lg:justify-center lg:gap-4">
+                <Button href="/check" variant="primary" size="lg" icon={Camera} className="whitespace-nowrap">
                   {t(lang, "cta.check.title")}
                 </Button>
-                <Button href="/assistant" variant="secondary" size="lg" icon={MessageCircle}>
+                <Button href="/assistant" variant="secondary" size="lg" icon={MessageCircle} className="whitespace-nowrap">
                   {t(lang, "cta.assistant.title")}
+                </Button>
+                <Button href="/explore" variant="secondary" size="lg" icon={MapPin} className="whitespace-nowrap">
+                  {t(lang, "cta.explore.title")}
                 </Button>
               </div>
 
@@ -88,6 +95,21 @@ export default function LandingPage() {
               <MessageCircle size={24} strokeWidth={1.75} aria-hidden className="text-primary" />
               <p className="mt-3 text-h3 font-semibold text-text">{t(lang, "cta.assistant.title")}</p>
               <p className="mt-1 text-sm text-text-secondary">{t(lang, "cta.assistant.desc")}</p>
+            </Link>
+
+            {/* Explore is a wide row, not a third square card. Three matching
+                cards in a line is the stock triptych L1 exists to prevent, and
+                this door leads somewhere different in kind: a place, not a tool. */}
+            <Link
+              href="/explore"
+              className="flex items-center gap-4 rounded-lg border border-border bg-surface p-5 shadow-sm transition-[box-shadow,transform] duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md sm:p-6 md:col-span-2"
+            >
+              <MapPin size={24} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-h3 font-semibold text-text">{t(lang, "cta.explore.title")}</span>
+                <span className="mt-1 block text-sm text-text-secondary">{t(lang, "cta.explore.desc")}</span>
+              </span>
+              <ChevronRight size={20} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
             </Link>
           </div>
         </section>

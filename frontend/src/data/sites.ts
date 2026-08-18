@@ -12,6 +12,7 @@ export interface Custom {
   title: Localized;
   summary: Localized;
   detail: Localized;
+  ruleIds: string[];
 }
 
 export interface Site {
@@ -59,6 +60,7 @@ export const SITES: Site[] = [
           en: "Wear a kamen, a length of cloth wrapped at the waist, with a sash tied over it. Both are lent or rented at the entrance. Shoulders and knees stay covered inside the grounds.",
           id: "Kenakan kamen, kain yang dililitkan di pinggang, dengan selendang diikat di atasnya. Keduanya dipinjamkan atau disewakan di pintu masuk. Bahu dan lutut tetap tertutup selama di dalam area pura.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "photography",
@@ -72,6 +74,7 @@ export const SITES: Site[] = [
           en: "Take photos in the outer areas. Ask before photographing someone who is praying, and never stand higher than a priest to get a shot.",
           id: "Ambil foto di area luar. Minta izin sebelum memotret orang yang sedang sembahyang, dan jangan pernah berdiri lebih tinggi daripada pedanda untuk mengambil gambar.",
         },
+        ruleIds: ["photography", "head-level-respect"],
       },
       {
         id: "offerings",
@@ -85,6 +88,7 @@ export const SITES: Site[] = [
           en: "Canang, small woven trays of flowers, are placed on the ground throughout the area. Walk around them, never over them or on them.",
           id: "Canang, wadah anyaman kecil berisi bunga, diletakkan di tanah di seluruh area. Berjalanlah mengelilinginya, jangan pernah melangkahinya atau menginjaknya.",
         },
+        ruleIds: ["offerings-canang"],
       },
       {
         id: "drones",
@@ -98,6 +102,7 @@ export const SITES: Site[] = [
           en: "Flying over the temple area is not permitted. This is enforced, and it interrupts ceremonies.",
           id: "Menerbangkan drone di area pura tidak diizinkan. Hal ini ditegakkan dan dapat mengganggu upacara.",
         },
+        ruleIds: ["drone-restriction"],
       },
       {
         id: "quiet",
@@ -111,6 +116,7 @@ export const SITES: Site[] = [
           en: "Keep your voice low near people who are praying, and let a ceremony pass rather than crossing through it.",
           id: "Jaga suara tetap pelan di dekat orang yang sedang sembahyang, dan biarkan upacara berlalu alih-alih menyeberang di tengahnya.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },
@@ -137,6 +143,7 @@ export const SITES: Site[] = [
           en: "A kamen and sash are required inside the temple grounds. They are lent or rented at the entrance. Keep shoulders and knees covered.",
           id: "Kamen dan selendang wajib dikenakan di dalam area pura. Keduanya dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "photography",
@@ -150,6 +157,7 @@ export const SITES: Site[] = [
           en: "Photograph the cliff views and the outer areas freely. Ask before photographing someone who is praying, and avoid taking photos inside the inner courtyard.",
           id: "Foto pemandangan tebing dan area luar dengan leluasa. Minta izin sebelum memotret orang yang sedang sembahyang, dan hindari memotret di halaman dalam.",
         },
+        ruleIds: ["photography", "sacred-area-entry"],
       },
       {
         id: "offerings",
@@ -163,6 +171,7 @@ export const SITES: Site[] = [
           en: "Offerings are placed on the ground and along the temple walls. Step around them and never walk over them.",
           id: "Sesaji diletakkan di tanah dan di sepanjang tembok pura. Berjalanlah mengelilinginya dan jangan pernah melangkahinya.",
         },
+        ruleIds: ["offerings-canang"],
       },
       {
         id: "quiet",
@@ -176,6 +185,7 @@ export const SITES: Site[] = [
           en: "Stay quiet near the shrines and the kecak dance stage. Let a ceremony pass rather than crossing through it, and keep your voice low.",
           id: "Tetap tenang di dekat pelinggih dan panggung tari kecak. Biarkan upacara berlalu alih-alih menyeberang di tengahnya, dan jaga suara tetap pelan.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },
@@ -202,6 +212,7 @@ export const SITES: Site[] = [
           en: "A kamen and sash are required across the whole complex, the largest temple in Bali. They are lent or rented at the main entrance.",
           id: "Kamen dan selendang wajib dikenakan di seluruh kompleks, pura terbesar di Bali. Keduanya dipinjamkan atau disewakan di pintu masuk utama.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "photography",
@@ -215,6 +226,7 @@ export const SITES: Site[] = [
           en: "Photograph the outer courtyards and the meru shrines. Ask before photographing someone who is praying, and never stand higher than a priest.",
           id: "Foto halaman luar dan pelinggih meru. Minta izin sebelum memotret orang yang sedang sembahyang, dan jangan pernah berdiri lebih tinggi daripada pedanda.",
         },
+        ruleIds: ["photography", "head-level-respect"],
       },
       {
         id: "offerings",
@@ -228,6 +240,7 @@ export const SITES: Site[] = [
           en: "Offerings are laid out widely, especially on ceremony days. Walk around them and never step on them, even if the ground looks busy.",
           id: "Sesaji diletakkan secara luas, terutama pada hari upacara. Berjalanlah mengelilinginya dan jangan pernah menginjaknya, meskipun tanah tampak ramai.",
         },
+        ruleIds: ["offerings-canang"],
       },
       {
         id: "drones",
@@ -241,6 +254,7 @@ export const SITES: Site[] = [
           en: "Flying drones over the temple complex is not permitted. This is enforced, and it interrupts ceremonies.",
           id: "Menerbangkan drone di atas kompleks pura tidak diizinkan. Hal ini ditegakkan dan dapat mengganggu upacara.",
         },
+        ruleIds: ["drone-restriction"],
       },
       {
         id: "quiet",
@@ -254,6 +268,7 @@ export const SITES: Site[] = [
           en: "Keep your voice low across the courtyards. Many people come here to pray, and ceremonies are frequent. Let them pass without crossing through.",
           id: "Jaga suara tetap pelan di seluruh halaman. Banyak orang datang untuk sembahyang, dan upacara sering berlangsung. Biarkan mereka berlalu tanpa menyeberang di tengahnya.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },
@@ -280,6 +295,7 @@ export const SITES: Site[] = [
           en: "A kamen is required to enter the temple over the rock arch. It is lent or rented at the entrance. Keep shoulders and knees covered.",
           id: "Kamen wajib dikenakan untuk masuk ke pura di atas lengkung batu. Kamen dipinjamkan atau disewakan di pintu masuk. Jaga bahu dan lutut tetap tertutup.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "offerings",
@@ -293,6 +309,7 @@ export const SITES: Site[] = [
           en: "Offerings are placed along the cliff edge and at the shrines. Walk around them and never kick or step on them.",
           id: "Sesaji diletakkan di sepanjang tepi tebing dan di pelinggih. Berjalanlah mengelilinginya dan jangan pernah menyentuh atau menginjaknya.",
         },
+        ruleIds: ["offerings-canang"],
       },
       {
         id: "quiet",
@@ -306,6 +323,7 @@ export const SITES: Site[] = [
           en: "Keep your voice low near the shrines and let a ceremony pass rather than crossing through it.",
           id: "Jaga suara tetap pelan di dekat pelinggih dan biarkan upacara berlalu alih-alih menyeberang di tengahnya.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },
@@ -332,6 +350,7 @@ export const SITES: Site[] = [
           en: "A kamen is required to reach the bathing pools, and is lent or rented at the entrance. Keep your shoulders covered.",
           id: "Kamen wajib dikenakan untuk mencapai kolam pemandian, dan dipinjamkan atau disewakan di pintu masuk. Jaga bahu tetap tertutup.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "photography",
@@ -345,6 +364,7 @@ export const SITES: Site[] = [
           en: "Photograph the pools from the surrounding paths. Ask before photographing someone who is purifying, and do not stand higher than a priest.",
           id: "Foto kolam dari jalur di sekelilingnya. Minta izin sebelum memotret orang yang sedang melukat, dan jangan berdiri lebih tinggi daripada pedanda.",
         },
+        ruleIds: ["photography", "head-level-respect"],
       },
       {
         id: "offerings",
@@ -358,6 +378,7 @@ export const SITES: Site[] = [
           en: "Offerings are placed around the pools and along the walkways. Step around them and never walk over them.",
           id: "Sesaji diletakkan di sekitar kolam dan di sepanjang jalur. Berjalanlah mengelilinginya dan jangan pernah melangkahinya.",
         },
+        ruleIds: ["offerings-canang"],
       },
       {
         id: "quiet",
@@ -371,6 +392,7 @@ export const SITES: Site[] = [
           en: "People come here to purify in silence. Keep your voice low and let those who are bathing finish without disturbance.",
           id: "Orang datang ke sini untuk melukat dengan hening. Jaga suara tetap pelan dan biarkan mereka yang sedang mandi selesai tanpa gangguan.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },
@@ -397,6 +419,7 @@ export const SITES: Site[] = [
           en: "A kamen and sash are required inside the temple grounds on the lake. They are lent or rented at the entrance.",
           id: "Kamen dan selendang wajib dikenakan di dalam area pura di tepi danau. Keduanya dipinjamkan atau disewakan di pintu masuk.",
         },
+        ruleIds: ["temple-attire"],
       },
       {
         id: "photography",
@@ -410,6 +433,7 @@ export const SITES: Site[] = [
           en: "Photograph the lake and the surrounding gardens freely. Ask before photographing someone who is praying, and keep to the paths.",
           id: "Foto danau dan taman di sekelilingnya dengan leluasa. Minta izin sebelum memotret orang yang sedang sembahyang, dan tetap di jalur.",
         },
+        ruleIds: ["photography"],
       },
       {
         id: "drones",
@@ -423,6 +447,7 @@ export const SITES: Site[] = [
           en: "Flying drones over the temple or the lake is not permitted. This is enforced, and it disturbs the calm of the site.",
           id: "Menerbangkan drone di atas pura atau danau tidak diizinkan. Hal ini ditegakkan dan mengganggu ketenangan kawasan.",
         },
+        ruleIds: ["drone-restriction"],
       },
       {
         id: "quiet",
@@ -436,6 +461,7 @@ export const SITES: Site[] = [
           en: "Keep your voice low near the shrine and the gardens. Let a ceremony pass rather than crossing through it.",
           id: "Jaga suara tetap pelan di dekat pelinggih dan taman. Biarkan upacara berlalu alih-alih menyeberang di tengahnya.",
         },
+        ruleIds: ["speaking-volume"],
       },
     ],
   },

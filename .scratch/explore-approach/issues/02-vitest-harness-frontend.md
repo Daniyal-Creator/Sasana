@@ -9,7 +9,7 @@ Ini pekerjaan mekanis: tiru yang sudah jalan di `backend/`, sesuaikan seperlunya
 
 **Blocked by:** None — bisa mulai sekarang.
 
-**Status:** ready-for-human — Rekan A
+**Status:** resolved
 
 **Owner:** Rekan A
 
@@ -17,27 +17,35 @@ Ini pekerjaan mekanis: tiru yang sudah jalan di `backend/`, sesuaikan seperlunya
 `frontend/vitest.config.mts`, `frontend/__tests__/harness.test.ts`.
 Tidak ada yang lain. Kalau terasa perlu, tulis di `## Comments`.
 
-- [ ] `vitest` masuk ke `devDependencies` di `frontend/package.json`, versi
+- [x] `vitest` masuk ke `devDependencies` di `frontend/package.json`, versi
       sama dengan yang dipakai `backend/package.json` supaya tidak ada dua
       versi berbeda di satu repo
-- [ ] Script `"test": "vitest"` dan `"test:run": "vitest run"` ada, persis
+- [x] Script `"test": "vitest"` dan `"test:run": "vitest run"` ada, persis
       seperti di backend
-- [ ] `frontend/vitest.config.mts` ada, meniru `backend/vitest.config.mts`,
+- [x] `frontend/vitest.config.mts` ada, meniru `backend/vitest.config.mts`,
       dengan dua perbedaan yang disengaja:
       alias `@` menunjuk ke `./src` (frontend punya alias `@/*` di
       `tsconfig.json` — cocokkan ke situ, jangan ditebak), dan blok `env`
       backend **tidak** ikut disalin karena frontend tidak punya `env.ts` yang
       memvalidasi saat import
-- [ ] `environment: "node"` — tes yang datang di tiket 04 dan 05 semuanya
+- [x] `environment: "node"` — tes yang datang di tiket 04 dan 05 semuanya
       fungsi murni, tidak ada DOM, jadi jangan pasang `jsdom` atau
       `@testing-library`. Kalau nanti ada tes komponen, itu tiket lain
-- [ ] `frontend/__tests__/harness.test.ts` berisi satu tes yang membuktikan
+- [x] `frontend/__tests__/harness.test.ts` berisi satu tes yang membuktikan
       harness-nya benar-benar hidup: impor sesuatu lewat alias `@`
       (contoh: `formatDistance` dari `@/lib/geo`) dan assert satu nilai yang
       sudah pasti benar hari ini, misalnya `formatDistance(400, "en") === "400 m"`.
       Kalau alias-nya salah pasang, tes ini yang gagal, bukan tiket 04/05
-- [ ] `npm run test:run` di dalam `frontend/` hijau
-- [ ] `npx tsc --noEmit` di dalam `frontend/` bersih
+- [x] `npm run test:run` di dalam `frontend/` hijau
+- [x] `npx tsc --noEmit` di dalam `frontend/` bersih
 
 **Catatan:** jangan menyentuh `frontend/src/lib/geo.ts`. Isinya sedang diubah di
 tiket 05. Tes harness Anda hanya membacanya.
+
+## Comments
+
+- 2026-08-18 (agent): Selesai.
+  - `vitest` (^4.1.10) ditambahkan ke `devDependencies` di `frontend/package.json` bersama script `"test"` dan `"test:run"`.
+  - `frontend/vitest.config.mts` dibuat dengan alias `@` -> `./src` dan `@shared` -> `../shared`, `environment: "node"`, tanpa blok env backend.
+  - `frontend/__tests__/harness.test.ts` memverifikasi alias `@` dan fungsi `formatDistance(400, "en") === "400 m"`.
+  - `npm run test:run` dan `npx tsc --noEmit` di frontend berhasil lulus tanpa error.

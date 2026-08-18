@@ -6,7 +6,7 @@ depan membaca separuh alasan lalu menyimpulkan yang salah.
 
 **Blocked by:** None — bisa mulai sekarang.
 
-**Status:** ready-for-human — Daniyal
+**Status:** claimed — Daniyal
 
 **Owner:** Daniyal
 

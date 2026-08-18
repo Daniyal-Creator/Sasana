@@ -78,3 +78,26 @@ tiga hal yang membuat Live Mode rapuh di lapangan.
   dipasang di layar "Nearby", bukan di Explore Mode. Explore Mode adalah
   penjelajahan manual dan posisi tidak menentukan apa pun di sana, jadi
   memberitahu "sedang mencari lokasi" di layar itu hanya kebisingan.
+
+- 2026-08-18 (agent, verifikasi lanjutan): Dua cabang yang tadi belum terlihat
+  sekarang sudah terbukti, plus empat perilaku lain. Browser uji ini tidak
+  punya panel Sensors, jadi `navigator.geolocation` dan `navigator.permissions`
+  saya kendalikan dari konsol lalu halaman dijalankan seperti biasa. Kode yang
+  diuji sama persis dengan yang dipakai Sensors; hanya sumber posisinya yang
+  saya tentukan, sehingga akurasi dan kode error bisa dipilih — sesuatu yang
+  tidak bisa dilakukan panel Sensors.
+
+  | Yang diuji | Hasil |
+  |---|---|
+  | `permissions.state = "prompt"` | Screen A muncul, tidak dilewati |
+  | Akurasi 900 m selama 20 detik | Kartu "Finding your location" muncul |
+  | 700 m dari Tanah Lot, akurasi 200 m | Notice **diam** (700+200 > 800) |
+  | Posisi sama, akurasi membaik jadi 50 m | Notice **menyala** |
+  | Masuk Zone (350 m) sesudah notice | Sheet sama, tidak ada penanda kedua |
+  | `POSITION_UNAVAILABLE` (kode 2) | Tetap di sheet, `clearWatch` tidak dipanggil |
+  | Keluar ke 1000 m | Kembali ke "Nearby" |
+  | `PERMISSION_DENIED` (kode 1) | Explore Mode, `clearWatch` dipanggil sekali |
+
+  Console bersih di seluruh rangkaian. Baris ketiga dan keempat adalah inti
+  ADR-0005: posisi yang identik, hanya keyakinannya yang berbeda, dan itulah
+  yang menentukan notice menyala atau tidak.

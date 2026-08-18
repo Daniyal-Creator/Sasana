@@ -91,16 +91,6 @@ export function hasExitedApproach(pos: LatLng, accuracyM: number, site: Site): b
 }
 
 /**
- * @deprecated Superseded by `hasExitedApproach`. Kept only because
- * `app/explore/page.tsx` still calls it, and that file belongs to ticket 06;
- * deleting it here would leave `main` failing typecheck between the two merges.
- * Ticket 06 removes the call and this function together.
- */
-export function hasExitedZone(pos: LatLng, site: Site): boolean {
-  return haversineMeters(pos, site) > site.radiusM + EXIT_BUFFER_M;
-}
-
-/**
  * Under 1 km: rounded to 50 m, "650 m".
  * Under 10 km: one decimal, "4.1 km" (EN) / "4,1 km" (ID).
  * Above that: whole numbers, "18 km".

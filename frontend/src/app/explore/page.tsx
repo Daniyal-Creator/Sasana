@@ -1,9 +1,18 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { MapPin, MapPinOff, Bell, ScrollText, Compass, ShieldCheck, ChevronRight } from "lucide-react";
+import {
+  MapPin,
+  MapPinOff,
+  Bell,
+  ScrollText,
+  Compass,
+  ShieldCheck,
+  ChevronRight,
+  Navigation,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -12,11 +21,46 @@ import { ApproachSheet } from "@/components/explore/ApproachSheet";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import type { LatLng } from "@/lib/geo";
-import { haversineMeters, formatDistance, isInsideZone, hasExitedZone, nearestSite } from "@/lib/geo";
+import {
+  haversineMeters,
+  formatDistance,
+  hasEnteredApproach,
+  hasExitedApproach,
+  approachRadiusM,
+  nearestSite,
+} from "@/lib/geo";
 import { SITES } from "@/data/sites";
 import type { Site } from "@/data/sites";
 
 type View = "asking" | "outside" | "inside" | "explore";
+
+// A fix this vague cannot decide whether the visitor is inside an Approach, so
+// the notice waits (ADR-0005). The grace period exists so a reading that is
+// briefly poor does not flicker a status message onto the screen.
+const LOW_ACCURACY_M = 200;
+const LOW_ACCURACY_GRACE_MS = 20_000;
+
+// timeout: without one the browser may never call back at all, and the page
+// would sit silent forever. maximumAge lets a fix from the last ten seconds be
+// reused, which matters for a visitor walking with the screen on.
+const WATCH_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 15_000,
+  maximumAge: 10_000,
+};
+
+// The simulated walk starts outside the Approach and steps inward, so what is
+// demonstrated is the crossing itself rather than the destination.
+const SIMULATED_STEP_MS = 900;
+const SIMULATED_ACCURACY_M = 15;
+const EARTH_RADIUS_M = 6_371_000;
+
+function metresNorthOf(site: Site, metres: number): LatLng {
+  return {
+    lat: site.lat + (metres / EARTH_RADIUS_M) * (180 / Math.PI),
+    lng: site.lng,
+  };
+}
 
 function FeatureRow({
   icon: Icon,
@@ -38,6 +82,29 @@ function FeatureRow({
   );
 }
 
+/** Carries an icon and a text label, never colour alone (Guardrails C9). */
+function SignalNotice() {
+  const { lang } = useLang();
+  return (
+    <Card padding="md" className="mt-6">
+      <div className="flex items-start gap-3">
+        <Navigation
+          size={20}
+          strokeWidth={1.75}
+          aria-hidden
+          className="mt-0.5 shrink-0 text-primary"
+        />
+        <div>
+          <p className="font-medium text-text">{tExplore(lang, "explore.signal.searching.title")}</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            {tExplore(lang, "explore.signal.searching.body")}
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function ExplorePage() {
   return (
     <Suspense fallback={<div className="flex-1" />}>
@@ -52,18 +119,18 @@ function ExploreInner() {
   const simulateId = searchParams.get("simulate");
   const simulatedSite = simulateId ? SITES.find((s) => s.id === simulateId) : undefined;
 
-  const [view, setView] = useState<View>(simulatedSite ? "inside" : "asking");
-  const [position, setPosition] = useState<LatLng | null>(
-    simulatedSite ? { lat: simulatedSite.lat, lng: simulatedSite.lng } : null,
-  );
-  const [approachSite, setApproachSite] = useState<Site | null>(simulatedSite ?? null);
-  const [simulated, setSimulated] = useState(Boolean(simulatedSite));
+  const [view, setView] = useState<View>("asking");
+  const [position, setPosition] = useState<LatLng | null>(null);
+  const [approachSite, setApproachSite] = useState<Site | null>(null);
+  const [simulated] = useState(Boolean(simulatedSite));
   const [selectedSiteId, setSelectedSiteId] = useState<string>(SITES[0].id);
+  const [signalUnsure, setSignalUnsure] = useState(false);
 
-  const viewRef = useRef<View>(simulatedSite ? "inside" : "asking");
+  const viewRef = useRef<View>("asking");
   const announced = useRef<Set<string>>(new Set());
   const approachSiteRef = useRef<Site | null>(null);
   const watchId = useRef<number | null>(null);
+  const lowAccuracyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const closest = useMemo(() => {
     if (!position) return [];
@@ -73,50 +140,136 @@ function ExploreInner() {
       .slice(0, 3);
   }, [position]);
 
-  function changeView(next: View) {
+  const changeView = useCallback((next: View) => {
     viewRef.current = next;
     setView(next);
-  }
+  }, []);
 
-  function handlePosition(p: LatLng) {
-    setPosition(p);
-    if (viewRef.current === "explore") return;
+  /** A vague fix is only worth reporting once it has persisted. */
+  const noteUncertainFix = useCallback(() => {
+    if (lowAccuracyTimer.current !== null) return;
+    lowAccuracyTimer.current = setTimeout(() => setSignalUnsure(true), LOW_ACCURACY_GRACE_MS);
+  }, []);
 
-    const { site } = nearestSite(p, SITES);
-    if (isInsideZone(p, site)) {
-      if (!announced.current.has(site.id)) {
-        announced.current.add(site.id);
-        approachSiteRef.current = site;
-        setApproachSite(site);
-        changeView("inside");
+  const noteConfidentFix = useCallback(() => {
+    if (lowAccuracyTimer.current !== null) {
+      clearTimeout(lowAccuracyTimer.current);
+      lowAccuracyTimer.current = null;
+    }
+    setSignalUnsure(false);
+  }, []);
+
+  const handlePosition = useCallback(
+    (p: LatLng, accuracyM: number) => {
+      setPosition(p);
+      if (accuracyM > LOW_ACCURACY_M) noteUncertainFix();
+      else noteConfidentFix();
+
+      if (viewRef.current === "explore") return;
+
+      const { site } = nearestSite(p, SITES);
+
+      if (hasEnteredApproach(p, accuracyM, site)) {
+        // Crossing the Approach is what raises the notice. Reaching the Zone
+        // afterwards raises nothing: the sheet is already open, and a second
+        // marker would interrupt a visitor who is finally looking at the place
+        // rather than the phone (ADR-0005).
+        if (!announced.current.has(site.id)) {
+          announced.current.add(site.id);
+          approachSiteRef.current = site;
+          setApproachSite(site);
+          changeView("inside");
+        }
+        return;
       }
-      return;
-    }
 
-    if (approachSiteRef.current && hasExitedZone(p, approachSiteRef.current)) {
-      announced.current.delete(approachSiteRef.current.id);
-      if (viewRef.current === "inside") changeView("outside");
-      return;
-    }
+      const left = approachSiteRef.current;
+      if (left && hasExitedApproach(p, accuracyM, left)) {
+        announced.current.delete(left.id);
+        approachSiteRef.current = null;
+        if (viewRef.current === "inside") changeView("outside");
+        return;
+      }
 
-    if (viewRef.current === "asking") changeView("outside");
-  }
+      if (viewRef.current === "asking") changeView("outside");
+    },
+    [changeView, noteConfidentFix, noteUncertainFix],
+  );
 
-  function startWatching() {
+  const startWatching = useCallback(() => {
     if (!("geolocation" in navigator)) {
       changeView("explore");
       return;
     }
+    if (watchId.current !== null) return;
     watchId.current = navigator.geolocation.watchPosition(
-      (pos) => handlePosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => changeView("explore"),
-      { enableHighAccuracy: true },
+      (pos) =>
+        handlePosition(
+          { lat: pos.coords.latitude, lng: pos.coords.longitude },
+          pos.coords.accuracy,
+        ),
+      (err) => {
+        // Only a refusal is permanent. POSITION_UNAVAILABLE and TIMEOUT are
+        // transient and do not cancel the watch, so throwing away Live Mode for
+        // them costs the visitor the feature over a passing loss of signal.
+        if (err.code === err.PERMISSION_DENIED) {
+          if (watchId.current !== null) {
+            navigator.geolocation.clearWatch(watchId.current);
+            watchId.current = null;
+          }
+          changeView("explore");
+          return;
+        }
+        noteUncertainFix();
+      },
+      WATCH_OPTIONS,
     );
-  }
+  }, [changeView, handlePosition, noteUncertainFix]);
+
+  // A visitor who has already granted location should not be asked to grant it
+  // again on every visit. Screen A exists to explain the request, not to be a
+  // toll gate.
+  useEffect(() => {
+    if (simulatedSite) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const status = await navigator.permissions?.query({ name: "geolocation" });
+        if (!status || cancelled) return;
+        if (status.state === "granted") startWatching();
+        else if (status.state === "denied") changeView("explore");
+      } catch {
+        // The Permissions API is missing or refused the query. Screen A is the
+        // correct fallback, so there is nothing to do.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [simulatedSite, startWatching, changeView]);
+
+  // The simulated walk: outside the Approach, then across it.
+  useEffect(() => {
+    if (!simulatedSite) return;
+    const approach = approachRadiusM(simulatedSite);
+    const legs = [approach + 200, approach + 60, approach - 60, simulatedSite.radiusM - 50];
+    let leg = 0;
+    handlePosition(metresNorthOf(simulatedSite, legs[leg]), SIMULATED_ACCURACY_M);
+    const id = setInterval(() => {
+      leg += 1;
+      if (leg >= legs.length) {
+        clearInterval(id);
+        return;
+      }
+      handlePosition(metresNorthOf(simulatedSite, legs[leg]), SIMULATED_ACCURACY_M);
+    }, SIMULATED_STEP_MS);
+    return () => clearInterval(id);
+  }, [simulatedSite, handlePosition]);
 
   useEffect(() => {
     return () => {
       if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current);
+      if (lowAccuracyTimer.current !== null) clearTimeout(lowAccuracyTimer.current);
     };
   }, []);
 
@@ -191,6 +344,8 @@ function ExploreInner() {
             {tExplore(lang, "explore.map.notToScale")}
           </p>
         </div>
+
+        {signalUnsure && <SignalNotice />}
 
         <EmptyState
           icon={MapPinOff}

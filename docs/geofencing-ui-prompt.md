@@ -1,3 +1,18 @@
+> **Historical document.** This is the task order that was handed out on
+> 2026-08-13 to build Explore, kept as written. It is not a maintained spec, and
+> it is not the place to look for how Explore behaves today.
+>
+> **§8 and §9.1 no longer describe the code.** The notice now fires on crossing
+> the Approach, a circle 400 m outside the Zone, rather than on entering the
+> Zone; entry and exit both require the position to be accurate enough to be
+> sure; and `hasExitedZone` no longer exists. The current behaviour and the
+> reasoning behind it are in
+> [`adr/0005-approach-notice-foreground-only.md`](adr/0005-approach-notice-foreground-only.md).
+>
+> **§4 through §7 still hold** — the design tokens, the design laws, the
+> existing components, and the shape of `sites.ts` are all unchanged, except
+> that each Custom now also carries the ids of the Rules it is drawn from.
+
 # Task brief — Explore (geofencing) UI, frontend only
 
 > **How to use this file.** Paste the whole thing into your coding agent as the task. It is self-contained: every token value, component API, and file path you need is written out below, so you do not need to open any other document in this repo. Work through the seven steps in order and commit after each one.

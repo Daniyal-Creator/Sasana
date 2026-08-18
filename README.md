@@ -98,6 +98,8 @@ Run these from inside `frontend/` or `backend/` — there is no root package.
 | `npm run build` | Production build |
 | `npm start` | Serve the production build |
 | `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Run tests in watch mode |
+| `npm run test:run` | Run tests once (CI-style) |
 
 **`backend/`**
 
@@ -111,6 +113,39 @@ Run these from inside `frontend/` or `backend/` — there is no root package.
 
 Tests mock the Gemini SDK, so they need no API key, no network, and consume no
 quota.
+
+---
+
+## Trying Explore without being in Bali
+
+Explore raises its notice when you cross the **Approach** around a sacred site —
+a circle 400 m outside the site's own Zone. Walking into one is not an option
+for most people testing this, so there are two ways to see it happen.
+
+**Simulate the walk.** Add `?simulate=` and a site id:
+
+```bash
+http://localhost:3000/explore?simulate=pura-tanah-lot
+```
+
+The simulated position starts 200 m outside the Approach and steps inward, so
+what you see is the crossing rather than the destination: the screen shows
+nearby sites first, then the notice rises as the line is crossed. Site ids live
+in `frontend/src/data/sites.ts`; `pura-tanah-lot` is a good first one.
+
+While a simulation is running the panel carries a **Simulated location** label,
+so a reading from this mode can never be mistaken for a real one.
+
+**Or override the device position.** Chrome DevTools → the three-dot menu →
+More tools → Sensors → Location → Other, and enter the latitude and longitude
+of a site from `sites.ts`. This exercises the real geolocation path, including
+the accuracy handling, which the simulation does not.
+
+**What this does not do.** Nothing arrives while the page is closed. There is no
+background notification, no service worker, and no push: the notice exists only
+while Explore is open on screen. That limit is a deliberate trade recorded in
+[`docs/adr/0005-approach-notice-foreground-only.md`](docs/adr/0005-approach-notice-foreground-only.md),
+and Explore says so on its own permission screen.
 
 ---
 

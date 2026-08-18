@@ -6,7 +6,7 @@ ia hanya memanggil berkas ini.
 
 **Blocked by:** 02 (butuh test runner)
 
-**Status:** ready-for-human — Daniyal
+**Status:** claimed — Daniyal
 
 **Owner:** Daniyal
 

@@ -40,12 +40,15 @@ coverage/
 *.swp
 
 # --- Local development tooling (not part of the product) ---
-# AI agent skills, prompts and configuration. Useful while building, but noise
-# for anyone reading or running the app.
+# One person's agent setup: installed skills, tool settings, lockfiles. Useful
+# while building, and nobody else's business.
+#
+# AGENTS.md and CLAUDE.md used to be listed here and are not any more. They are
+# not personal setup: they carry the UI guardrails and the vocabulary every
+# contributor is held to, and more than one person now works in this repo with
+# more than one agent. Rules nobody else can read are not rules.
 .claude/
 .agents/
-AGENTS.md
-CLAUDE.md
 skills-lock.json
 
 # Working notes and the local issue tracker. Specs that matter live in docs/.

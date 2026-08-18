@@ -5,7 +5,7 @@ tiga hal yang membuat Live Mode rapuh di lapangan.
 
 **Blocked by:** 03 (kunci i18n), 05 (fungsi `geo.ts`)
 
-**Status:** ready-for-human — Daniyal
+**Status:** claimed — Daniyal
 
 **Owner:** Daniyal
 

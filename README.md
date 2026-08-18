@@ -134,6 +134,8 @@ backend/             Hono API - everything that touches Gemini
 
 shared/              contract.ts - the API types both sides share (types only)
 docs/                PRD, technical / backend / UI specs, ADRs
+.scratch/            Working notes. Only the effort being worked by more than
+  explore-approach/  one person is committed; the rest is local and ignored.
 docker-compose.yml   Local backend container
 ```
 
@@ -162,6 +164,54 @@ a host that builds the Dockerfile itself has to be told the same.
 
 `.env` files are never deployed and never enter the image; they are git-ignored
 and local to your machine.
+
+---
+
+## Working the tickets
+
+Work is tracked as markdown files in the repository, not in an external tool.
+The effort currently open is **explore-approach**, which corrects how Explore
+decides a visitor is near a sacred site.
+
+| Path | Contents |
+| --- | --- |
+| [`.scratch/explore-approach/spec.md`](.scratch/explore-approach/spec.md) | The decisions every ticket rests on, the file each ticket owns, and the order they merge in |
+| [`.scratch/explore-approach/issues/`](.scratch/explore-approach/issues) | One file per ticket, numbered from `01` |
+
+Read the spec first. It is short, and every ticket assumes you have.
+
+**Taking a ticket**
+
+1. Pick one whose `Blocked by:` line is already satisfied.
+2. Set its `Status:` line to `claimed` with your name. Commit that one change on
+   its own and push it before you start anything else. This is the only thing
+   stopping two people from building the same ticket twice.
+3. Branch from `main`, named `explore-approach/NN-<slug>`.
+4. Touch only the files your ticket lists. Every file in this effort has exactly
+   one owning ticket, so a file that is not on your list belongs to someone
+   else. If the work seems to need one anyway, stop and write down why under a
+   `## Comments` heading at the bottom of your ticket rather than editing it.
+5. Names that cross tickets — i18n keys, function signatures — are fixed in the
+   ticket that creates them, because the ticket that consumes them is already
+   written against those names. Changing one means changing the ticket first.
+6. Tick the checklist as you go. When it is all ticked and both
+   `npm run test:run` and `npx tsc --noEmit` pass in the workspace you touched,
+   open a pull request and set `Status:` to `resolved`.
+
+Merge in dependency order, not in the order tickets happen to finish.
+
+**Where raw material goes**
+
+Only markdown files inside `.scratch/explore-approach/` are committed. Anything
+else you put there — a log, a screenshot, a pasted `.env` — is ignored and stays
+on your machine. Use a sibling directory such as `.scratch/notes/` for raw
+material: everything under `.scratch/` other than this one effort is local by
+default, so nothing you leave there can reach GitHub by accident.
+
+That split matters because a file cannot be un-pushed. Deleting it later removes
+it from the latest commit, not from the history, and anyone can still read it.
+If a credential ever does reach a commit, revoke and reissue it — do not try to
+delete your way out.
 
 ---
 

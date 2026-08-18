@@ -49,4 +49,24 @@ CLAUDE.md
 skills-lock.json
 
 # Working notes and the local issue tracker. Specs that matter live in docs/.
-.scratch/
+# One exception: an effort worked by more than one person has to travel with
+# the repo, or the other people cannot read their own tickets. Only the
+# markdown ships. A log, a screenshot, or a pasted .env dropped next to a
+# ticket stays on the machine it was written on, because deleting a file after
+# it has been pushed does not remove it from the history — the only real remedy
+# for a leaked key is revoking it.
+#
+# The patterns end in `/*` rather than `/` throughout: git will not re-include
+# anything whose parent directory is excluded, so ignoring the entries instead
+# of the directory itself is what makes every `!` line below work at all.
+.scratch/*
+!.scratch/explore-approach/
+.scratch/explore-approach/*
+!.scratch/explore-approach/*.md
+!.scratch/explore-approach/issues/
+.scratch/explore-approach/issues/*
+!.scratch/explore-approach/issues/*.md
+# Nested scratch dirs inside a workspace stay ignored wholesale. The old
+# pattern was `.scratch/`, which matched at any depth; the anchored patterns
+# above only cover the root one, so this line restores the rest.
+*/.scratch/

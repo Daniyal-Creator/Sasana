@@ -18,8 +18,8 @@ const dict = {
   },
   "explore.permission.feature1.title": { en: "A quiet heads-up", id: "Pemberitahuan yang tenang" },
   "explore.permission.feature1.body": {
-    en: "One notice as you approach a site. Never repeated while you stay.",
-    id: "Satu pemberitahuan saat Anda mendekati situs. Tidak diulang selama Anda berada di sana.",
+    en: "One notice as you approach a site, only while this page is open. Never repeated while you stay.",
+    id: "Satu pemberitahuan saat Anda mendekati situs, hanya selama halaman ini terbuka. Tidak diulang selama Anda berada di sana.",
   },
   "explore.permission.feature2.title": {
     en: "Only the customs that apply here",
@@ -43,6 +43,16 @@ const dict = {
   },
   "explore.permission.cta": { en: "Turn on location", id: "Aktifkan lokasi" },
   "explore.permission.notnow": { en: "Not now", id: "Nanti saja" },
+
+  // Waiting for a position that is certain enough to act on
+  "explore.signal.searching.title": {
+    en: "Finding your location",
+    id: "Mencari lokasi Anda",
+  },
+  "explore.signal.searching.body": {
+    en: "It can take a moment to pin down exactly where you are, especially near tall buildings or under trees.",
+    id: "Perlu waktu sebentar untuk menentukan posisi Anda dengan pasti, terutama di dekat bangunan tinggi atau di bawah pepohonan.",
+  },
 
   // Screen B: no site nearby
   "explore.nearby.title": { en: "Nearby", id: "Terdekat" },

@@ -15,6 +15,11 @@ tiga hal yang membuat Live Mode rapuh di lapangan.
 - [ ] Notice menyala lewat `hasEnteredApproach`, tidak lagi lewat `isInsideZone`
 - [ ] Set `announced` dibersihkan lewat `hasExitedApproach`, tetap di `useRef`
       dan tetap **tidak** ditulis ke storage apa pun
+- [ ] `hasExitedZone` dicabut dari `page.tsx` **dan** dari `lib/geo.ts`.
+      Tiket 05 sengaja meninggalkannya bertanda `@deprecated`: ia satu-satunya
+      pemanggil, dan menghapus fungsinya lebih dulu akan membuat `main` gagal
+      typecheck di antara dua merge. Ini satu-satunya baris di tiket ini yang
+      boleh menyentuh `lib/geo.ts`
 - [ ] Masuk Zone setelah Approach tidak memicu apa-apa: sheet yang sama tetap
       terbuka, tidak ada penanda kedua
 - [ ] `watchPosition` dipanggil dengan

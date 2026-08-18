@@ -12,6 +12,13 @@ _Avoid_: Temple, location, spot, POI, destination
 The circular area around a Site inside which its customs apply. Has a centre and a radius.
 _Avoid_: Geofence, sacred area, boundary, perimeter, region
 
+**Approach**:
+The wider circle around a Site, lying outside its Zone, where a visitor is told
+what will be expected of them. Crossing into it is what raises the notice; the
+Zone is where the Customs themselves take effect. A visitor is always inside the
+Approach before they are inside the Zone.
+_Avoid_: Buffer, trigger radius, proximity, alert zone, geofence
+
 **Odalan**:
 A Site's own anniversary ceremony. While it is happening the Site is busier and more restricted than usual.
 

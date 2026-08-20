@@ -202,51 +202,82 @@ and local to your machine.
 
 ---
 
-## Working the tickets
+## Working together
 
-Work is tracked as markdown files in the repository, not in an external tool.
-The effort currently open is **explore-approach**, which corrects how Explore
-decides a visitor is near a sacred site.
+Three people work this repo in parallel, each owning one area:
 
-| Path | Contents |
+| Area | Owner | Branch prefix | Spec |
+| --- | --- | --- | --- |
+| Geofencing | Daniyal | `geofencing/` | `.scratch/geofencing/spec.md` |
+| AI vision | Manu | `vision/` | `.scratch/vision/spec.md` |
+| Landing page | Rafli | `landing/` | `.scratch/landing/spec.md` |
+
+Each owner writes their own `spec.md` and has it read before starting. Writing
+it is the point: it is where you decide what "done" means for your area, so
+nobody discovers three different answers in the last week.
+
+**Branch, merge, repeat**
+
+1. Branch from `main`, named `<area>/<slug>` — `geofencing/akurasi-approach`,
+   `vision/prompt-cache`, `landing/hero-copy`. No ticket numbers: the areas do
+   not carve up a shared object, so there is nothing to number.
+2. Merge into `main` **as soon as a piece is done**, not when your whole area
+   is. Nobody waits for anybody — your files are separate — so a branch held
+   back for three weeks buys nothing and costs every conflict at once.
+3. To pick up other people's work, run `git merge main` inside your branch, not
+   `git rebase`. The history comes out slightly untidier and `--force` never has
+   to be typed. On a team of three with no second pair of eyes, that trade is
+   worth making.
+4. Whoever merges later resolves the conflict, in their own branch, before the
+   pull request. That also means the slowest to merge does the most work, which
+   is the incentive we want.
+
+**Files more than one area touches**
+
+| File | Rule |
 | --- | --- |
-| [`.scratch/explore-approach/spec.md`](.scratch/explore-approach/spec.md) | The decisions every ticket rests on, the file each ticket owns, and the order they merge in |
-| [`.scratch/explore-approach/issues/`](.scratch/explore-approach/issues) | One file per ticket, numbered from `01` |
+| `shared/contract.ts` | Owned by AI vision. Contract changes ship as their own small pull request, merged before anything that depends on them. |
+| `frontend/tailwind.config.ts` | Owned by geofencing. Ask before changing a token. |
+| `frontend/src/app/globals.css` | Append only, inside a marked block (`/* landing */`, `/* explore */`). Never add a global selector — `body`, `h1`, `*` — because that changes pages you do not own without touching a line of theirs. |
+| `*/package.json` | Append only. Add a dependency freely; do not bump somebody else's version. |
+| `*/package-lock.json` | Never resolve a conflict by hand. Take the version from `main`, then run `npm install` again. |
 
-Read the spec first. It is short, and every ticket assumes you have.
+**Getting into `main`**
 
-**Taking a ticket**
+A pull request is required, for everybody, including whoever owns the
+repository — an owner pushing straight to `main` is exactly how the other two
+end up staring at a red `main` with no pull request to blame. No review from
+another person is required; there are three of you, and an approval queue would
+only slow the merges down.
 
-1. Pick one whose `Blocked by:` line is already satisfied.
-2. Set its `Status:` line to `claimed` with your name. Commit that one change on
-   its own and push it before you start anything else. This is the only thing
-   stopping two people from building the same ticket twice.
-3. Branch from `main`, named `explore-approach/NN-<slug>`.
-4. Touch only the files your ticket lists. Every file in this effort has exactly
-   one owning ticket, so a file that is not on your list belongs to someone
-   else. If the work seems to need one anyway, stop and write down why under a
-   `## Comments` heading at the bottom of your ticket rather than editing it.
-5. Names that cross tickets — i18n keys, function signatures — are fixed in the
-   ticket that creates them, because the ticket that consumes them is already
-   written against those names. Changing one means changing the ticket first.
-6. Tick the checklist as you go. When it is all ticked and both
-   `npm run test:run` and `npx tsc --noEmit` pass in the workspace you touched,
-   open a pull request and set `Status:` to `resolved`.
+CI runs `npm ci`, `npm run typecheck`, and `npm run test:run` in both
+workspaces, and has to be green before a pull request can merge.
 
-Merge in dependency order, not in the order tickets happen to finish.
+A page that already works must not get worse. A page that does not exist yet may
+land half-finished, as long as nothing in `Header.tsx` links to it.
 
 **Where raw material goes**
 
-Only markdown files inside `.scratch/explore-approach/` are committed. Anything
-else you put there — a log, a screenshot, a pasted `.env` — is ignored and stays
-on your machine. Use a sibling directory such as `.scratch/notes/` for raw
-material: everything under `.scratch/` other than this one effort is local by
-default, so nothing you leave there can reach GitHub by accident.
+Only markdown inside a committed effort directory under `.scratch/` ships —
+`.scratch/geofencing/`, `.scratch/vision/`, `.scratch/landing/`, and the
+finished `.scratch/explore-approach/`. Anything else you put there — a log, a
+screenshot, a pasted `.env` — is ignored and stays on your machine. Use a
+sibling directory such as `.scratch/notes/` for raw material: everything under
+`.scratch/` other than those efforts is local by default, so nothing you leave
+there can reach GitHub by accident.
 
 That split matters because a file cannot be un-pushed. Deleting it later removes
 it from the latest commit, not from the history, and anyone can still read it.
 If a credential ever does reach a commit, revoke and reissue it — do not try to
 delete your way out.
+
+**The explore-approach effort (finished)**
+
+[`.scratch/explore-approach/`](.scratch/explore-approach) is kept as a record.
+It ran under a different arrangement — numbered tickets carving up one shared
+feature, one owning ticket per file, merged in dependency order — because three
+people were building parts of the same screen. Read it as history, not as
+instructions.
 
 ---
 

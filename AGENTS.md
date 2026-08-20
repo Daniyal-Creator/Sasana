@@ -4,6 +4,31 @@ Instructions for any coding agent working here, whichever tool it runs in.
 `CLAUDE.md` points at this file, so there is one copy to keep true rather than
 several that drift.
 
+## Hard rules
+
+Five rules that hold for every change, whatever you were asked to do. They are
+copied here rather than linked because they are the ones most expensive to
+discover late; the full version, with the reasoning, is the **Working together**
+section of [`README.md`](README.md).
+
+1. **Never push to `main`.** Every change goes through a pull request, for
+   everybody. GitHub enforces this — a direct push is rejected outright — so an
+   attempt costs you a round trip rather than a mistake.
+2. **Branch as `<area>/<slug>`**, from an up-to-date `main`: `geofencing/`,
+   `vision/`, `landing/`. One branch per finished piece, alive for days rather
+   than weeks. Merge as soon as a piece is done, not when the area is.
+3. **`git merge main`, never `git rebase`**, and never force-push. The history
+   comes out untidier and nobody can erase work that has not been pushed yet.
+4. **Do not touch a file another area owns.** `shared/contract.ts` belongs to AI
+   vision; `frontend/tailwind.config.ts` to geofencing. `globals.css` and
+   `package.json` take additions only — never a global CSS selector, never a
+   version bump on somebody else's dependency. A `package-lock.json` conflict is
+   resolved by taking `main`'s copy and running `npm install`, never by hand.
+   If the work seems to need a file you do not own, say so instead of editing it.
+5. **Be green before opening the pull request**: `npm run typecheck` and
+   `npm run test:run` in each workspace you touched. CI runs exactly these, so a
+   red run here is a red run there.
+
 ## UI work
 
 Any change under `frontend/src/app/**`, `frontend/src/components/**`,

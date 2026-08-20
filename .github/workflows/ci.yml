@@ -1,0 +1,49 @@
+# Runs on every pull request, and on main after a merge.
+#
+# Two jobs rather than one, because there is no package.json at the repository
+# root: frontend/ and backend/ each install and test on their own. They are
+# independent, so a red backend still tells you whether the frontend is fine.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # `npm ci`, not `npm install`: it installs exactly what the lockfile says
+      # and fails if the lockfile and package.json disagree. That is the point —
+      # a green run here has to mean the same thing on everyone's machine.
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:run
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # The tests mock Gemini, so no API key is needed and none is available to
+      # a pull request from a fork.
+      - run: npm run test:run

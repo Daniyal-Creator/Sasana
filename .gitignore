@@ -69,6 +69,17 @@ skills-lock.json
 !.scratch/explore-approach/issues/
 .scratch/explore-approach/issues/*
 !.scratch/explore-approach/issues/*.md
+# The three areas being worked in parallel. Each owner's spec.md has to travel
+# with the repo or the other two cannot read what "done" means for that area.
+!.scratch/geofencing/
+.scratch/geofencing/*
+!.scratch/geofencing/*.md
+!.scratch/vision/
+.scratch/vision/*
+!.scratch/vision/*.md
+!.scratch/landing/
+.scratch/landing/*
+!.scratch/landing/*.md
 # Nested scratch dirs inside a workspace stay ignored wholesale. The old
 # pattern was `.scratch/`, which matched at any depth; the anchored patterns
 # above only cover the root one, so this line restores the rest.

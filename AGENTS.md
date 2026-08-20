@@ -42,10 +42,10 @@ Issues and specs are tracked as markdown files under `.scratch/`. See
 [`docs/agents/issue-tracker.md`](docs/agents/issue-tracker.md).
 
 Most of `.scratch/` is local working notes. An effort worked by more than one
-person is committed so everyone can read it, and only its markdown ships. If
-you are picking up a ticket, read the **Working the tickets** section of
-[`README.md`](README.md) first: it covers claiming, branch naming, and the rule
-that each file has exactly one owning ticket.
+person is committed so everyone can read it, and only its markdown ships. Before
+you touch code, read the **Working together** section of
+[`README.md`](README.md) first: it covers who owns which area, branch naming,
+when to merge, and the rules for the files more than one area touches.
 
 ## Triage labels
 

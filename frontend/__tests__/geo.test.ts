@@ -25,7 +25,7 @@ function siteWithRadius(radiusM: number): Site {
     radiusM,
     customs: [],
     source: "test",
-    odalanDates: [],
+    odalan: [],
   };
 }
 

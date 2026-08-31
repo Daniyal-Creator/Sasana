@@ -48,6 +48,10 @@ export default {
         tool: "600px",
         prose: "680px",
         container: "1120px",
+        // Reading widths stop at `container`. The Explore Guide is a bento of
+        // panels rather than prose, and at 1120 on a wide screen it reads as a
+        // narrow column stranded in the middle of the page.
+        wide: "1320px",
         hero: "520px",
       },
       transitionTimingFunction: {

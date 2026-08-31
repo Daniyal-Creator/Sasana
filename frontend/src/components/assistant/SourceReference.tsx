@@ -19,7 +19,7 @@ export function SourceReference({ source, grounded }: SourceReferenceProps) {
   if (!source) return null;
 
   return (
-    <div className="mt-3 border-t border-border pt-2">
+    <div className="mt-3 border-t border-accent pt-2">
       <p className="flex items-center gap-1.5 text-sm text-text-secondary">
         <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
         {t(lang, "assistant.source", { source })}

@@ -125,7 +125,7 @@ const DUMMY_CUSTOMS: Custom[] = [
   },
 ];
 
-function bothLangs(key: "explore.dummy.areaLabel"): Localized {
+function bothLangs(key: "explore.dummy.areaLabel" | "explore.dummy.source"): Localized {
   return { en: tExplore("en", key), id: tExplore("id", key) };
 }
 
@@ -182,6 +182,12 @@ export function buildDummySites(anchor: LatLng, lang: "en" | "id" = "id"): Dummy
       name: `Pura Dummy ${n}`,
       region: tExplore(lang, "explore.dummy.region"),
       areaLabel: bothLangs("explore.dummy.areaLabel"),
+      // `Site.description` arrived from the landing work, where it introduces a
+      // real place on the slider. A dummy has nothing to introduce, so it says
+      // the one true thing about itself, the same sentence its source line
+      // carries. `image` stays undefined: there is no photograph of a place
+      // that does not exist.
+      description: bothLangs("explore.dummy.source"),
       lat,
       lng,
       radiusM,

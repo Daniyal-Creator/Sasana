@@ -60,8 +60,9 @@ _Avoid_: Screen A, onboarding, splash, intro, permission screen
 
 **Situation Check**:
 Reading a visitor's own photo and telling them how it stands against custom.
-_Avoid_: Photo check, scan, compliance check, analysis
+_Avoid_: Photo check, scan, compliance check, analysis (Landing hero badge uses "AI VISION" per ADR-0006)
 
 **Assistant**:
 Answering a visitor's question about custom, grounded in the Rules.
-_Avoid_: Chatbot, bot, AI, agent
+_Avoid_: Chatbot, bot, AI, agent (Landing hero badge uses "CHATBOT" per ADR-0006)
+

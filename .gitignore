@@ -50,6 +50,10 @@ coverage/
 .claude/
 .agents/
 skills-lock.json
+.codex/
+.github/agents/
+.github/hooks/
+.github/skills/
 
 # Working notes and the local issue tracker. Specs that matter live in docs/.
 # One exception: an effort worked by more than one person has to travel with

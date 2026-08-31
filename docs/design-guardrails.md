@@ -6,7 +6,7 @@
 |---|---|
 | **Document** | Design Guardrails (banned patterns + enforcement) |
 | **Companion to** | [UI/UX Specification](./ui-spec.md) · [PRD](./prd.md) · [Technical Specification](./tech-spec.md) |
-| **Version** | 1.3 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8); 1.2 adds the `/explore` basemap carve-out (§11.1); 1.3 adds the Custom illustration exception to I4 (§11.2) |
+| **Version** | 1.4 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8); 1.2 adds the ADR-0009 scroll-fade-up carve-out (§7 M4); 1.3 adds the `/explore` basemap carve-out (§11.1); 1.4 adds the Custom illustration exception to I4 (§11.2). 1.2 and 1.3 were written in parallel on two branches and both claimed 1.2; they are ordered here by the merge, not by the day they were written |
 | **Applies to** | Every PR that touches `app/**`, `components/**`, `globals.css`, `tailwind.config.ts` |
 | **Owner** | Manu (frontend/UI) · reviewed by Daniyal · QA-checked by Rafli |
 
@@ -177,7 +177,7 @@ Full spec in ui-spec §9. The guardrails:
 | M1 | **Transform and opacity only.** Never animate `width`, `height`, `top`, `left`, or `margin`. |
 | M2 | **No bounce, elastic, spring-overshoot, or `animate-bounce`** (already law in ui-spec §9). |
 | M3 | **Durations stay in band:** 120–150ms feedback, 200ms transitions, 300–400ms entrances. Nothing above 400ms. |
-| M4 | **No scroll-jacking, no scroll-triggered reveal chains, no typewriter effects, no confetti.** A compliance result is not a celebration moment (P2). |
+| M4 | **No scroll-jacking, no scroll-triggered reveal chains, no typewriter effects, no confetti.** A compliance result is not a celebration moment (P2). **Scoped carve-out (ADR-0009):** the landing `/` page may use one-shot scroll-triggered fade-up entrances (opacity + translateY, ≤400ms, `once: true`). All other M rules remain in full force. No parallax, no scroll-jacking, no pin. |
 | M5 | **`prefers-reduced-motion` is respected everywhere** — entrances degrade to opacity-only, loops stop. |
 | M6 | **Loading is a skeleton or a spinner**, never a shifting gradient bar, never a fake progress percentage. |
 
@@ -268,29 +268,6 @@ To break a rule:
 
 Amendments to this document follow the same path. Version it in the header table when it changes.
 
-### 11.2 Named exception — Custom illustrations in Explore (ADR-0013)
-
-**Status.** Proposed. Pending UI-owner sign-off and a cultural review of the
-drawings, per `.scratch/geofencing/issues/01-design-exception-i4.md`.
-
-**Rule broken.** §8 I4, which §11.1 otherwise keeps in force inside the
-`/explore` carve-out.
-
-**Scope.** One file: `frontend/src/components/explore/CustomVisual.tsx`. Five
-inline SVG illustrations, one per `CustomIcon` value, showing the object or the
-etiquette a Custom names. **No human figures. No named real Site. No ceremony
-in progress. Objects and etiquette diagrams only.** Anything outside that list
-is not covered and needs its own exception.
-
-**Why.** Two Customs name things a first-time visitor has never seen: a kamen,
-and canang sari. "Walk around them, never over them" is broken by people who
-did not recognise what was on the ground as an offering, and text cannot fix a
-failure of recognition. The full argument, the alternatives that were tried,
-and the consequences are in `docs/adr/0013-cultural-object-illustrations.md`.
-
-**Superseded by photographs.** If licensed photographs of these objects ever
-arrive, they replace the drawings and this exception lapses.
-
 ### 11.1 Live carve-out — the `/explore` basemap
 
 **Scope.** Files under `frontend/src/app/explore/**` and
@@ -331,3 +308,26 @@ and its reasoning live in `.scratch/geofencing/spec.md`.
 ---
 
 *Binding companion to [ui-spec.md](./ui-spec.md). Where the two documents overlap, the stricter reading applies.*
+
+### 11.2 Named exception — Custom illustrations in Explore (ADR-0013)
+
+**Status.** Proposed. Pending UI-owner sign-off and a cultural review of the
+drawings, per `.scratch/geofencing/issues/01-design-exception-i4.md`.
+
+**Rule broken.** §8 I4, which §11.1 otherwise keeps in force inside the
+`/explore` carve-out.
+
+**Scope.** One file: `frontend/src/components/explore/CustomVisual.tsx`. Five
+inline SVG illustrations, one per `CustomIcon` value, showing the object or the
+etiquette a Custom names. **No human figures. No named real Site. No ceremony
+in progress. Objects and etiquette diagrams only.** Anything outside that list
+is not covered and needs its own exception.
+
+**Why.** Two Customs name things a first-time visitor has never seen: a kamen,
+and canang sari. "Walk around them, never over them" is broken by people who
+did not recognise what was on the ground as an offering, and text cannot fix a
+failure of recognition. The full argument, the alternatives that were tried,
+and the consequences are in `docs/adr/0013-cultural-object-illustrations.md`.
+
+**Superseded by photographs.** If licensed photographs of these objects ever
+arrive, they replace the drawings and this exception lapses.

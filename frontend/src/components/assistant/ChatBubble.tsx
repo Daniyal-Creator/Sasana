@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { SourceReference } from "@/components/assistant/SourceReference";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
@@ -13,15 +14,23 @@ interface ChatBubbleProps {
 }
 
 export function SasanaAvatar({ size = "md" }: { size?: "md" | "lg" }) {
+  const isLg = size === "lg";
   return (
     <span
       aria-hidden
       className={[
-        "flex shrink-0 items-center justify-center rounded-full bg-primary font-display font-semibold text-accent",
-        size === "lg" ? "h-12 w-12 text-lg" : "h-7 w-7 text-xs",
+        "relative flex shrink-0 items-center justify-center",
+        isLg ? "h-16 w-16" : "h-7 w-7",
       ].join(" ")}
     >
-      S
+      <Image
+        src="/sasana-logo.png"
+        alt="Sasana"
+        width={isLg ? 64 : 28}
+        height={isLg ? 64 : 28}
+        className="h-full w-full object-contain"
+        priority={isLg}
+      />
     </span>
   );
 }

@@ -20,6 +20,9 @@ export interface Site {
   name: string;
   region: string;
   areaLabel: Localized;
+  description: Localized;
+  /** Path to a real photograph, sourced per ADR-0007. Undefined until sourced. */
+  image?: string;
   lat: number;
   lng: number;
   radiusM: number;
@@ -64,6 +67,10 @@ export const SITES: Site[] = [
     name: "Pura Tanah Lot",
     region: "Tabanan, Bali",
     areaLabel: { en: "Sacred coastal temple area", id: "Kawasan pura tepi laut" },
+    description: {
+      en: "A temple set on a rocky outcrop along the coast of Tabanan, surrounded by crashing waves and known for its sunset views across the Indian Ocean.",
+      id: "Pura yang berdiri di atas batu karang di pesisir Tabanan, dikelilingi deburan ombak dan dikenal dengan pemandangan matahari terbenam di Samudra Hindia.",
+    },
     lat: -8.6212,
     lng: 115.0868,
     radiusM: 400,
@@ -158,6 +165,10 @@ export const SITES: Site[] = [
     name: "Pura Luhur Uluwatu",
     region: "Badung, Bali",
     areaLabel: { en: "Clifftop sacred area", id: "Kawasan suci di atas tebing" },
+    description: {
+      en: "A cliff-edge temple on the southern tip of Bali, overlooking the Indian Ocean. The site hosts the nightly kecak dance performance at sunset.",
+      id: "Pura di tepi tebing ujung selatan Bali, menghadap Samudra Hindia. Lokasi ini menyelenggarakan pertunjukan tari kecak setiap sore menjelang matahari terbenam.",
+    },
     lat: -8.8291,
     lng: 115.0849,
     radiusM: 400,
@@ -238,6 +249,10 @@ export const SITES: Site[] = [
     name: "Pura Besakih",
     region: "Karangasem, Bali",
     areaLabel: { en: "Mother temple complex", id: "Kompleks pura agung" },
+    description: {
+      en: "The largest and most important temple complex in Bali, spanning the slopes of Mount Agung. It consists of over twenty separate temples.",
+      id: "Kompleks pura terbesar dan terpenting di Bali, membentang di lereng Gunung Agung. Kompleks ini terdiri dari lebih dari dua puluh pura terpisah.",
+    },
     lat: -8.3739,
     lng: 115.4515,
     radiusM: 500,
@@ -324,6 +339,10 @@ export const SITES: Site[] = [
     name: "Pura Batu Bolong",
     region: "Badung, Bali",
     areaLabel: { en: "Temple on the rock arch", id: "Pura di atas lengkung batu" },
+    description: {
+      en: "A small temple built on a natural rock arch that juts into the sea near Canggu. It sits beside Tanah Lot and shares the same coastline.",
+      id: "Pura kecil yang dibangun di atas lengkung batu alami yang menjorok ke laut dekat Canggu. Letaknya berdampingan dengan Tanah Lot di garis pantai yang sama.",
+    },
     lat: -8.6547,
     lng: 115.1225,
     radiusM: 250,
@@ -380,6 +399,10 @@ export const SITES: Site[] = [
     name: "Pura Tirta Empul",
     region: "Gianyar, Bali",
     areaLabel: { en: "Sacred spring purification temple", id: "Pura pemandian air suci" },
+    description: {
+      en: "A water temple in Tampaksiring fed by a natural spring. Visitors come to bathe in its pools as part of the melukat purification ritual.",
+      id: "Pura air di Tampaksiring yang dialiri mata air alami. Pengunjung datang untuk mandi di kolamnya sebagai bagian dari ritual penyucian melukat.",
+    },
     lat: -8.4156,
     lng: 115.3153,
     radiusM: 300,
@@ -458,6 +481,10 @@ export const SITES: Site[] = [
     name: "Pura Ulun Danu Beratan",
     region: "Tabanan, Bali",
     areaLabel: { en: "Temple on the mountain lake", id: "Pura di tepi danau pegunungan" },
+    description: {
+      en: "A lakeside temple on the shore of Lake Beratan in the central highlands. Its multi-tiered meru shrines appear to float when the water is high.",
+      id: "Pura di tepi Danau Beratan di dataran tinggi tengah Bali. Pelinggih meru bertingkatnya tampak mengapung saat air danau sedang tinggi.",
+    },
     lat: -8.275,
     lng: 115.1668,
     radiusM: 350,

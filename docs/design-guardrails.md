@@ -6,7 +6,7 @@
 |---|---|
 | **Document** | Design Guardrails (banned patterns + enforcement) |
 | **Companion to** | [UI/UX Specification](./ui-spec.md) · [PRD](./prd.md) · [Technical Specification](./tech-spec.md) |
-| **Version** | 1.1 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8) |
+| **Version** | 1.3 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8); 1.2 adds the `/explore` basemap carve-out (§11.1); 1.3 adds the Custom illustration exception to I4 (§11.2) |
 | **Applies to** | Every PR that touches `app/**`, `components/**`, `globals.css`, `tailwind.config.ts` |
 | **Owner** | Manu (frontend/UI) · reviewed by Daniyal · QA-checked by Rafli |
 
@@ -267,6 +267,66 @@ To break a rule:
 4. Add the approved exception to this document — either as a new permitted case or as a named, scoped carve-out. **An exception that is not written back here does not exist.**
 
 Amendments to this document follow the same path. Version it in the header table when it changes.
+
+### 11.2 Named exception — Custom illustrations in Explore (ADR-0013)
+
+**Status.** Proposed. Pending UI-owner sign-off and a cultural review of the
+drawings, per `.scratch/geofencing/issues/01-design-exception-i4.md`.
+
+**Rule broken.** §8 I4, which §11.1 otherwise keeps in force inside the
+`/explore` carve-out.
+
+**Scope.** One file: `frontend/src/components/explore/CustomVisual.tsx`. Five
+inline SVG illustrations, one per `CustomIcon` value, showing the object or the
+etiquette a Custom names. **No human figures. No named real Site. No ceremony
+in progress. Objects and etiquette diagrams only.** Anything outside that list
+is not covered and needs its own exception.
+
+**Why.** Two Customs name things a first-time visitor has never seen: a kamen,
+and canang sari. "Walk around them, never over them" is broken by people who
+did not recognise what was on the ground as an offering, and text cannot fix a
+failure of recognition. The full argument, the alternatives that were tried,
+and the consequences are in `docs/adr/0013-cultural-object-illustrations.md`.
+
+**Superseded by photographs.** If licensed photographs of these objects ever
+arrive, they replace the drawings and this exception lapses.
+
+### 11.1 Live carve-out — the `/explore` basemap
+
+**Scope.** Files under `frontend/src/app/explore/**` and
+`frontend/src/components/explore/**`. Nothing else. The other three routes — `/`,
+`/check`, `/assistant` — are bound by this document exactly as before.
+
+**What is suspended.** The visual rules: §2 (gradients), §3.1 C1/C2/C5/C7,
+§5 (depth, including D3 backdrop-blur), §6 L2/L3/L4, and §7 durations.
+
+**Why.** Explore now runs a full-screen raster basemap served by a third party
+(CARTO Voyager, OpenStreetMap data). Its palette is baked into the tile images:
+it cannot be tokenized, it cannot be themed, and at full screen it is most of
+what the visitor sees. C1 and C2 are therefore not merely broken here, they are
+unsatisfiable — there is no version of this screen that meets them. A rule that
+cannot be met is not a rule, it is a standing invitation to argue, so it is
+suspended by name instead of being quietly violated in every pull request.
+The alternative that would have satisfied C1/C2 — MapLibre with a vector
+basemap styled from tokens — was considered and rejected on bundle size.
+
+**What stays in force inside the carve-out.** These are not visual rules, and
+nothing about a basemap touches them:
+
+- **§9 W1–W6 (copy).** No em dashes, no marketing filler, lead with the fix, and
+  above all W6: never invent a rule.
+- **§8 I4.** No AI-generated imagery of Balinese people, ceremonies, or temples.
+- **§3.1 C6.** Color is never the only signal. On the map this bites: Zone and
+  Approach must differ by more than hue — Zone is a solid stroke with a fill,
+  Approach is a dashed stroke with none — because a visitor who cannot separate
+  the two colors still has to separate the two circles.
+- **§6 L5.** 375px is the source layout; the screen still reflows at 320px and
+  200% zoom.
+- **§7 M5.** `prefers-reduced-motion` is respected: the sheet snaps without
+  transition, the banner arrives without sliding.
+
+**Status.** Temporary. Reviewed once the map layout has settled. The decision
+and its reasoning live in `.scratch/geofencing/spec.md`.
 
 ---
 

@@ -78,6 +78,18 @@ skills-lock.json
 !.scratch/geofencing/
 .scratch/geofencing/*
 !.scratch/geofencing/*.md
+!.scratch/geofencing/issues/
+.scratch/geofencing/issues/*
+!.scratch/geofencing/issues/*.md
+# One effort of its own, allow-listed the same way. Its issues are cited by
+# ADR-0012, ADR-0013 and guardrails 11.2; left out, those links point at
+# nothing.
+!.scratch/dummy-sites/
+.scratch/dummy-sites/*
+!.scratch/dummy-sites/*.md
+!.scratch/dummy-sites/issues/
+.scratch/dummy-sites/issues/*
+!.scratch/dummy-sites/issues/*.md
 !.scratch/vision/
 .scratch/vision/*
 !.scratch/vision/*.md
@@ -88,3 +100,7 @@ skills-lock.json
 # pattern was `.scratch/`, which matched at any depth; the anchored patterns
 # above only cover the root one, so this line restores the rest.
 */.scratch/
+
+# Local agent tooling state, not part of the product.
+.impeccable/
+.codex/

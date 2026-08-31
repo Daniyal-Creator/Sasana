@@ -99,3 +99,153 @@
     animation: none;
   }
 }
+
+/* explore ------------------------------------------------------------------
+   Leaflet ships its own stylesheet, and these are the only three places it has
+   to be corrected. Every selector is scoped under .explore-map: a bare
+   .leaflet-* rule here would be a global selector, which README forbids
+   because it would reach pages this area does not own.
+   -------------------------------------------------------------------------- */
+
+/* The credit line is a licence condition, so it is kept small but never
+   hidden. Lifting it clear of the bottom sheet is done inline from BaseMap
+   instead: Leaflet's own stylesheet targets the same control, and margin here
+   loses that argument silently. */
+.explore-map .leaflet-control-attribution {
+  font-size: 11px;
+}
+
+/* Pinch is the natural gesture on a phone, and two more buttons on a 375px
+   screen eat map. The control is created once and hidden by width rather than
+   added and removed, which would churn Leaflet's control list on every resize. */
+.explore-map .leaflet-control-zoom {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .explore-map .leaflet-control-zoom {
+    display: block;
+  }
+}
+
+/* Site marker. Leaflet builds this from an HTML string, so it cannot carry
+   Tailwind classes; the values below are the same tokens the rest of the screen
+   uses (surface, primary, border, the warm-ink shadow scale). Covered by the
+   /explore carve-out, guardrails §11.1. */
+.explore-map .sasana-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9999px;
+  border: 1.5px solid #cbbfa8;
+  background: #fffdf9;
+  color: #1d4e89;
+  box-shadow: 0 4px 12px rgb(42 37 32 / 0.18);
+  transition:
+    transform 150ms cubic-bezier(0.25, 1, 0.5, 1),
+    background-color 150ms ease-out;
+}
+
+.explore-map .sasana-marker svg {
+  fill: currentColor;
+}
+
+/* Selected reads two ways at once, because colour alone is not a signal (C6):
+   the badge inverts and it grows. */
+.explore-map .sasana-marker.is-selected {
+  background: #1d4e89;
+  border-color: #1d4e89;
+  color: #fbfcfe;
+  transform: scale(1.15);
+}
+
+.explore-map .sasana-marker-wrap:focus-visible .sasana-marker {
+  outline: 2px solid #3b6fb0;
+  outline-offset: 2px;
+}
+
+/* The name under the mark. Leaflet's default tooltip is a white box with an
+   arrow, which at six-per-screen reads as clutter; this is a plain label. */
+.explore-map .leaflet-tooltip.sasana-marker-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: #2a2520;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  /* Keeps the name legible over both the pale sea and the roads underneath,
+     without a filled plate that would hide the map. */
+  text-shadow:
+    0 1px 2px #fffdf9,
+    0 -1px 2px #fffdf9,
+    1px 0 2px #fffdf9,
+    -1px 0 2px #fffdf9;
+  white-space: nowrap;
+}
+
+.explore-map .leaflet-tooltip.sasana-marker-label::before {
+  display: none;
+}
+
+/* Zoomed out, the map answers "where in Bali", and six names stacked on each
+   other answer nothing.
+
+   display, not opacity: Leaflet writes opacity onto the tooltip as an inline
+   style, and an inline style beats any rule here however specific. */
+.explore-map .sasana-labels-off .leaflet-tooltip.sasana-marker-label {
+  display: none;
+}
+
+/* Scroll surfaces inside the Explore panel and sheets.
+ *
+ * The platform scrollbar on Windows is an opaque grey channel with a stepper
+ * arrow at each end. Inside a sheet that floats over a map it reads as a
+ * second, competing edge, and the arrows are controls nobody uses on a list of
+ * eleven rows. This is not a custom scrollbar for flavour; it is the overlay
+ * scrollbar every other platform already draws, brought to the one that does
+ * not.
+ *
+ * Warm ink 42,37,32 is the `text` token, varying alpha only (guardrails §2.2).
+ * Scoped to a class: globals.css never gets a bare selector.
+ */
+.sasana-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(42, 37, 32, 0.18) transparent;
+}
+
+.sasana-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.sasana-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* The transparent border plus padding-box clip is what insets the thumb from
+   the panel edge without a track to sit in. */
+.sasana-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(42, 37, 32, 0.18);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+  transition: background-color 150ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.sasana-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(42, 37, 32, 0.28);
+}
+
+.sasana-scroll::-webkit-scrollbar-thumb:active {
+  background-color: rgba(42, 37, 32, 0.38);
+}
+
+/* The stepper arrows, and the little square where the two bars would meet. */
+.sasana-scroll::-webkit-scrollbar-button,
+.sasana-scroll::-webkit-scrollbar-corner {
+  display: none;
+}

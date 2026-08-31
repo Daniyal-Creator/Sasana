@@ -19,8 +19,14 @@ Zone is where the Customs themselves take effect. A visitor is always inside the
 Approach before they are inside the Zone.
 _Avoid_: Buffer, trigger radius, proximity, alert zone, geofence
 
+**Site marker**:
+The mark drawn at a Site's centre on the map. Tapping one is how a visitor asks
+what the place expects of them. It is not the Zone: the Zone is an area, the
+Site marker is a point inside it.
+_Avoid_: Pin, POI, icon, spot
+
 **Odalan**:
-A Site's own anniversary ceremony. While it is happening the Site is busier and more restricted than usual.
+A Site's own anniversary ceremony. While it is happening the Site is busier and more restricted than usual. A recorded Odalan date always travels with the calendar anchor it came from and a source; a date without one does not exist.
 
 ## Guidance
 
@@ -45,6 +51,12 @@ _Avoid_: GPS mode, real mode, auto mode
 **Explore Mode**:
 Choosing a Site by hand to read its customs, whether or not the visitor is anywhere near it.
 _Avoid_: Demo mode, manual mode, preview mode, browse mode
+
+**Guide**:
+The screen that explains how Explore works and asks for location. It comes
+before the map, and its one job is to earn that permission by showing what the
+app will do rather than promising it.
+_Avoid_: Screen A, onboarding, splash, intro, permission screen
 
 **Situation Check**:
 Reading a visitor's own photo and telling them how it stands against custom.

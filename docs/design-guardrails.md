@@ -6,7 +6,7 @@
 |---|---|
 | **Document** | Design Guardrails (banned patterns + enforcement) |
 | **Companion to** | [UI/UX Specification](./ui-spec.md) · [PRD](./prd.md) · [Technical Specification](./tech-spec.md) |
-| **Version** | 1.1 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8) |
+| **Version** | 1.2 — binding for MVP and after. 1.1 adds the ADR-0001 landing-hero carve-out (§2.2, §6 L8). 1.2 adds the ADR-0009 scroll-fade-up carve-out (§7 M4) |
 | **Applies to** | Every PR that touches `app/**`, `components/**`, `globals.css`, `tailwind.config.ts` |
 | **Owner** | Manu (frontend/UI) · reviewed by Daniyal · QA-checked by Rafli |
 
@@ -177,7 +177,7 @@ Full spec in ui-spec §9. The guardrails:
 | M1 | **Transform and opacity only.** Never animate `width`, `height`, `top`, `left`, or `margin`. |
 | M2 | **No bounce, elastic, spring-overshoot, or `animate-bounce`** (already law in ui-spec §9). |
 | M3 | **Durations stay in band:** 120–150ms feedback, 200ms transitions, 300–400ms entrances. Nothing above 400ms. |
-| M4 | **No scroll-jacking, no scroll-triggered reveal chains, no typewriter effects, no confetti.** A compliance result is not a celebration moment (P2). |
+| M4 | **No scroll-jacking, no scroll-triggered reveal chains, no typewriter effects, no confetti.** A compliance result is not a celebration moment (P2). **Scoped carve-out (ADR-0009):** the landing `/` page may use one-shot scroll-triggered fade-up entrances (opacity + translateY, ≤400ms, `once: true`). All other M rules remain in full force. No parallax, no scroll-jacking, no pin. |
 | M5 | **`prefers-reduced-motion` is respected everywhere** — entrances degrade to opacity-only, loops stop. |
 | M6 | **Loading is a skeleton or a spinner**, never a shifting gradient bar, never a fake progress percentage. |
 

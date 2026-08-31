@@ -8,7 +8,18 @@
 
 @layer base {
   html {
+    scroll-behavior: smooth;
     -webkit-tap-highlight-color: transparent;
+  }
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
   }
   body {
     @apply bg-bg font-sans text-base text-text antialiased;
@@ -26,7 +37,12 @@
   /* Landing hero fills the full viewport; the header overlays it on the
      landing page (ADR-0001). */
   .hero-viewport {
-    min-height: 100svh;
+    min-height: 75svh;
+  }
+  @media (min-width: 640px) {
+    .hero-viewport {
+      min-height: 88vh;
+    }
   }
 
   /* Permitted gradient: landing hero scrim (ADR-0001, guardrails §2.2).
@@ -38,9 +54,9 @@
   .hero-scrim {
     background-image: linear-gradient(
       to bottom,
-      rgb(42 37 32 / 0.05) 0%,
-      rgb(42 37 32 / 0.6) 40%,
-      rgb(42 37 32 / 0.88) 100%
+      rgb(42 37 32 / 0.35) 0%,
+      rgb(42 37 32 / 0.55) 45%,
+      rgb(42 37 32 / 0.85) 100%
     );
   }
 
@@ -55,6 +71,11 @@
     background-size: 200% 100%;
     animation: shimmer 1.4s linear infinite;
   }
+
+  /* Stagger delays for topic card entrance (M3: each within 400ms band) */
+  .stagger-delay-1 { animation-delay: 80ms; }
+  .stagger-delay-2 { animation-delay: 160ms; }
+  .stagger-delay-3 { animation-delay: 240ms; }
 }
 
 @keyframes shimmer {

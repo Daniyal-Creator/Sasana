@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import { LanguageProvider } from "@/lib/language";
 import { Header } from "@/components/layout/Header";
+import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`${fraunces.variable} ${jakarta.variable}`}>
       <body>
+        <SmoothScroll />
         <LanguageProvider>
           <div className="flex min-h-dvh flex-col">
             <Header />

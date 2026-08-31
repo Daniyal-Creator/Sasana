@@ -5,9 +5,37 @@ import { t, type Lang } from "@/lib/i18n";
 
 const SEGMENTS: Lang[] = ["id", "en"];
 
-export function LanguageSwitcher() {
+export function LanguageSwitcher({ variant = "default" }: { variant?: "default" | "hero" }) {
   const { lang, setLang } = useLang();
   const activeIndex = SEGMENTS.indexOf(lang);
+
+  if (variant === "hero") {
+    return (
+      <div
+        role="group"
+        aria-label={t(lang, "lang.label")}
+        className="flex items-center rounded-full bg-[#c09965]/90 px-3.5 py-1.5 text-xs font-semibold tracking-wider text-white shadow-sm transition-all duration-150 hover:bg-[#b08752]"
+      >
+        <button
+          type="button"
+          aria-pressed={lang === "id"}
+          onClick={() => setLang("id")}
+          className={`transition-opacity ${lang === "id" ? "font-bold text-white opacity-100 underline underline-offset-2" : "text-white/80 opacity-80 hover:opacity-100"}`}
+        >
+          ID
+        </button>
+        <span className="mx-1.5 text-white/60">/</span>
+        <button
+          type="button"
+          aria-pressed={lang === "en"}
+          onClick={() => setLang("en")}
+          className={`transition-opacity ${lang === "en" ? "font-bold text-white opacity-100 underline underline-offset-2" : "text-white/80 opacity-80 hover:opacity-100"}`}
+        >
+          EN
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -41,3 +69,4 @@ export function LanguageSwitcher() {
     </div>
   );
 }
+

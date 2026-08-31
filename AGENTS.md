@@ -43,6 +43,14 @@ Breaking a guardrail is allowed, but only in the open: it takes an ADR in
 [`docs/adr/`](docs/adr) saying which clause is being broken and why. Silently
 breaking one gets the work sent back.
 
+**One scoped exception is live.** `/explore` runs a third-party raster basemap
+that fills the screen and carries a palette no token can reach, so the visual
+rules are suspended there. The scope, and the rules that stay in force inside it
+anyway, are written as a named carve-out in
+[§11 of the guardrails](docs/design-guardrails.md#11-exception-process). Nothing
+outside `frontend/src/app/explore/**` and `frontend/src/components/explore/**`
+is covered by it.
+
 ## Vocabulary
 
 [`CONTEXT.md`](CONTEXT.md) is the glossary that the product, the copy, and the

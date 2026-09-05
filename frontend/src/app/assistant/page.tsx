@@ -16,6 +16,7 @@ import { MobileTopicChips } from "@/components/assistant/MobileTopicChips";
 import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
+import { readActiveSite } from "@/lib/site-context";
 import { t } from "@/lib/i18n";
 import type { ChatMessage, ChatResponse } from "@shared/contract";
 
@@ -62,6 +63,13 @@ export default function AssistantPage() {
           message: opts?.apiMessage ?? question,
           lang,
           history: history.map(({ role, content }) => ({ role, content })),
+          // Read per send, not once on mount: a visitor can pick a different
+          // Site in another tab, and the answer must follow where they are now.
+          // Omitted entirely when no Site is active.
+          ...(() => {
+            const site = readActiveSite();
+            return site ? { site } : {};
+          })(),
         }),
       });
       if (!res.ok) throw new Error("chat request failed");

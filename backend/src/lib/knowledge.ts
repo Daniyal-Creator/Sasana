@@ -47,6 +47,16 @@ export function loadRules(): Rule[] {
   return cache;
 }
 
+// Resolves rule ids - as sent by a client alongside a Site - against the loaded
+// knowledge base. This is where the grounding guarantee is kept: the caller
+// names rules, the server supplies their text, and an id the KB does not know
+// is dropped rather than echoed back. Order follows the KB, not the caller, so
+// the same Site always reads the same way; duplicates collapse.
+export function rulesByIds(rules: Rule[], ids: string[]): Rule[] {
+  const wanted = new Set(ids);
+  return rules.filter((rule) => wanted.has(rule.id));
+}
+
 // Formats rules as a numbered list for system-prompt injection
 // (context stuffing, PRD §12).
 export function formatRulesForPrompt(rules: Rule[], lang: Lang): string {

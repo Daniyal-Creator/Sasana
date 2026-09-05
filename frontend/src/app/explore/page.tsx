@@ -33,6 +33,7 @@ import { ApproachCard } from "@/components/explore/ApproachCard";
 import { ApproachSheet, APPROACH_SHEET_PEEK_FRAC } from "@/components/explore/ApproachSheet";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
+import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
 import type { LatLng } from "@/lib/geo";
 import {
   haversineMeters,
@@ -419,6 +420,25 @@ function ExploreInner() {
   // The one place the real list and the invented one meet. Everywhere else in
   // the app still imports SITES and still gets six real places.
   const allSites = useMemo(() => [...SITES, ...dummySites], [dummySites]);
+
+  // Hands the Site to the Situation Check and the Assistant, so a photo taken
+  // here is judged against this Site's own Customs rather than against temple
+  // etiquette in general.
+  //
+  // Read from the Approach the visitor has actually crossed into, and failing
+  // that from the Site whose panel they opened by hand. Deliberately NOT from
+  // `selectedSiteId`: that starts at SITES[0] as the map's opening camera, so
+  // using it would tell a visitor who has only glanced at Explore that they are
+  // standing at Tanah Lot - a confident wrong place, which is the failure this
+  // product exists to prevent. No Approach and no open panel means no claim.
+  //
+  // `siteContextFrom` returns null for a Dummy Site, whose name is invented;
+  // ADR-0012 forbids a fictional place reaching the backend. That clears the
+  // Site and restores the generic check, exactly how both pages behaved before.
+  useEffect(() => {
+    const here = approachSite ?? allSites.find((s) => s.id === panelSiteId) ?? null;
+    writeActiveSite(here ? siteContextFrom(here) : null);
+  }, [allSites, approachSite, panelSiteId]);
 
   useEffect(() => {
     dummySitesRef.current = dummySites;

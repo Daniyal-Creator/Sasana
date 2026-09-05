@@ -1,6 +1,6 @@
 import { imageTooLarge, invalidInput, unsupportedMedia } from "@/lib/errors";
 import type { Lang } from "@shared/contract";
-import type { ChatMessage, VisionContext } from "@shared/contract";
+import type { ChatMessage, SiteContext, VisionContext } from "@shared/contract";
 
 export const MESSAGE_MAX_CHARS = 1000;
 export const HISTORY_LIMIT = 6;
@@ -32,10 +32,46 @@ export function sanitizeText(input: string, max = MESSAGE_MAX_CHARS): string {
     .slice(0, max);
 }
 
+export const SITE_NAME_MAX_CHARS = 120;
+export const SITE_ID_MAX_CHARS = 64;
+export const SITE_RULE_IDS_LIMIT = 32;
+
+// A malformed `site` is dropped rather than rejected, matching how `context` is
+// handled: losing the Site only costs the answer its specificity, and failing
+// a visitor's photo check over a bad optional field helps nobody. The values
+// that survive are still only *names* - the rule text always comes from the
+// server's own knowledge base (see SiteContext in shared/contract.ts).
+export function validateSiteContext(raw: unknown): SiteContext | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const s = raw as Record<string, unknown>;
+
+  if (typeof s.id !== "string" || typeof s.name !== "string") return undefined;
+  const id = sanitizeText(s.id, SITE_ID_MAX_CHARS);
+  const name = sanitizeText(s.name, SITE_NAME_MAX_CHARS);
+  if (!id || !name) return undefined;
+
+  if (!Array.isArray(s.ruleIds)) return undefined;
+  const ruleIds = [
+    ...new Set(
+      s.ruleIds
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => sanitizeText(value, SITE_ID_MAX_CHARS))
+        .filter(Boolean),
+    ),
+  ].slice(0, SITE_RULE_IDS_LIMIT);
+
+  // A Site that names no rules carries no information the prompt can use, so it
+  // is the same as having no Site at all.
+  if (ruleIds.length === 0) return undefined;
+
+  return { id, name, ruleIds };
+}
+
 export interface ValidatedChatRequest {
   message: string;
   lang: Lang;
   history: ChatMessage[];
+  site?: SiteContext;
 }
 
 export function validateChatRequest(body: Record<string, unknown>): ValidatedChatRequest {
@@ -54,6 +90,7 @@ export function validateChatRequest(body: Record<string, unknown>): ValidatedCha
     message,
     lang: body.lang === "id" ? "id" : "en",
     history: normalizeHistory(body.history),
+    site: validateSiteContext(body.site),
   };
 }
 
@@ -61,6 +98,7 @@ export interface ValidatedVisionRequest {
   image: string;
   context: VisionContext;
   lang: Lang;
+  site?: SiteContext;
 }
 
 export function validateVisionRequest(body: Record<string, unknown>): ValidatedVisionRequest {
@@ -73,6 +111,7 @@ export function validateVisionRequest(body: Record<string, unknown>): ValidatedV
     // context only softens the prompt, it does not make the answer unsafe.
     context: body.context === "temple" ? "temple" : "general",
     lang: body.lang === "id" ? "id" : "en",
+    site: validateSiteContext(body.site),
   };
 }
 

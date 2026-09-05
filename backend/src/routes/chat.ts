@@ -1,7 +1,7 @@
 import { chatCache, chatCacheKey } from "@/lib/cache";
 import { askQuestion } from "@/lib/gemini";
 import { handleApiError, parseJsonBody } from "@/lib/http";
-import { loadRules } from "@/lib/knowledge";
+import { loadRules, rulesByIds } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
 import { validateChatRequest } from "@/lib/validation";
 import type { Lang } from "@shared/contract";
@@ -21,7 +21,10 @@ export async function POST(req: Request): Promise<Response> {
     // history, so a cached answer keyed on the question alone could land in the
     // wrong conversation.
     const cacheable = parsed.history.length === 0;
-    const key = chatCacheKey(parsed.message, lang);
+    // The Site belongs in the key: once it reaches the prompt the answer is
+    // about that place, and serving Tanah Lot's answer at Besakih would be a
+    // confident wrong Custom - the failure this app exists to prevent.
+    const key = chatCacheKey(parsed.message, lang, parsed.site?.id);
 
     if (cacheable) {
       const hit = chatCache.get(key);
@@ -37,7 +40,18 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
 
-    const answer = await askQuestion(parsed.message, parsed.history, lang, loadRules());
+    const rules = loadRules();
+    // Rule text always comes from here, never from the request body. The client
+    // only named which ids apply where the visitor is standing.
+    const siteRules = parsed.site ? rulesByIds(rules, parsed.site.ruleIds) : [];
+    const answer = await askQuestion(
+      parsed.message,
+      parsed.history,
+      lang,
+      rules,
+      parsed.site,
+      siteRules,
+    );
     if (cacheable) chatCache.set(key, answer);
 
     logInfo({
@@ -45,6 +59,8 @@ export async function POST(req: Request): Promise<Response> {
       event: "ok",
       durationMs: Date.now() - started,
       grounded: answer.grounded,
+      siteId: parsed.site?.id,
+      siteRules: siteRules.length,
       lang,
     });
     return Response.json(answer, { status: 200, headers: { "x-cache": "MISS" } });

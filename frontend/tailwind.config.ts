@@ -46,6 +46,7 @@ export default {
       },
       maxWidth: {
         tool: "600px",
+        check: "960px",
         prose: "680px",
         container: "1120px",
         // Reading widths stop at `container`. The Explore Guide is a bento of

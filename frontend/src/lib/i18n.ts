@@ -347,11 +347,25 @@ const dict = {
   "check.analyze": { en: "Analyze photo", id: "Analisis foto" },
   "check.loading": { en: "Analyzing your photo…", id: "Menganalisis foto Anda…" },
   "check.reset": { en: "Check another", id: "Cek yang lain" },
+  "check.tts": { en: "Convert to Speech", id: "Ubah ke Suara" },
+  "check.tts.stop": { en: "Stop", id: "Hentikan" },
+  "check.followup.placeholder": {
+    en: "Ask about this result…",
+    id: "Tanyakan tentang hasil ini…",
+  },
   "check.unclear.retake": { en: "Retake photo", id: "Ambil ulang foto" },
   "check.source": { en: "Reference: {source}", id: "Rujukan: {source}" },
   "check.error": {
     en: "Something went wrong analyzing your photo. Please try again.",
     id: "Terjadi masalah saat menganalisis foto Anda. Silakan coba lagi.",
+  },
+  "check.placeholder": {
+    en: "Analysis results will appear here",
+    id: "Hasil analisis bakal muncul di sini",
+  },
+  "check.scrollDown": {
+    en: "Scroll down for more",
+    id: "Gulir ke bawah untuk selengkapnya",
   },
   "common.retry": { en: "Try again", id: "Coba lagi" },
 

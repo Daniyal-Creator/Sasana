@@ -1,6 +1,6 @@
 import { formatRulesForPrompt } from "@/lib/knowledge";
 import type { Rule } from "@/lib/types";
-import type { Lang, SiteContext, VisionContext } from "@shared/contract";
+import type { Lang, PhotoMeta, SiteContext, VisionContext } from "@shared/contract";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
@@ -54,6 +54,67 @@ Judge the photo against the customs that apply at this specific place, listed be
 
 CUSTOMS THAT APPLY AT ${site.name}:
 ${formatRulesForPrompt(siteRules, lang)}`;
+}
+
+// What the visitor's device knew about the photo, written for the model.
+//
+// It answers questions the pixels cannot: a photo that is dark at 19:30 is a
+// photo taken after sunset, not a broken camera, and coordinates place a
+// visitor at a real temple rather than at "somewhere with stone walls". Both
+// change the verdict a careful reader would give.
+//
+// The last line is the fence. Time and place are exactly the two facts that
+// tempt a model into announcing what is happening at a temple today, and this
+// app does not know that: no schedule, no opening hours, no ceremony in
+// progress. The metadata is for reading the photograph, not for narrating the
+// place.
+export function buildPhotoMetaLine(photo?: PhotoMeta): string {
+  if (!photo) return "";
+
+  const facts: string[] = [];
+
+  if (photo.takenAt) {
+    const clock = photo.takenAt.slice(11, 16);
+    const date = photo.takenAt.slice(0, 10);
+    const approximate =
+      photo.timeSource === "file"
+        ? " (the file's own date, which may be later than the shutter)"
+        : "";
+    facts.push(`- Taken at ${clock} local time on ${date}, which is ${timeOfDay(clock)}${approximate}.`);
+  }
+
+  if (photo.coords) {
+    const accuracy = photo.coords.accuracyM
+      ? `, accurate to about ${photo.coords.accuracyM} m`
+      : "";
+    facts.push(
+      `- Taken at latitude ${photo.coords.lat}, longitude ${photo.coords.lng}${accuracy}.`,
+    );
+  }
+
+  facts.push(
+    photo.source === "camera"
+      ? "- Taken with the app's camera moments ago, so the visitor is standing there now."
+      : "- Chosen from the visitor's own files, so they may be somewhere else by now.",
+  );
+
+  return `
+
+PHOTO METADATA (reported by the visitor's device, not read out of the image):
+${facts.join("\n")}
+Use it to read the photograph better: it tells you the light to expect and where the visitor is. Do not use it to state opening hours, ceremony dates, or what is happening at a place right now. You do not know those.`;
+}
+
+/** The part of the day a wall clock reading falls in, for the light it implies. */
+function timeOfDay(clock: string): string {
+  const hour = Number(clock.slice(0, 2));
+  if (!Number.isFinite(hour)) return "an unknown time of day";
+  if (hour < 5) return "the middle of the night, so any light is artificial";
+  if (hour < 10) return "morning";
+  if (hour < 15) return "the middle of the day, so shadows are short and hard";
+  if (hour < 18) return "late afternoon";
+  if (hour < 20) return "dusk, so the photo may be dim without being a bad photo";
+  return "night, so the photo may be dim without being a bad photo";
 }
 
 // Used when the model returns something unparseable. Failing safe to "unclear"

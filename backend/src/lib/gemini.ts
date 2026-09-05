@@ -4,6 +4,7 @@ import { describeError, toGeminiError } from "@/lib/errors";
 import { logError, logInfo } from "@/lib/logger";
 import {
   buildChatSystemPrompt,
+  buildPhotoMetaLine,
   buildVisionContextLine,
   buildVisionSystemPrompt,
   chatFallback,
@@ -17,6 +18,7 @@ import type {
   ChatMessage,
   ChatResponse,
   Lang,
+  PhotoMeta,
   SiteContext,
   VisionContext,
   VisionResult,
@@ -61,13 +63,24 @@ const CHAT_SCHEMA = {
   propertyOrdering: ["answer", "source", "grounded"],
 };
 
+/** Everything the prompt knows besides the pixels. */
+export interface VisionRequestContext {
+  context: VisionContext;
+  lang: Lang;
+  site?: SiteContext;
+  /** Resolved server-side from the ids the request named. */
+  siteRules?: Rule[];
+  /** Time and place, as the visitor's device reported them. */
+  photo?: PhotoMeta;
+}
+
+// An options object rather than a seventh positional argument: the call site
+// was already `(data, mime, context, lang, site, rules)`, and a reader should
+// not have to count commas to find out which is which.
 export async function analyzeImage(
   base64Image: string,
   mimeType: "image/jpeg" | "image/png",
-  context: VisionContext,
-  lang: Lang,
-  site?: SiteContext,
-  siteRules: Rule[] = [],
+  { context, lang, site, siteRules = [], photo }: VisionRequestContext,
 ): Promise<VisionResult> {
   const started = Date.now();
   const call = () =>
@@ -75,7 +88,7 @@ export async function analyzeImage(
       model: env.GEMINI_VISION_MODEL,
       contents: [
         { inlineData: { data: base64Image, mimeType } },
-        buildVisionContextLine(context, lang, site, siteRules),
+        buildVisionContextLine(context, lang, site, siteRules) + buildPhotoMetaLine(photo),
       ],
       config: {
         systemInstruction: buildVisionSystemPrompt(lang),

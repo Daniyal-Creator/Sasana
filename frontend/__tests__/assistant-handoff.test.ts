@@ -1,5 +1,11 @@
-import { describe, expect, it, beforeEach } from "vitest";
-import type { AssistantHandoffPayload } from "@/lib/assistant-context";
+import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import {
+  STORAGE_KEY,
+  readHandoff,
+  writeHandoff,
+  consumeHandoff,
+  type AssistantHandoffPayload,
+} from "@/lib/assistant-handoff";
 
 class MockStorage implements Storage {
   private store: Record<string, string> = {};
@@ -29,54 +35,83 @@ class MockStorage implements Storage {
   }
 }
 
-if (typeof globalThis.sessionStorage === "undefined") {
-  Object.defineProperty(globalThis, "sessionStorage", {
-    value: new MockStorage(),
-    writable: true,
-    configurable: true,
-  });
-}
+const mockStorage = new MockStorage();
+const originalWindow = globalThis.window;
 
-const STORAGE_KEY = "sasana.assistant_handoff";
+const samplePayload: AssistantHandoffPayload = {
+  question: "Can I wear shorts at this temple?",
+  imageUrl: "data:image/jpeg;base64,abc123mock",
+  lang: "en",
+  contextResult: {
+    status: "needs_attention",
+    reason: "Shorts require a kamen wrap",
+    suggestion: "Rent a sarong at the entrance",
+    reference: "Circular 7/2025",
+  },
+};
 
-describe("Assistant Handoff Data", () => {
+describe("Assistant Handoff Storage (production logic)", () => {
   beforeEach(() => {
-    sessionStorage.clear();
+    mockStorage.clear();
+    // Stub window.sessionStorage so production code interacts with it
+    // @ts-expect-error stubbing window for node environment
+    globalThis.window = {
+      sessionStorage: mockStorage,
+    };
   });
 
-  it("stores and retrieves handoff payload properly", () => {
-    const payload: AssistantHandoffPayload = {
-      question: "Can I wear shorts at this temple?",
-      imageUrl: "data:image/jpeg;base64,abc123mock",
-      lang: "en",
-      contextResult: {
-        status: "needs_attention",
-        reason: "Shorts require a kamen wrap",
-        suggestion: "Rent a sarong at the entrance",
-        reference: "Circular 7/2025",
-      },
-    };
-
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    const retrieved = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
-
-    expect(retrieved.question).toBe("Can I wear shorts at this temple?");
-    expect(retrieved.imageUrl).toBe("data:image/jpeg;base64,abc123mock");
-    expect(retrieved.lang).toBe("en");
-    expect(retrieved.contextResult?.status).toBe("needs_attention");
+  afterEach(() => {
+    globalThis.window = originalWindow;
   });
 
-  it("clears storage when payload is consumed", () => {
-    const payload: AssistantHandoffPayload = {
-      question: "Apakah boleh memotret?",
-      imageUrl: null,
-      lang: "id",
-    };
+  it("exports the expected canonical STORAGE_KEY", () => {
+    expect(STORAGE_KEY).toBe("sasana.assistant_handoff");
+  });
 
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+  it("writes payload to sessionStorage using writeHandoff", () => {
+    writeHandoff(samplePayload);
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    expect(raw).not.toBeNull();
+    expect(JSON.parse(raw!)).toEqual(samplePayload);
+  });
 
-    sessionStorage.removeItem(STORAGE_KEY);
-    expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+  it("removes payload from sessionStorage when writeHandoff is called with null", () => {
+    writeHandoff(samplePayload);
+    expect(window.sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+
+    writeHandoff(null);
+    expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+  });
+
+  it("reads and parses handoff payload using readHandoff", () => {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(samplePayload));
+    const retrieved = readHandoff();
+    expect(retrieved).toEqual(samplePayload);
+  });
+
+  it("returns null when readHandoff encounters corrupted JSON", () => {
+    window.sessionStorage.setItem(STORAGE_KEY, "{invalid-json-data");
+    const retrieved = readHandoff();
+    expect(retrieved).toBeNull();
+  });
+
+  it("consumes payload and immediately purges storage", () => {
+    writeHandoff(samplePayload);
+    expect(window.sessionStorage.getItem(STORAGE_KEY)).not.toBeNull();
+
+    const consumed = consumeHandoff();
+    expect(consumed).toEqual(samplePayload);
+    expect(window.sessionStorage.getItem(STORAGE_KEY)).toBeNull();
+    expect(readHandoff()).toBeNull();
+  });
+
+  it("is safe during SSR when window is undefined", () => {
+    // @ts-expect-error simulating SSR
+    globalThis.window = undefined;
+
+    expect(readHandoff()).toBeNull();
+    expect(() => writeHandoff(samplePayload)).not.toThrow();
+    expect(() => writeHandoff(null)).not.toThrow();
+    expect(consumeHandoff()).toBeNull();
   });
 });

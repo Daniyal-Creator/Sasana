@@ -3,6 +3,7 @@ import {
   SITE_STORAGE_KEY,
   readActiveSite,
   siteContextFrom,
+  siteContextNear,
   writeActiveSite,
 } from "@/lib/site-context";
 import { SITES } from "@/data/sites";
@@ -138,5 +139,25 @@ describe("readActiveSite and writeActiveSite", () => {
 
     expect(readActiveSite()).toBeNull();
     expect(() => writeActiveSite(siteContextFrom(realSite))).not.toThrow();
+  });
+});
+
+describe("siteContextNear", () => {
+  const site = SITES[0];
+
+  it("names the Site a photo was taken at", () => {
+    expect(siteContextNear({ lat: site.lat, lng: site.lng })?.id).toBe(site.id);
+  });
+
+  it("still names it from the car park outside the Zone", () => {
+    // Roughly 300 m north: outside the Zone on the smallest Site, inside the
+    // Approach on every one of them.
+    const near = { lat: site.lat + 0.0027, lng: site.lng };
+
+    expect(siteContextNear(near)?.id).toBe(site.id);
+  });
+
+  it("names no Site for a photo taken somewhere else entirely", () => {
+    expect(siteContextNear({ lat: -6.2, lng: 106.8 })).toBeNull();
   });
 });

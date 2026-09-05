@@ -8,13 +8,15 @@ import { ErrorFallback } from "@/components/ui/ErrorFallback";
 import { ScrollIndicator } from "@/components/ui/ScrollIndicator";
 import { CameraUploader } from "@/components/check/CameraUploader";
 import { ContextSelector, type CheckContext } from "@/components/check/ContextSelector";
+import { PhotoMetaBar, type LocationPhase } from "@/components/check/PhotoMetaBar";
 import { ResultCard } from "@/components/check/ResultCard";
 import { CheckEmptyState } from "@/components/check/CheckEmptyState";
 import { Footer } from "@/components/layout/Footer";
 import { useLang } from "@/lib/language";
 import { apiUrl } from "@/lib/api";
 import { t } from "@/lib/i18n";
-import { readActiveSite } from "@/lib/site-context";
+import { readActiveSite, siteContextNear } from "@/lib/site-context";
+import { requestDeviceCoords } from "@/lib/photo-meta";
 import type { PreparedImage } from "@/lib/image";
 import type { SiteContext, VisionResult } from "@shared/contract";
 
@@ -31,12 +33,41 @@ export default function CheckPage() {
   // server, and reading it in a useState initialiser makes the first client
   // render disagree with the server's.
   const [site, setSite] = useState<SiteContext | null>(null);
+  // A Site the photo's own coordinates landed in. It outranks the stored one:
+  // a visitor who picked Besakih on the map yesterday and is photographing
+  // Tirta Empul today is at Tirta Empul.
+  const [photoSite, setPhotoSite] = useState<SiteContext | null>(null);
+  const [locationPhase, setLocationPhase] = useState<LocationPhase>("idle");
 
   useEffect(() => {
     setSite(readActiveSite());
   }, []);
 
   const busy = phase === "loading";
+  const activeSite = photoSite ?? site;
+
+  function receiveImage(next: PreparedImage) {
+    setImage(next);
+    setResult(null);
+    setPhase("idle");
+    setLocationPhase("idle");
+    // A photo that carries its own GPS names its Site without anyone being
+    // asked for permission a second time.
+    setPhotoSite(next.meta.coords ? siteContextNear(next.meta.coords) : null);
+  }
+
+  async function addLocation() {
+    if (!image || busy) return;
+    setLocationPhase("locating");
+    const coords = await requestDeviceCoords();
+    if (!coords) {
+      setLocationPhase("unavailable");
+      return;
+    }
+    setLocationPhase("idle");
+    setImage((prev) => (prev ? { ...prev, meta: { ...prev.meta, coords } } : prev));
+    setPhotoSite(siteContextNear(coords));
+  }
 
   async function analyze() {
     if (!image) return;
@@ -53,7 +84,8 @@ export default function CheckPage() {
           mimeType: image.mimeType,
           context,
           lang,
-          ...(site ? { site } : {}),
+          photo: image.meta,
+          ...(activeSite ? { site: activeSite } : {}),
         }),
       });
       if (!res.ok) throw new Error("vision request failed");
@@ -68,6 +100,8 @@ export default function CheckPage() {
     setImage(null);
     setResult(null);
     setPhase("idle");
+    setPhotoSite(null);
+    setLocationPhase("idle");
   }
 
   return (
@@ -89,7 +123,18 @@ export default function CheckPage() {
         <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8">
           {/* Left Column: Upload & Actions */}
           <div className="flex flex-col">
-            <CameraUploader image={image} onImageReady={setImage} onClear={reset} disabled={busy} />
+            <CameraUploader image={image} onImageReady={receiveImage} onClear={reset} disabled={busy} />
+
+            {image && (
+              <PhotoMetaBar
+                meta={image.meta}
+                device={image.device}
+                siteName={activeSite?.name}
+                phase={locationPhase}
+                onAddLocation={addLocation}
+                disabled={busy}
+              />
+            )}
 
             <div className="mt-3 flex items-start gap-2.5 text-xs text-text-secondary leading-relaxed">
               <Shield size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-text-muted" />

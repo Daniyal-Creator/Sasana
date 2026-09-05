@@ -9,7 +9,8 @@
 // different lifetimes, so they get different storage.
 
 import { isDummySite } from "@/data/dummy-sites";
-import type { Site } from "@/data/sites";
+import { SITES, type Site } from "@/data/sites";
+import { approachRadiusM, nearestSite, type LatLng } from "@/lib/geo";
 import type { SiteContext } from "@shared/contract";
 
 export const SITE_STORAGE_KEY = "sasana.active_site";
@@ -72,4 +73,26 @@ export function writeActiveSite(site: SiteContext | null): void {
   } catch {
     // Losing the Site costs the next answer its specificity, nothing more.
   }
+}
+
+/**
+ * The Site a pair of coordinates belongs to, if any.
+ *
+ * A visitor who opens the check directly, photo already taken, never passed
+ * through Explore and so has no Site in storage. Their coordinates can name one
+ * anyway, which is the difference between a verdict measured against temples in
+ * general and one measured against the Customs of the place they are standing
+ * in.
+ *
+ * The Approach radius is the line, not the Zone: someone in the car park is
+ * plainly at the Site for the purpose of judging their photo. Unlike the
+ * Approach notice, no accuracy test guards this. ADR-0005 sets that bar because
+ * an unprompted notice for the wrong Site interrupts a visitor who asked for
+ * nothing; here the visitor has asked a question, the Customs shown are real
+ * either way, and the fallback is the generic check.
+ */
+export function siteContextNear(pos: LatLng): SiteContext | null {
+  const { site, distanceM } = nearestSite(pos, SITES);
+  if (!site || distanceM > approachRadiusM(site)) return null;
+  return siteContextFrom(site);
 }

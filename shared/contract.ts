@@ -34,6 +34,45 @@ export interface SiteContext {
   ruleIds: string[];
 }
 
+/**
+ * What the visitor's device knows about the photo, beyond its pixels.
+ *
+ * Optional in every part, like `SiteContext`. A browser that blocks location,
+ * a photo stripped of its EXIF by a messaging app, a camera shot that never had
+ * any - each simply sends less, and the check behaves exactly as it did before
+ * any of this existed.
+ *
+ * Unlike `SiteContext`, these values are facts about the visitor rather than
+ * names to resolve, so they do reach the prompt as text. They are read to
+ * interpret the photo - the light to expect, where it was taken - and the
+ * prompt says so.
+ */
+export interface PhotoMeta {
+  /** Shot in the app's camera, or chosen from the visitor's files. */
+  source: "camera" | "upload";
+  /**
+   * Local wall-clock time of capture, `YYYY-MM-DDTHH:MM:SS`, no zone suffix.
+   * EXIF records a bare local time with no offset, so pretending to know the
+   * zone would be inventing one; `timeZoneOffsetMin` carries what we do know.
+   */
+  takenAt?: string;
+  /** Minutes east of UTC on the device that sent it. Jakarta is 420. */
+  timeZoneOffsetMin?: number;
+  /** Where `takenAt` came from, weakest last. */
+  timeSource?: "exif" | "file" | "clock";
+  coords?: PhotoCoords;
+}
+
+/** Where the photo was taken. */
+export interface PhotoCoords {
+  lat: number;
+  lng: number;
+  /** Radius of uncertainty in metres, when the fix came from the browser. */
+  accuracyM?: number;
+  /** The photo's own EXIF, or a live fix from the browser. */
+  source: "exif" | "device";
+}
+
 /** `POST /api/vision` response body. */
 export interface VisionResult {
   status: VisionStatus;

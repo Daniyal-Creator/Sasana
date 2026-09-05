@@ -1,5 +1,8 @@
 // Client-side image validation + downscale before upload (ui-spec §5.10, TS §8.2).
 
+import { buildPhotoMeta, readExif } from "@/lib/photo-meta";
+import type { PhotoMeta } from "@shared/contract";
+
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_EDGE = 1024;
 const ACCEPTED = ["image/jpeg", "image/png"];
@@ -15,6 +18,25 @@ export interface PreparedImage {
   mimeType: string;
   previewUrl: string;
   name: string;
+  /** What the file and the device knew about this photo. */
+  meta: PhotoMeta;
+  /** Camera make and model, when the file carried one. Shown, never sent. */
+  device?: string;
+}
+
+/**
+ * A photo, ready to check: pixels downscaled, metadata lifted off the original.
+ *
+ * The order matters. EXIF has to be read from the File itself, because the
+ * canvas re-encode below writes a fresh JPEG with no metadata segment at all.
+ */
+export async function preparePhoto(
+  file: File,
+  source: PhotoMeta["source"],
+): Promise<PreparedImage> {
+  const exif = await readExif(file);
+  const prepared = await prepareImage(file);
+  return { ...prepared, meta: buildPhotoMeta(file, source, exif), device: exif.device };
 }
 
 export function validateImage(file: File): ImageError | null {
@@ -23,7 +45,14 @@ export function validateImage(file: File): ImageError | null {
   return null;
 }
 
-export async function prepareImage(file: File): Promise<PreparedImage> {
+type Pixels = Omit<PreparedImage, "meta" | "device">;
+
+// Rotation is deliberately not applied here. Every browser since 2020 honours
+// EXIF Orientation when it decodes an image, so `img.width` and `drawImage`
+// already describe the upright photo; transforming it again by hand would turn
+// a correct portrait shot on its side. Verified against a hand-built JPEG
+// carrying Orientation=6: a 2x1 image decodes as 1x2, already rotated.
+async function prepareImage(file: File): Promise<Pixels> {
   const dataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);

@@ -49,7 +49,12 @@ export default {
         check: "960px",
         prose: "680px",
         container: "1120px",
+        // Reading widths stop at `container`. The Explore Guide is a bento of
+        // panels rather than prose, and at 1120 on a wide screen it reads as a
+        // narrow column stranded in the middle of the page.
+        wide: "1320px",
         hero: "520px",
+        "assistant-main": "780px",
       },
       transitionTimingFunction: {
         "out-quart": "cubic-bezier(0.25,1,0.5,1)",
@@ -60,12 +65,14 @@ export default {
         resultIn: { from: { opacity: "0", transform: "translateY(12px)" }, to: { opacity: "1", transform: "none" } },
         msgIn: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
         dotPulse: { "0%,100%": { opacity: ".3" }, "50%": { opacity: "1" } },
+        staggerIn: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
       },
       animation: {
         fadeUp: "fadeUp .2s cubic-bezier(0.25,1,0.5,1)",
         resultIn: "resultIn .32s cubic-bezier(0.25,1,0.5,1)",
         msgIn: "msgIn .24s cubic-bezier(0.25,1,0.5,1)",
         dotPulse: "dotPulse 1.2s ease-in-out infinite",
+        staggerIn: "staggerIn .3s cubic-bezier(0.25,1,0.5,1) both",
       },
     },
   },

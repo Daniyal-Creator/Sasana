@@ -20,33 +20,73 @@ export interface Site {
   name: string;
   region: string;
   areaLabel: Localized;
+  description: Localized;
+  /** Path to a real photograph, sourced per ADR-0007. Undefined until sourced. */
+  image?: string;
   lat: number;
   lng: number;
   radiusM: number;
   customs: Custom[];
   source: string;
-  odalanDates: string[];
+  odalan: Odalan[];
 }
 
-// TODO(odalan): every odalanDates array is empty on purpose. Odalan follows the
-// 210-day pawukon cycle, and the placeholder dates that were here first did not
-// correspond to any known odalan for these temples. ADR-0004 says a date we
-// cannot confirm is worse than no date, because a visitor who plans around a
-// wrong ceremony date is misled by the one app that promised to prevent that.
-// Fill these in only from temple management or an official Balinese calendar,
-// and record where each date came from. The notice itself is implemented and
-// verified: put a date within seven days of today into any Site to see it.
+/**
+ * A dated notice about a known ceremony, never a live status claim (ADR-0004).
+ * Each entry carries how the date was arrived at, because a visitor who plans a
+ * trip around a wrong ceremony date has been misled by the one app that
+ * promised to prevent exactly that.
+ */
+export interface Odalan {
+  /** ISO date, YYYY-MM-DD. */
+  date: string;
+  /** The Balinese calendar anchor the date is derived from. */
+  anchor: Localized;
+  /** How the date was arrived at. Shown to the visitor, never guessed. */
+  source: string;
+  /** The page it was read from, so the next person can re-check it. */
+  sourceUrl: string;
+}
+
+// Odalan dates are read from a named source and written down with it. They are
+// never computed: the 210-day pawukon cycle is a real implementation with its
+// own correctness risk, and getting it subtly wrong produces confidently
+// incorrect ceremony dates, which is worse than a short hand-kept list
+// (ADR-0004).
+//
+// Three Sites carry no date because none could be found from a source worth
+// citing. An empty array shows no notice, which is the safe default. Drop an
+// entry rather than let it age past its date.
+//
+// To see the notice without waiting for a real date, open
+// /explore?odalan=1. The demo switch exists so that nobody is ever
+// tempted to type a date that is not true.
 export const SITES: Site[] = [
   {
     id: "pura-tanah-lot",
     name: "Pura Tanah Lot",
     region: "Tabanan, Bali",
     areaLabel: { en: "Sacred coastal temple area", id: "Kawasan pura tepi laut" },
+    description: {
+      en: "A temple set on a rocky outcrop along the coast of Tabanan, surrounded by crashing waves and known for its sunset views across the Indian Ocean.",
+      id: "Pura yang berdiri di atas batu karang di pesisir Tabanan, dikelilingi deburan ombak dan dikenal dengan pemandangan matahari terbenam di Samudra Hindia.",
+    },
     lat: -8.6212,
     lng: 115.0868,
     radiusM: 400,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    odalan: [
+      {
+        date: "2027-01-27",
+        anchor: {
+          en: "Buda Wage Langkir, every 210 days",
+          id: "Buda Wage Langkir, tiap 210 hari",
+        },
+        source:
+          "tanahlot.id, the temple's own site, gives the pujawali as Buda Cemeng Langkir. Counted 210 days on from the 1 July 2026 pujawali. The weekday checks out: Buda is Wednesday, and 27 January 2027 is a Wednesday.",
+        sourceUrl: "https://www.tanahlot.id/article/pujawali-di-pura-luhur-tanah-lot-",
+      },
+    ],
     customs: [
       {
         id: "dress",
@@ -125,11 +165,26 @@ export const SITES: Site[] = [
     name: "Pura Luhur Uluwatu",
     region: "Badung, Bali",
     areaLabel: { en: "Clifftop sacred area", id: "Kawasan suci di atas tebing" },
+    description: {
+      en: "A cliff-edge temple on the southern tip of Bali, overlooking the Indian Ocean. The site hosts the nightly kecak dance performance at sunset.",
+      id: "Pura di tepi tebing ujung selatan Bali, menghadap Samudra Hindia. Lokasi ini menyelenggarakan pertunjukan tari kecak setiap sore menjelang matahari terbenam.",
+    },
     lat: -8.8291,
     lng: 115.0849,
     radiusM: 400,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    odalan: [
+      {
+        date: "2027-02-02",
+        anchor: {
+          en: "Anggara Kasih Medangsia, every 210 days",
+          id: "Anggara Kasih Medangsia, tiap 210 hari",
+        },
+        source:
+          "Bali Post reported the pujawali on 9 December 2025, which is 210 days after the 13 May 2025 one recorded by the Kuta Selatan district office. Two more cycles on lands 2 February 2027, and the weekday checks out: Anggara is Tuesday, and 2 February 2027 is a Tuesday.",
+        sourceUrl: "https://www.balipost.com/news/2025/12/05/510827/Pujawali-Pura-Uluwatu-9-Desember,Diawali...html",
+      },
+    ],
     customs: [
       {
         id: "dress",
@@ -194,11 +249,18 @@ export const SITES: Site[] = [
     name: "Pura Besakih",
     region: "Karangasem, Bali",
     areaLabel: { en: "Mother temple complex", id: "Kompleks pura agung" },
+    description: {
+      en: "The largest and most important temple complex in Bali, spanning the slopes of Mount Agung. It consists of over twenty separate temples.",
+      id: "Kompleks pura terbesar dan terpenting di Bali, membentang di lereng Gunung Agung. Kompleks ini terdiri dari lebih dari dua puluh pura terpisah.",
+    },
     lat: -8.3739,
     lng: 115.4515,
     radiusM: 500,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    // Ida Bhatara Turun Kabeh, on Purnama Sasih Kadasa each year. The 2026
+    // ceremony ran 2 to 23 April (dpma.baliprov.go.id). No 2027 date has been
+    // published yet, and a past date is worse than none, so this stays empty.
+    odalan: [],
     customs: [
       {
         id: "dress",
@@ -277,11 +339,16 @@ export const SITES: Site[] = [
     name: "Pura Batu Bolong",
     region: "Badung, Bali",
     areaLabel: { en: "Temple on the rock arch", id: "Pura di atas lengkung batu" },
+    description: {
+      en: "A small temple built on a natural rock arch that juts into the sea near Canggu. It sits beside Tanah Lot and shares the same coastline.",
+      id: "Pura kecil yang dibangun di atas lengkung batu alami yang menjorok ke laut dekat Canggu. Letaknya berdampingan dengan Tanah Lot di garis pantai yang sama.",
+    },
     lat: -8.6547,
     lng: 115.1225,
     radiusM: 250,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    // No odalan date found from a source worth citing. Leave empty until one is.
+    odalan: [],
     customs: [
       {
         id: "dress",
@@ -332,11 +399,24 @@ export const SITES: Site[] = [
     name: "Pura Tirta Empul",
     region: "Gianyar, Bali",
     areaLabel: { en: "Sacred spring purification temple", id: "Pura pemandian air suci" },
+    description: {
+      en: "A water temple in Tampaksiring fed by a natural spring. Visitors come to bathe in its pools as part of the melukat purification ritual.",
+      id: "Pura air di Tampaksiring yang dialiri mata air alami. Pengunjung datang untuk mandi di kolamnya sebagai bagian dari ritual penyucian melukat.",
+    },
     lat: -8.4156,
     lng: 115.3153,
     radiusM: 300,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    odalan: [
+      {
+        date: "2026-09-28",
+        anchor: { en: "Purnama Kapat, once a year", id: "Purnama Kapat, setahun sekali" },
+        source:
+          "Gianyar regency government, announcing the Karya Padudusan Agung. The series runs 26 to 29 September 2026, with Purnama Kapat on the 28th and the piodalan peak on the 29th.",
+        sourceUrl:
+          "https://gianyarkab.go.id/informasi-publik/berita/karya-padudusan-agung-di-pura-tirta-empul-tampaksiring",
+      },
+    ],
     customs: [
       {
         id: "dress",
@@ -401,11 +481,16 @@ export const SITES: Site[] = [
     name: "Pura Ulun Danu Beratan",
     region: "Tabanan, Bali",
     areaLabel: { en: "Temple on the mountain lake", id: "Pura di tepi danau pegunungan" },
+    description: {
+      en: "A lakeside temple on the shore of Lake Beratan in the central highlands. Its multi-tiered meru shrines appear to float when the water is high.",
+      id: "Pura di tepi Danau Beratan di dataran tinggi tengah Bali. Pelinggih meru bertingkatnya tampak mengapung saat air danau sedang tinggi.",
+    },
     lat: -8.275,
     lng: 115.1668,
     radiusM: 350,
     source: "Bali Governor Circular No. 7/2025",
-    odalanDates: [],
+    // No odalan date found from a source worth citing. Leave empty until one is.
+    odalan: [],
     customs: [
       {
         id: "dress",

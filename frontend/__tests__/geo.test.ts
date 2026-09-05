@@ -20,12 +20,13 @@ function siteWithRadius(radiusM: number): Site {
     name: "Test Site",
     region: "Test, Bali",
     areaLabel: { en: "Test area", id: "Kawasan uji" },
+    description: { en: "Test description", id: "Deskripsi uji" },
     lat: -8.6212,
     lng: 115.0868,
     radiusM,
     customs: [],
     source: "test",
-    odalanDates: [],
+    odalan: [],
   };
 }
 

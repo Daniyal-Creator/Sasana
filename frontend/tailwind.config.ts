@@ -46,6 +46,7 @@ export default {
       },
       maxWidth: {
         tool: "600px",
+        check: "960px",
         prose: "680px",
         container: "1120px",
         hero: "520px",

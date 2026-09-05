@@ -7,6 +7,7 @@ import { t } from "@/lib/i18n";
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string | null;
   source?: string | null;
   grounded?: boolean;
   isFirstOfTurn?: boolean;
@@ -26,7 +27,14 @@ export function SasanaAvatar({ size = "md" }: { size?: "md" | "lg" }) {
   );
 }
 
-export function ChatBubble({ role, content, source, grounded, isFirstOfTurn = true }: ChatBubbleProps) {
+export function ChatBubble({
+  role,
+  content,
+  imageUrl,
+  source,
+  grounded,
+  isFirstOfTurn = true,
+}: ChatBubbleProps) {
   const { lang } = useLang();
   const isUser = role === "user";
 
@@ -42,6 +50,16 @@ export function ChatBubble({ role, content, source, grounded, isFirstOfTurn = tr
         ].join(" ")}
       >
         <span className="sr-only">{t(lang, isUser ? "sr.you" : "sr.assistant")}: </span>
+        {imageUrl && (
+          <div className="mb-2 overflow-hidden rounded-md border border-border/30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={t(lang, "check.photo.alt")}
+              className="max-h-48 w-full object-cover"
+            />
+          </div>
+        )}
         <p className="whitespace-pre-wrap text-base">{content}</p>
         {!isUser && grounded !== undefined && <SourceReference source={source ?? null} grounded={grounded} />}
       </div>

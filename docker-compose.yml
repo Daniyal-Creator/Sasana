@@ -4,6 +4,14 @@
 # Windows bind mount is unreliable, and the frontend developers depend on fast
 # HMR. Run it natively with `npm run dev` inside frontend/.
 
+# Pinned, and deliberately NOT "sasana" - that name belongs to
+# docker-compose.prod.yml. The project name is Compose's namespace: sharing one
+# means `up` on either file adopts and recreates the other's containers, and
+# once the answer cache has a database, both would point at the same named
+# volume. Separate names keep a production dry-run on a laptop from disturbing
+# whatever is running for development.
+name: sasana-dev
+
 services:
   backend:
     build:

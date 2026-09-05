@@ -1,6 +1,42 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import type { AssistantHandoffPayload } from "@/lib/assistant-context";
 
+class MockStorage implements Storage {
+  private store: Record<string, string> = {};
+
+  getItem(key: string): string | null {
+    return this.store[key] ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.store[key] = String(value);
+  }
+
+  removeItem(key: string): void {
+    delete this.store[key];
+  }
+
+  clear(): void {
+    this.store = {};
+  }
+
+  key(index: number): string | null {
+    return Object.keys(this.store)[index] ?? null;
+  }
+
+  get length(): number {
+    return Object.keys(this.store).length;
+  }
+}
+
+if (typeof globalThis.sessionStorage === "undefined") {
+  Object.defineProperty(globalThis, "sessionStorage", {
+    value: new MockStorage(),
+    writable: true,
+    configurable: true,
+  });
+}
+
 const STORAGE_KEY = "sasana.assistant_handoff";
 
 describe("Assistant Handoff Data", () => {

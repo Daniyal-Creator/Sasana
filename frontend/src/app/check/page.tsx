@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -14,8 +14,9 @@ import { Footer } from "@/components/layout/Footer";
 import { useLang } from "@/lib/language";
 import { apiUrl } from "@/lib/api";
 import { t } from "@/lib/i18n";
+import { readActiveSite } from "@/lib/site-context";
 import type { PreparedImage } from "@/lib/image";
-import type { VisionResult } from "@shared/contract";
+import type { SiteContext, VisionResult } from "@shared/contract";
 
 type Phase = "idle" | "loading" | "done" | "error";
 
@@ -25,6 +26,15 @@ export default function CheckPage() {
   const [image, setImage] = useState<PreparedImage | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<VisionResult | null>(null);
+  // The Site the visitor picked in Explore, if they came from there. Read after
+  // mount rather than during render: sessionStorage does not exist on the
+  // server, and reading it in a useState initialiser makes the first client
+  // render disagree with the server's.
+  const [site, setSite] = useState<SiteContext | null>(null);
+
+  useEffect(() => {
+    setSite(readActiveSite());
+  }, []);
 
   const busy = phase === "loading";
 
@@ -36,7 +46,15 @@ export default function CheckPage() {
       const res = await fetch(apiUrl("/api/vision"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: image.base64, mimeType: image.mimeType, context, lang }),
+        // `site` is omitted when the visitor did not come from Explore, which
+        // is what keeps the standalone check behaving exactly as it always has.
+        body: JSON.stringify({
+          image: image.base64,
+          mimeType: image.mimeType,
+          context,
+          lang,
+          ...(site ? { site } : {}),
+        }),
       });
       if (!res.ok) throw new Error("vision request failed");
       setResult((await res.json()) as VisionResult);

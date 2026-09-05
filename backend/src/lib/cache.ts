@@ -49,6 +49,13 @@ export const chatCache = new TTLCache<ChatResponse>(ONE_HOUR_MS, MAX_ENTRIES);
 
 // Language is part of the key: the same question must not return an English
 // answer to an Indonesian asker.
-export function chatCacheKey(message: string, lang: string): string {
-  return `${lang}::${message.toLowerCase().replace(/\s+/g, " ").trim()}`;
+//
+// The Site is part of it for the same reason, and a sharper one. Once a Site
+// reaches the prompt the answer is about that place, so a key of question and
+// language alone would serve the answer for Tanah Lot to somebody standing at
+// Besakih - a wrong Custom delivered with full confidence, which is the exact
+// failure this product exists to prevent. Visitors with no Site keep sharing
+// one key, which is where the hit rate lives.
+export function chatCacheKey(message: string, lang: string, siteId?: string): string {
+  return `${lang}::${siteId ?? "-"}::${message.toLowerCase().replace(/\s+/g, " ").trim()}`;
 }

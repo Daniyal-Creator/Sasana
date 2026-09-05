@@ -4,6 +4,7 @@ import { describeError, toGeminiError } from "@/lib/errors";
 import { logError, logInfo } from "@/lib/logger";
 import {
   buildChatSystemPrompt,
+  buildVisionContextLine,
   buildVisionSystemPrompt,
   chatFallback,
   VISION_PARSE_FALLBACK,
@@ -16,6 +17,7 @@ import type {
   ChatMessage,
   ChatResponse,
   Lang,
+  SiteContext,
   VisionContext,
   VisionResult,
   VisionStatus,
@@ -64,6 +66,8 @@ export async function analyzeImage(
   mimeType: "image/jpeg" | "image/png",
   context: VisionContext,
   lang: Lang,
+  site?: SiteContext,
+  siteRules: Rule[] = [],
 ): Promise<VisionResult> {
   const started = Date.now();
   const call = () =>
@@ -71,9 +75,7 @@ export async function analyzeImage(
       model: env.GEMINI_VISION_MODEL,
       contents: [
         { inlineData: { data: base64Image, mimeType } },
-        context === "temple"
-          ? "Context: the user says they are at or near a temple (pura)."
-          : "Context: general setting; it may or may not be a sacred site.",
+        buildVisionContextLine(context, lang, site, siteRules),
       ],
       config: {
         systemInstruction: buildVisionSystemPrompt(lang),
@@ -142,6 +144,8 @@ export async function askQuestion(
   history: ChatMessage[],
   lang: Lang,
   rules: Rule[],
+  site?: SiteContext,
+  siteRules: Rule[] = [],
 ): Promise<ChatResponse> {
   const started = Date.now();
   const contents = [
@@ -157,7 +161,7 @@ export async function askQuestion(
       model: env.GEMINI_CHAT_MODEL,
       contents,
       config: {
-        systemInstruction: buildChatSystemPrompt(rules, lang),
+        systemInstruction: buildChatSystemPrompt(rules, lang, site, siteRules),
         temperature: 0.3,
         maxOutputTokens: 800,
         thinkingConfig: THINKING,

@@ -42,10 +42,14 @@ function mockAnswer(payload: unknown, usage?: Record<string, number>) {
   });
 }
 
+const CIRCULAR = "Bali Governor Circular No. 7 of 2025";
+
+// What a well-behaved model returns now: an answer plus the ids it stands on.
+// It no longer types the attribution - the server reads that off the rules the
+// ids resolve to.
 const GROUNDED = {
   answer: "Wear a kamen and sash when entering temple grounds.",
-  source: "Bali Governor Circular No. 7 of 2025",
-  grounded: true,
+  ruleIds: ["temple-attire"],
 };
 
 const EN_FALLBACK = "I don't have official information on that in the Bali code of conduct.";
@@ -59,7 +63,7 @@ beforeEach(() => {
 });
 
 describe("POST /api/chat — grounded answers", () => {
-  it("returns the model answer with its source when grounded", async () => {
+  it("returns the model answer with the source of the rules it cited", async () => {
     mockAnswer(GROUNDED, { totalTokenCount: 120 });
     const res = await POST(post({ message: "Can I wear shorts at a temple?", lang: "en", history: [] }));
 
@@ -67,8 +71,9 @@ describe("POST /api/chat — grounded answers", () => {
     const json = await readBody(res);
     expect(json).toEqual({
       answer: GROUNDED.answer,
-      source: "Bali Governor Circular No. 7 of 2025",
-      grounded: true,
+      kind: "rule",
+      ruleIds: ["temple-attire"],
+      source: CIRCULAR,
     });
   });
 
@@ -79,7 +84,7 @@ describe("POST /api/chat — grounded answers", () => {
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
     expect(systemInstruction).toContain("ONLY using the RULES listed below");
     expect(systemInstruction).toContain("Do not guess and do not fabricate a rule");
-    expect(systemInstruction).toContain("1. [Dress Code]");
+    expect(systemInstruction).toContain("1. (id: temple-attire) [Dress Code]");
     expect(systemInstruction).toContain("Reply in the user's language: English");
   });
 
@@ -90,26 +95,53 @@ describe("POST /api/chat — grounded answers", () => {
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
     expect(systemInstruction).toContain("Indonesian (Bahasa Indonesia)");
     expect(systemInstruction).toContain("Tata Busana");
+    expect(systemInstruction).toContain("(id: temple-attire)");
   });
 });
 
 describe("POST /api/chat — grounding safety net (FR2.1)", () => {
-  it("replaces the answer with the fallback when the model reports grounded=false", async () => {
-    mockAnswer({ answer: "Sure, drones are totally fine!", source: "", grounded: false });
+  it("replaces the answer with the fallback when the model cites no rule", async () => {
+    mockAnswer({ answer: "Sure, drones are totally fine!", ruleIds: [] });
     const res = await POST(post({ message: "What time is the football match?", lang: "en", history: [] }));
 
     const json = await readBody(res);
-    expect(json).toEqual({ answer: EN_FALLBACK, source: null, grounded: false });
+    expect(json).toEqual({ answer: EN_FALLBACK, kind: "none", ruleIds: [], source: null });
   });
 
-  it("refuses a grounded=true answer that cites no source", async () => {
-    mockAnswer({ answer: "Rule 12 says you may climb shrines.", source: "", grounded: true });
+  // The heart of it: the model can claim grounding, but only the knowledge base
+  // can grant it. An id the KB does not know buys the answer nothing.
+  it("refuses an answer whose cited rule ids are invented", async () => {
+    mockAnswer({ answer: "Rule 12 says you may climb shrines.", ruleIds: ["rule-12", "made-up"] });
     const res = await POST(post({ message: "Can I climb a shrine?", lang: "en", history: [] }));
 
     const json = await readBody(res);
-    expect(json.grounded).toBe(false);
+    expect(json.kind).toBe("none");
+    expect(json.ruleIds).toEqual([]);
     expect(json.source).toBeNull();
     expect(json.answer).toBe(EN_FALLBACK);
+  });
+
+  // The bug this whole change exists to kill: a good answer used to be thrown
+  // away for missing a `source` string the schema never required it to write.
+  it("keeps a real answer that cites one real rule among invented ones", async () => {
+    mockAnswer({
+      answer: "Wear a kamen and sash.",
+      ruleIds: ["nope", "temple-attire", "also-nope"],
+    });
+    const res = await POST(post({ message: "What do I wear?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("rule");
+    expect(json.ruleIds).toEqual(["temple-attire"]);
+    expect(json.answer).toBe("Wear a kamen and sash.");
+  });
+
+  it("lists every distinct source when the answer stands on more than one", async () => {
+    mockAnswer({ answer: "Cover up and keep out of the inner court.", ruleIds: ["temple-attire", "menstruation-entry"] });
+    const res = await POST(post({ message: "What are the rules here?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.source).toBe(`${CIRCULAR} · Balinese Hindu custom (adat)`);
   });
 
   it("falls back when the model returns something that is not JSON", async () => {
@@ -118,7 +150,14 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
 
     expect(res.status).toBe(200);
     const json = await readBody(res);
-    expect(json).toEqual({ answer: ID_FALLBACK, source: null, grounded: false });
+    expect(json).toEqual({ answer: ID_FALLBACK, kind: "none", ruleIds: [], source: null });
+  });
+
+  it("falls back when ruleIds is not an array", async () => {
+    mockAnswer({ answer: "Anything goes.", ruleIds: "temple-attire" });
+    const res = await POST(post({ message: "Can I wear shorts?", lang: "en", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("none");
   });
 });
 
@@ -216,7 +255,7 @@ describe("POST /api/chat — request validation", () => {
   });
 
   it("coerces an unknown lang to English", async () => {
-    mockAnswer({ answer: "x", source: "", grounded: false });
+    mockAnswer({ answer: "x", ruleIds: [] });
     const res = await POST(post({ message: "hello", lang: "fr", history: [] }));
 
     expect((await readBody(res)).answer).toBe(EN_FALLBACK);
@@ -299,7 +338,7 @@ describe("POST /api/chat — upstream failures", () => {
     const res = await POST(post({ message: "Can I wear shorts?", lang: "en", history: [] }));
 
     expect(res.status).toBe(200);
-    expect((await readBody(res)).grounded).toBe(true);
+    expect((await readBody(res)).kind).toBe("rule");
     expect(generateContent).toHaveBeenCalledTimes(2);
   });
 

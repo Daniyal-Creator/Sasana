@@ -81,18 +81,43 @@ export interface VisionResult {
   reference: string;
 }
 
+/**
+ * What an assistant answer is standing on.
+ *
+ * - `rule` — the answer cites Rules the server resolved against its own
+ *   knowledge base. `ruleIds` names them and `source` carries their attribution.
+ * - `context` — cultural explanation with no Rule behind it. Answered, but
+ *   never presented as official guidance. Nothing produces this yet; the server
+ *   half lands with tier 2 (see `.scratch/assistant/spec.md`).
+ * - `none` — nothing in the knowledge base covers the question, so the answer
+ *   is the official fallback.
+ *
+ * This replaced a `grounded: boolean` that could not tell `context` from
+ * `none`: "I can explain, without an official rule" and "I cannot help" are
+ * different things to read on a phone at a temple gate.
+ */
+export type ChatKind = "rule" | "context" | "none";
+
 /** `POST /api/chat` response body. */
 export interface ChatResponse {
   answer: string;
+  kind: ChatKind;
+  /**
+   * Ids of the Rules this answer stands on, as the SERVER resolved them — the
+   * model names ids, the server keeps only the ones its knowledge base knows.
+   * Always empty unless `kind` is `"rule"`.
+   */
+  ruleIds: string[];
+  /** Attribution of the cited Rules, joined when they carry more than one. */
   source: string | null;
-  grounded: boolean;
 }
 
 /** One turn of assistant conversation, as sent in the `POST /api/chat` history. */
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  kind?: ChatKind;
+  ruleIds?: string[];
   source?: string | null;
-  grounded?: boolean;
   error?: boolean;
 }

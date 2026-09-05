@@ -59,17 +59,26 @@ export function rulesByIds(rules: Rule[], ids: string[]): Rule[] {
 
 // Formats rules as a numbered list for system-prompt injection
 // (context stuffing, PRD §12).
-export function formatRulesForPrompt(rules: Rule[], lang: Lang): string {
+//
+// `withIds` prints each rule's id so the model can cite it back. Chat needs
+// that - an answer names the ids it stands on and the server resolves them -
+// while vision never cites anything, so it keeps the shorter, cheaper form.
+export function formatRulesForPrompt(
+  rules: Rule[],
+  lang: Lang,
+  { withIds = false }: { withIds?: boolean } = {},
+): string {
   return rules
     .map((r, i) => {
       const text = lang === "id" ? r.rule_id : r.rule_en;
       const why = lang === "id" ? r.why_id : r.why_en;
       const category = lang === "id" ? r.category_id : r.category_en;
+      const id = withIds ? `(id: ${r.id}) ` : "";
       // `why` is included so the assistant can answer "what is a canang?" and
       // other meaning questions from the KB instead of declining (ADR-0002).
       // `why_source` is deliberately left out: it is display-only attribution
       // and would only add prompt tokens.
-      return `${i + 1}. [${category}] ${text} Why it matters: ${why} (Source: ${r.source})`;
+      return `${i + 1}. ${id}[${category}] ${text} Why it matters: ${why} (Source: ${r.source})`;
     })
     .join("\n");
 }

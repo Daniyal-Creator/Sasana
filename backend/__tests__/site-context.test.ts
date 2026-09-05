@@ -242,22 +242,20 @@ describe("the Site reaching the routes", () => {
   });
 
   it("does not serve one Site's cached answer at another Site", async () => {
-    // A source is required: the server's grounding net replaces anything less
-    // with the official fallback, so a realistic mock has to carry one.
+    // A cited rule id is required: the server's grounding net replaces anything
+    // less with the official fallback, so a realistic mock has to carry one.
     generateContent
       .mockResolvedValueOnce({
         text: JSON.stringify({
           answer: "At Tirta Empul, keep your shoulders covered.",
-          source: CIRCULAR,
-          grounded: true,
+          ruleIds: ["temple-attire"],
         }),
         usageMetadata: { totalTokenCount: 100 },
       })
       .mockResolvedValueOnce({
         text: JSON.stringify({
           answer: "At Besakih, keep your shoulders covered.",
-          source: CIRCULAR,
-          grounded: true,
+          ruleIds: ["temple-attire"],
         }),
         usageMetadata: { totalTokenCount: 100 },
       });
@@ -275,15 +273,19 @@ describe("the Site reaching the routes", () => {
     // The same question at a different Site must reach the model again.
     expect(second.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);
-    expect(await second.json()).toMatchObject({ answer: "At Besakih, keep your shoulders covered." });
+    expect(await second.json()).toMatchObject({
+      answer: "At Besakih, keep your shoulders covered.",
+      kind: "rule",
+      ruleIds: ["temple-attire"],
+      source: CIRCULAR,
+    });
   });
 
   it("still caches a repeated question asked at the same Site", async () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
         answer: "Keep your shoulders covered.",
-        source: CIRCULAR,
-        grounded: true,
+        ruleIds: ["temple-attire"],
       }),
       usageMetadata: { totalTokenCount: 100 },
     });

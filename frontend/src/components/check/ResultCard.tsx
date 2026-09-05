@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AudioLines,
   Camera,
@@ -74,18 +74,37 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
   const isUnclear = result.status === "unclear";
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const startCheck = useRef<number | null>(null);
+
+  // The Web Speech API is missing from several in-app webviews, where every
+  // `window.speechSynthesis` call throws. The card only mounts after an
+  // analysis, never during SSR, so reading `window` here is safe.
+  const [ttsSupported] = useState(
+    () => typeof window !== "undefined" && Boolean(window.speechSynthesis),
+  );
 
   // Cancel audio when the card is unmounted (e.g. user resets)
   useEffect(() => {
     return () => {
-      window.speechSynthesis.cancel();
+      if (startCheck.current !== null) window.clearTimeout(startCheck.current);
+      if (ttsSupported) window.speechSynthesis.cancel();
     };
-  }, []);
+  }, [ttsSupported]);
+
+  function stopSpeaking() {
+    if (startCheck.current !== null) {
+      window.clearTimeout(startCheck.current);
+      startCheck.current = null;
+    }
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }
 
   function handleTts() {
+    if (!ttsSupported) return;
+
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
+      stopSpeaking();
       return;
     }
 
@@ -98,6 +117,18 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
     window.speechSynthesis.cancel(); // clear any leftover queue
     window.speechSynthesis.speak(utterance);
     setIsSpeaking(true);
+
+    // An utterance the engine refuses — no installed voice for the requested
+    // language, most often — fires neither `onend` nor `onerror` in some
+    // browsers, which would strand the button on "Stop" forever. Confirm
+    // playback actually started instead of trusting the callbacks alone.
+    if (startCheck.current !== null) window.clearTimeout(startCheck.current);
+    startCheck.current = window.setTimeout(() => {
+      startCheck.current = null;
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        setIsSpeaking(false);
+      }
+    }, 600);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -147,15 +178,17 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
 
       <div className="space-y-3 border-t border-border p-4">
         <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            variant="secondary"
-            icon={isSpeaking ? Square : AudioLines}
-            onClick={handleTts}
-            aria-pressed={isSpeaking}
-            aria-label={isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
-          >
-            {isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
-          </Button>
+          {ttsSupported && (
+            <Button
+              variant="secondary"
+              icon={isSpeaking ? Square : AudioLines}
+              onClick={handleTts}
+              aria-pressed={isSpeaking}
+              aria-label={isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
+            >
+              {isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
+            </Button>
+          )}
 
           {onReset && (
             isUnclear ? (

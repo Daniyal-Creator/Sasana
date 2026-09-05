@@ -53,7 +53,10 @@ export default function CheckPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col justify-between">
+    // `main` is already `flex-1` inside the layout's `min-h-dvh` column, so
+    // filling the viewport is `flex-1` — not a `100vh` calc, which overshoots
+    // by the height of the mobile URL bar and pushes the footer off-screen.
+    <div className="flex flex-1 flex-col justify-between">
       <div className="mx-auto w-full max-w-container flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
           {t(lang, "check.title")}

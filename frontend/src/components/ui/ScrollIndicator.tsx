@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { ArrowDown } from "lucide-react";
+import { getLenis } from "@/components/providers/SmoothScroll";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
 
@@ -45,7 +46,20 @@ export function ScrollIndicator() {
   }, [update]);
 
   function scrollDown() {
-    window.scrollBy({ top: window.innerHeight * 0.8, behavior: "smooth" });
+    const target = window.scrollY + window.innerHeight * 0.8;
+
+    // Lenis drives the scroll position itself; a native smooth scroll on top
+    // of it stutters or gets overwritten outright.
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.scrollTo(target);
+      return;
+    }
+
+    // No Lenis means smooth scrolling is off — under `prefers-reduced-motion`,
+    // in particular — so jump rather than animate (Guardrail §7 M5).
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: target, behavior: prefersReduced ? "auto" : "smooth" });
   }
 
   return (

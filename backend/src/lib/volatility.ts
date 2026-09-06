@@ -18,6 +18,15 @@
 // net only catches the obvious misses, so it is tuned for precision. A few
 // escapes are cheaper than killing a good answer, and a false positive here is
 // invisible - the visitor just sees a refusal and never learns why.
+//
+// The patterns are read twice, against two different things. Over an ANSWER
+// they decide whether it may be shown at all. Over a QUESTION they decide only
+// which refusal a visitor reads, and that second reading exists because a live
+// run showed the first one is not enough: asked "berapa harga tiket masuk?",
+// the model refused on its own, the net never fired, and the refusal came back
+// worded as though no rule covered the topic - offering "Akses", matched on the
+// word "masuk". The visitor asked about a price and was offered the inner
+// courtyard.
 
 // Phrases, not bare stems, and the reason is worth keeping in view: `tutup`
 // lives inside `menutupi bahu` - cover your shoulders - which is among the most
@@ -54,4 +63,33 @@ const VOLATILE = [
  */
 export function statesVolatileFact(answer: string): boolean {
   return VOLATILE.some((pattern) => pattern.test(answer));
+}
+
+// Shapes a question takes that a statement does not. "Jam buka berapa?" is
+// already caught by the list above; these are the ones that only appear when
+// somebody is asking.
+//
+// Kept as narrow as the rest, and for the same reason: a false positive sends a
+// perfectly answerable question to the wrong refusal. "kapan" alone is far too
+// broad - "kapan canang diletakkan?" is daily practice and has an answer - so
+// it is only matched against the nouns that make it a request for a date.
+const VOLATILE_QUESTION = [
+  /\bbuka\s+jam\s+berapa\b/i,
+  /\b(masih|sedang|lagi)\s+(buka|tutup)\b/i,
+  /\bberapa\s+harga/i,
+  /\bhow\s+much\b/i,
+  /\b(is|are)\s+(it|they)\s+open\b/i,
+  /\bkapan\s+(upacara|odalan|piodalan|melasti|ngaben|ceremony)\b/i,
+  /\bwhen\s+is\s+the\s+(ceremony|odalan|festival)\b/i,
+];
+
+/**
+ * True when the question is asking for something that will not stay true.
+ *
+ * Used only to choose the wording of a refusal, never to suppress an answer.
+ * Getting it wrong therefore costs a sentence, not a fact - which is why it can
+ * afford to read the question at all, where the answer-side net cannot.
+ */
+export function asksForVolatileFact(question: string): boolean {
+  return statesVolatileFact(question) || VOLATILE_QUESTION.some((p) => p.test(question));
 }

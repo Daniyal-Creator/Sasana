@@ -17,7 +17,7 @@ import type { RefusalReason } from "@/lib/prompts";
 import { withRetry } from "@/lib/retry";
 import { withTimeout } from "@/lib/timeout";
 import { HISTORY_LIMIT } from "@/lib/validation";
-import { statesVolatileFact } from "@/lib/volatility";
+import { asksForVolatileFact, statesVolatileFact } from "@/lib/volatility";
 import type { Rule } from "@/lib/types";
 import type {
   ChatKind,
@@ -299,8 +299,20 @@ export function safeParseChat(
 
   // A refusal is built rather than looked up: which one a visitor reads depends
   // on why the answer was refused, and only this function knows that.
-  const refuse = (reason: RefusalReason = "uncovered"): ChatResponse => ({
-    answer: buildRefusal(message, lang, rules, reason),
+  //
+  // When the net fires, the reason is settled - the answer said something that
+  // expires. Every other refusal falls back to reading the QUESTION, because
+  // the model usually declines these on its own and the net never sees them.
+  // Without that fallback, "berapa harga tiket masuk?" came back worded as
+  // though no rule covered the topic, and offered a rule matched on the word
+  // "masuk".
+  const refuse = (reason?: RefusalReason): ChatResponse => ({
+    answer: buildRefusal(
+      message,
+      lang,
+      rules,
+      reason ?? (asksForVolatileFact(message) ? "volatile" : "uncovered"),
+    ),
     kind: "none",
     ruleIds: [],
     source: null,

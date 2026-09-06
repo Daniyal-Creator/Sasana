@@ -34,6 +34,9 @@ services:
     volumes:
       - ./backend/src:/app/backend/src
       - ./shared:/app/shared
+      # The answer cache's SQLite file. Bind-mounted rather than named so a
+      # developer can open it, and git-ignored so it never gets committed.
+      - ./backend/data:/app/backend/data
     command: npm run dev
     healthcheck:
       # The script must stay quoted: unquoted, YAML reads the "? " and ": " in

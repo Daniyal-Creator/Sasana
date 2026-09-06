@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // The import attribute is required for JSON under Node's ESM loader.
 import rulesData from "@/data/rules.json" with { type: "json" };
 import { KnowledgeBaseError } from "@/lib/errors";
@@ -45,6 +46,28 @@ function validateRule(raw: unknown, i: number): Rule {
 export function loadRules(): Rule[] {
   if (!cache) cache = parseRules(rulesData);
   return cache;
+}
+
+let hash: string | null = null;
+
+/**
+ * A fingerprint of the knowledge base, computed once at first use.
+ *
+ * The answer cache stores it alongside every entry and treats a mismatch as a
+ * miss. That is the whole invalidation strategy, and it is the right one: an
+ * answer derived from these rules does not go stale because time passed, it
+ * goes stale when the rules change. A TTL would throw away answers that are
+ * still correct while keeping ones that are not.
+ *
+ * Deriving it from the file beats a version number a human has to remember to
+ * raise, because the human who forgets is the one editing rules at midnight
+ * before a demo.
+ */
+export function rulesHash(): string {
+  if (!hash) {
+    hash = createHash("sha256").update(JSON.stringify(rulesData)).digest("hex").slice(0, 16);
+  }
+  return hash;
 }
 
 // Resolves rule ids - as sent by a client alongside a Site - against the loaded
@@ -99,7 +122,57 @@ const STOPWORDS = new Set([
   "adalah", "saya", "anda", "kamu", "bisa", "boleh", "harus", "tidak", "ada", "juga",
   "saja", "sudah", "akan", "masih", "lagi", "kalau", "jika", "bagaimana", "kenapa",
   "mengapa", "dimana", "kah",
+  // Added when the answer cache started keying on these tokens. Every one is a
+  // question word or filler; none is a domain term.
+  "berapa", "mana", "siapa", "kapan", "tolong", "mohon", "gimana", "sih", "dong",
+  "nya", "lah", "kek", "deh", "ya",
 ]);
+
+// Indonesian clitics. Stripping them lets "bolehkah" reach the stopword list as
+// "boleh", and "upacaranya" match "upacara", without attempting real morphology:
+// prefixes carry nasal assimilation ("memakai" is me+pakai) and a naive stripper
+// mangles more words than it fixes.
+//
+// The three-character floor is what keeps the safe words safe. "punya" and
+// "tanya" both end in -nya, and both leave two letters behind, so neither is
+// touched.
+const CLITICS = ["kah", "lah", "nya"];
+const MIN_STEM = 3;
+
+function stripClitic(token: string): string {
+  for (const clitic of CLITICS) {
+    if (token.endsWith(clitic) && token.length - clitic.length >= MIN_STEM) {
+      return token.slice(0, -clitic.length);
+    }
+  }
+  return token;
+}
+
+/**
+ * The content words of a question, lowercased, deduplicated and sorted.
+ *
+ * This is the answer cache's key, and it deliberately shares its tokenizer with
+ * `searchRules`: both are asking "what is this question about", and two answers
+ * to that question would be two behaviours to keep in step.
+ *
+ * Sorting is what makes it a key rather than a fingerprint of phrasing. "Boleh
+ * pakai celana pendek tidak?" and "Apakah saya boleh pakai celana pendek?" both
+ * reduce to `celana|pakai|pendek`, so the second visitor to ask is served the
+ * first one's answer without a model call.
+ *
+ * What it cannot do is synonyms: "shorts" and "celana pendek" are different
+ * keys, and always will be without embeddings. That trade is the point - an
+ * embedding call per question would add tokens to a feature whose whole purpose
+ * is removing them.
+ */
+export function normalizeQuestion(message: string): string {
+  const tokens = message
+    .toLowerCase()
+    .split(/\W+/)
+    .map(stripClitic)
+    .filter((token) => token.length > 2 && !STOPWORDS.has(token));
+  return [...new Set(tokens)].sort().join("|");
+}
 
 function keywordMatchesToken(keyword: string, token: string): boolean {
   if (keyword === token) return true;

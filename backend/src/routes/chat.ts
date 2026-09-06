@@ -1,7 +1,8 @@
-import { chatCache, chatCacheKey } from "@/lib/cache";
+import { answerCache } from "@/lib/answer-cache";
+import { answerKey } from "@/lib/cache";
 import { askQuestion } from "@/lib/gemini";
 import { handleApiError, parseJsonBody } from "@/lib/http";
-import { loadRules, rulesByIds } from "@/lib/knowledge";
+import { loadRules, normalizeQuestion, rulesByIds, rulesHash } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
 import { detectPlaceQuery, findNearbyPlaces } from "@/lib/places";
 import { validateChatRequest } from "@/lib/validation";
@@ -28,13 +29,11 @@ export async function POST(req: Request): Promise<Response> {
     // history, so a cached answer keyed on the question alone could land in the
     // wrong conversation.
     const cacheable = parsed.history.length === 0;
-    // The Site belongs in the key: once it reaches the prompt the answer is
-    // about that place, and serving Tanah Lot's answer at Besakih would be a
-    // confident wrong Custom - the failure this app exists to prevent.
-    const key = chatCacheKey(parsed.message, lang, parsed.site?.id);
+    const kbHash = rulesHash();
+    const key = answerKey(normalizeQuestion(parsed.message), lang, parsed.site?.id);
 
     if (cacheable) {
-      const hit = chatCache.get(key);
+      const hit = answerCache.get(key, kbHash);
       if (hit) {
         logInfo({
           route: "chat",
@@ -67,17 +66,26 @@ export async function POST(req: Request): Promise<Response> {
           })
         : [];
 
-    const answer = await askQuestion(parsed.message, parsed.history, lang, rules, {
-      site: parsed.site,
-      siteRules,
-      places,
-    });
+    const { response: answer, totalTokens } = await askQuestion(
+      parsed.message,
+      parsed.history,
+      lang,
+      rules,
+      { site: parsed.site, siteRules, places },
+    );
 
-    // A map answer is never cached. Everything else here is derived from a
-    // knowledge base that changes when somebody edits it; this one describes
-    // the world, which changes on its own. A guest house that closes would
-    // otherwise keep being recommended by a stored sentence.
-    if (cacheable && answer.kind !== "places") chatCache.set(key, answer);
+    // Two kinds are deliberately never stored.
+    //
+    // `places` describes the world, which changes on its own, so a guest house
+    // that closes would otherwise keep being named by a stored sentence. Every
+    // other answer here derives from a knowledge base that only changes when
+    // somebody edits it, and the hash catches that.
+    //
+    // `none` is a refusal. Storing failures would let one unlucky model call
+    // become the permanent answer to a question the app can perfectly well
+    // handle - which is the shape of the bug this whole effort started from.
+    const storable = answer.kind !== "places" && answer.kind !== "none";
+    if (cacheable && storable) answerCache.set(key, answer, totalTokens ?? 0, kbHash);
 
     logInfo({
       route: "chat",
@@ -89,6 +97,7 @@ export async function POST(req: Request): Promise<Response> {
       siteRules: siteRules.length,
       placeQuery: category ?? undefined,
       places: places.length,
+      cached: cacheable && storable,
       lang,
     });
     return Response.json(answer, { status: 200, headers: { "x-cache": "MISS" } });

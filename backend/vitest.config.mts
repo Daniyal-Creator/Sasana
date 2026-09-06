@@ -20,6 +20,11 @@ export default defineConfig({
       // Both advance fake timers by 10s, which has to overshoot these.
       GEMINI_VISION_TIMEOUT_MS: "5000",
       GEMINI_CHAT_TIMEOUT_MS: "5000",
+      // The answer cache must never touch the real database. Test files run in
+      // parallel and would otherwise all open the same file, which SQLite
+      // answers with "database is locked" - and a suite that writes to the
+      // store it is testing carries results between runs.
+      CACHE_DB_PATH: ":memory:",
     },
   },
 });

@@ -126,10 +126,17 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
 
 Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
 
-- **Pencocokan lewat normalisasi token.** Stopword dibuang, kata sisanya
-  diurutkan, hasilnya jadi kunci — `STOPWORDS` EN+ID di `lib/knowledge.ts`
-  dipakai ulang. "boleh pakai celana pendek?" dan "apakah celana pendek boleh?"
-  bertemu di kunci yang sama. **Nol panggilan API tambahan.**
+- **Pencocokan lewat normalisasi token.** Stopword dan klitik dibuang, kata
+  sisanya diurutkan, hasilnya jadi kunci — `STOPWORDS` EN+ID di
+  `lib/knowledge.ts` dipakai ulang lewat `normalizeQuestion()`. Empat cara
+  menanyakan hal yang sama bertemu di `celana|pakai|pendek`. **Nol panggilan API
+  tambahan.**
+
+  Klitik `-kah`, `-lah`, `-nya` dilucuti dengan batas sisa 3 huruf, sehingga
+  "bolehkah" sampai ke stopword "boleh" tanpa merusak "punya" atau "tanya".
+  Prefiks tidak disentuh: bahasa Indonesia memakai peluluhan nasal, "memakai"
+  adalah me+pakai, dan pelucut naif merusak lebih banyak kata daripada yang
+  diperbaikinya.
 
   Embedding ditolak justru karena alasan akademik: menambah satu panggilan API
   per pertanyaan pada sistem yang tesisnya adalah penghematan token adalah
@@ -137,6 +144,12 @@ Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
 - **`node:sqlite` bawaan Node.** `backend/Dockerfile` memakai `node:24-alpine`,
   jadi modul ini tersedia tanpa dependensi baru — lolos `AGENTS.md` aturan 4
   tanpa menyentuh `package.json`. Butuh volume baru di `docker-compose.yml`.
+
+  *Menaikkan batas Node proyek ke 24.* `node:sqlite` baru ada sejak 22.5.
+  Ketahuan karena CI merah padahal lokal hijau: workflow menguji di Node 20
+  sementara kedua Dockerfile mengirim Node 24, jadi **CI selama ini membuktikan
+  kode bekerja di runtime yang tidak pernah dideploy**. Sekarang keduanya 24,
+  dan README menyebut batas yang sebenarnya.
 - **Invalidasi lewat hash isi `rules.json`**, dihitung sekali di `loadRules()`.
   Hash berbeda = anggap miss. Versi manual ditolak karena bergantung pada
   disiplin manusia yang pasti gagal di malam sebelum demo.
@@ -168,7 +181,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
 | 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
 | 6 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
-| 7 | Cache SQLite + `GET /api/stats`. | belum |
+| 7 | Cache SQLite + `GET /api/stats`. | selesai, belum di-merge |
 
 Cache sengaja ditaruh terakhir. Cache yang dibangun di atas gerbang yang masih
 membuang jawaban bagus akan meng-cache kegagalan itu dan mengabadikannya.
@@ -189,8 +202,9 @@ Dua, sebagai bagian dari PR yang bersangkutan.
   *"Never invent a rule. Ungrounded answers say so plainly."*) — ditulis sebagai
   [`docs/adr/0014-assistant-answer-tiers.md`](../../docs/adr/0014-assistant-answer-tiers.md).
 - **Cache persisten dan pilihan SQLite**, termasuk alasan hash `rules.json`
-  supaya orang berikutnya tidak menghapusnya karena mengira berlebihan.
-  Ditulis bersama PR-7 sebagai ADR-0016.
+  supaya orang berikutnya tidak menghapusnya karena mengira berlebihan —
+  ditulis sebagai
+  [`docs/adr/0016-persistent-answer-cache.md`](../../docs/adr/0016-persistent-answer-cache.md).
 
 `docs/adr/0004-no-open-closed-status.md` **tidak dicabut.** Ia melarang jam buka
 dan status buka/tutup; pagar volatilitas melarang kelas fakta yang persis sama.

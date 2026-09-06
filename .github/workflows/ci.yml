@@ -3,6 +3,12 @@
 # Two jobs rather than one, because there is no package.json at the repository
 # root: frontend/ and backend/ each install and test on their own. They are
 # independent, so a red backend still tells you whether the frontend is fine.
+#
+# Node 24 because that is what both Dockerfiles ship. This used to say 20, which
+# meant a green run proved the code worked on a runtime nobody deploys - a gap
+# that stayed harmless until the answer cache started importing `node:sqlite`,
+# which does not exist before 22.5. CI passed on the developer machines and
+# failed here, which is exactly backwards.
 name: CI
 
 on:
@@ -20,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       # `npm ci`, not `npm install`: it installs exactly what the lockfile says
@@ -39,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: backend/package-lock.json
       - run: npm ci

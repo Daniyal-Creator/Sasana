@@ -107,6 +107,10 @@ skills-lock.json
 # above only cover the root one, so this line restores the rest.
 */.scratch/
 
+# The answer cache's SQLite file. Generated at run time, machine-specific, and
+# it would carry one developer's questions into everyone else's checkout.
+backend/data/
+
 # Local agent tooling state, not part of the product.
 .impeccable/
 .codex/

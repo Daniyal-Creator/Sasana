@@ -185,13 +185,20 @@ export interface ChatRequestContext {
   places?: Place[];
 }
 
+/** An answer plus what it cost, which is what the cache records as saved. */
+export interface AnsweredQuestion {
+  response: ChatResponse;
+  /** `usageMetadata.totalTokenCount`, absent when the API declined to report it. */
+  totalTokens?: number;
+}
+
 export async function askQuestion(
   message: string,
   history: ChatMessage[],
   lang: Lang,
   rules: Rule[],
   { site, siteRules = [], places = [] }: ChatRequestContext = {},
-): Promise<ChatResponse> {
+): Promise<AnsweredQuestion> {
   const started = Date.now();
   const contents = [
     ...history.slice(-HISTORY_LIMIT).map((m) => ({
@@ -237,7 +244,7 @@ export async function askQuestion(
       outputTokens: res.usageMetadata?.candidatesTokenCount,
       totalTokens: res.usageMetadata?.totalTokenCount,
     });
-    return result;
+    return { response: result, totalTokens: res.usageMetadata?.totalTokenCount };
   } catch (err) {
     logError({
       route: "chat",

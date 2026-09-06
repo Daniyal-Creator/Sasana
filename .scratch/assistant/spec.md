@@ -144,6 +144,18 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   makanan. Kata yang berguna adalah kata yang **membedakan** satu rule dari
   yang lain.
 
+- **Prompt hanya membawa rule yang relevan.** `selectRules()` mengirim 5 teratas
+  dari `searchRules` plus rule Site, dan **jatuh ke KB penuh saat retrieval
+  kosong**. Terukur live: 3.880 -> 1.635 token, rata-rata 8,4 rule dari 27.
+  [`docs/adr/0017`](../../docs/adr/0017-retrieval-instead-of-context-stuffing.md).
+
+  *Diputuskan setelah diukur, bukan sebelum.* Korpus pertama saya memberi recall
+  100% di k=3, tapi saya menulisnya sambil melihat rule-nya jadi kosakatanya
+  condong cocok. Korpus kedua yang sengaja menghindari kata-kata di keyword
+  memberi 79% — dan bentuk kegagalannya yang menentukan rancangan: retrieval
+  **tidak pernah** menaruh rule yang benar di peringkat bawah, ia gagal dengan
+  mengembalikan **nol**. Maka nol itulah satu-satunya yang tidak dipercaya.
+
 ### Cache dan hemat token
 
 Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
@@ -203,7 +215,8 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
 | 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
 | 6 | Isi KB: 13 → 27 rule bersumber, plus standar sumber sebagai test. | sebagian, belum di-merge |
-| 7 | Cache SQLite + `GET /api/stats`. | selesai, belum di-merge |
+| 7 | Cache SQLite + `GET /api/stats`. | selesai |
+| 8 | Retrieval: prompt hanya membawa rule yang relevan. | sedang dikerjakan |
 
 Cache sengaja ditaruh terakhir. Cache yang dibangun di atas gerbang yang masih
 membuang jawaban bagus akan meng-cache kegagalan itu dan mengabadikannya.

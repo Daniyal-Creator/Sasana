@@ -84,14 +84,17 @@ describe("POST /api/chat — grounded answers", () => {
     });
   });
 
-  it("sends the whole knowledge base, the tier ladder and both fences in the system prompt", async () => {
+  it("sends the rules the question is about, the tier ladder and both fences", async () => {
     mockAnswer(GROUNDED);
     await POST(post({ message: "Can I fly a drone?", lang: "en", history: [] }));
 
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
-    // The whole KB, every rule addressable by id.
-    expect(systemInstruction).toContain("1. (id: temple-attire) [Dress Code]");
-    expect(systemInstruction).toContain("13. (id: no-littering)");
+    // The rule that answers is there, addressable by id...
+    expect(systemInstruction).toContain("(id: drone-restriction)");
+    // ...and the twenty-six that have nothing to do with drones are not, which
+    // is the whole point: the prompt used to carry all of them.
+    expect(systemInstruction).not.toContain("(id: menstruation-entry)");
+    expect(systemInstruction).not.toContain("(id: money-exchange)");
     // All four tiers offered, strongest first.
     expect(systemInstruction).toContain('1. "rule"');
     expect(systemInstruction).toContain('2. "context"');
@@ -271,12 +274,15 @@ describe("POST /api/chat — volatility fence", () => {
   });
 
   it("does not run the fence over a grounded answer", async () => {
+    // The cited rule has to be one this question actually retrieves, now that
+    // the prompt carries a selection: a model naming a rule it was not shown is
+    // working from memory, and the citation check refuses it.
     mockAnswer({
-      answer: "Aturan menyebut jam buka tidak diatur; ikuti petugas.",
+      answer: "Aturan menyebut jam buka tidak diatur; ikuti petugas dan papan di pura.",
       kind: "rule",
-      ruleIds: ["general-conduct"],
+      ruleIds: ["sacred-area-entry"],
     });
-    const res = await POST(post({ message: "Kapan boleh masuk?", lang: "id", history: [] }));
+    const res = await POST(post({ message: "Kapan boleh masuk area suci?", lang: "id", history: [] }));
 
     expect((await readBody(res)).kind).toBe("rule");
   });

@@ -153,10 +153,13 @@ export function buildChatSystemPrompt(
   lang: Lang,
   { site, siteRules = [], places = [] }: ChatPromptContext = {},
 ): string {
-  // The whole KB stays in RULES even when a Site is known: a visitor standing
-  // at Besakih may still ask something general, and narrowing the list would
-  // turn an answerable question into a refusal. The Site is added as a place to
-  // read "here" from, not as a filter.
+  // RULES carries the selection `selectRules` made for this question, not the
+  // whole knowledge base. It used to carry everything, on the reasoning that
+  // narrowing would turn an answerable question into a refusal - which was
+  // right, and is now handled where it belongs: retrieval falls back to the
+  // full list whenever it finds nothing, which measurement showed is the only
+  // way it fails. The Site is still a place to read "here" from rather than a
+  // filter, and its own rules ride along in the selection regardless.
   const location =
     site && siteRules.length > 0
       ? `

@@ -53,8 +53,12 @@ const GROUNDED = {
   ruleIds: ["temple-attire"],
 };
 
-const EN_FALLBACK = "I don't have official information on that in the Bali code of conduct.";
-const ID_FALLBACK = "Saya tidak punya informasi resmi soal itu dalam tata krama Bali.";
+// A refusal is now built per question, so tests assert its opening rather than
+// the whole string. The rest is the offer of what the knowledge base does hold,
+// and that changes as rules are added.
+const EN_REFUSED = "I don't have an official rule for that yet.";
+const ID_REFUSED = "Saya belum punya aturan resmi soal itu.";
+const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -116,7 +120,8 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
     const res = await POST(post({ message: "What time is the football match?", lang: "en", history: [] }));
 
     const json = await readBody(res);
-    expect(json).toEqual({ answer: EN_FALLBACK, kind: "none", ruleIds: [], source: null });
+    expect(json).toMatchObject({ kind: "none", ruleIds: [], source: null });
+    expect(json.answer).toContain(EN_REFUSED);
   });
 
   // The heart of it: the model can claim grounding, but only the knowledge base
@@ -129,7 +134,7 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
     expect(json.kind).toBe("none");
     expect(json.ruleIds).toEqual([]);
     expect(json.source).toBeNull();
-    expect(json.answer).toBe(EN_FALLBACK);
+    expect(json.answer).toContain(EN_REFUSED);
   });
 
   // The bug this whole change exists to kill: a good answer used to be thrown
@@ -162,7 +167,8 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
 
     expect(res.status).toBe(200);
     const json = await readBody(res);
-    expect(json).toEqual({ answer: ID_FALLBACK, kind: "none", ruleIds: [], source: null });
+    expect(json).toMatchObject({ kind: "none", ruleIds: [], source: null });
+    expect(json.answer).toContain(ID_REFUSED);
   });
 
   it("falls back when ruleIds is not an array", async () => {
@@ -241,7 +247,11 @@ describe("POST /api/chat — volatility fence", () => {
 
     const json = await readBody(res);
     expect(json.kind).toBe("none");
-    expect(json.answer).toBe(EN_FALLBACK);
+    // Refused for stating something that expires, so the visitor is told that,
+    // and pointed at someone who does know, rather than being told there is no
+    // rule - which was never what they asked about.
+    expect(json.answer).toContain(EN_VOLATILE);
+    expect(json.answer).toContain("temple staff");
   });
 
   // The fence must not fire on the answers this app exists to give. "tutup"
@@ -348,7 +358,7 @@ describe("POST /api/chat — nearby places from the map", () => {
 
     const json = await readBody(res);
     expect(json.kind).toBe("none");
-    expect(json.answer).toBe(ID_FALLBACK);
+    expect(json.answer).toContain(ID_REFUSED);
   });
 
   it("still answers when Overpass is down, without an error card", async () => {
@@ -473,7 +483,7 @@ describe("POST /api/chat — request validation", () => {
     mockAnswer({ answer: "x", kind: "none", ruleIds: [] });
     const res = await POST(post({ message: "hello", lang: "fr", history: [] }));
 
-    expect((await readBody(res)).answer).toBe(EN_FALLBACK);
+    expect((await readBody(res)).answer).toContain(EN_REFUSED);
   });
 });
 

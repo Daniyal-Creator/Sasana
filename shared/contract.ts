@@ -82,21 +82,26 @@ export interface VisionResult {
 }
 
 /**
- * What an assistant answer is standing on.
+ * What an assistant answer is standing on, strongest first.
  *
  * - `rule` — the answer cites Rules the server resolved against its own
- *   knowledge base. `ruleIds` names them and `source` carries their attribution.
- * - `context` — cultural explanation with no Rule behind it. Answered, but
- *   never presented as official guidance. Nothing produces this yet; the server
- *   half lands with tier 2 (see `.scratch/assistant/spec.md`).
- * - `none` — nothing in the knowledge base covers the question, so the answer
- *   is the official fallback.
+ *   knowledge base. `ruleIds` names them and `source` carries their
+ *   attribution. The only tier that carries official weight.
+ * - `context` — Balinese custom or the meaning of something, with no Rule
+ *   behind it. Answered, never presented as official guidance.
+ * - `general` — Bali more broadly: history, culture, geography, the background
+ *   of its tourism. The model's own knowledge, labelled as such.
+ * - `none` — the question cannot be answered, so the answer is the official
+ *   fallback. Covers both "nothing covers this" and the refusals the
+ *   volatility fence requires (opening hours, prices, what is happening today,
+ *   which hotel to book).
  *
- * This replaced a `grounded: boolean` that could not tell `context` from
- * `none`: "I can explain, without an official rule" and "I cannot help" are
- * different things to read on a phone at a temple gate.
+ * This replaced a `grounded: boolean`, which could not tell any of the middle
+ * states from each other: "I can explain, without an official rule", "here is
+ * background about Bali", and "I cannot help" are three different things to
+ * read on a phone at a temple gate.
  */
-export type ChatKind = "rule" | "context" | "none";
+export type ChatKind = "rule" | "context" | "general" | "none";
 
 /** `POST /api/chat` response body. */
 export interface ChatResponse {

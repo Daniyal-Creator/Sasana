@@ -43,20 +43,30 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   rule yang ia pakai; server yang mengambil teks sumbernya lewat `rulesByIds()`.
   Id yang tidak dikenal KB dibuang, bukan digemakan kembali. Klaim grounding
   jadi **bisa diverifikasi**, bukan sekadar kata sifat yang diketik model.
-- **Cakupan lebar tapi berbatas.** Makna budaya dan etiket di luar pura masuk.
-  Logistik (jam buka, tiket, jadwal upacara) dan tanya-jawab Bali umum tetap
-  ditolak — `docs/adr/0004-no-open-closed-status.md` berlaku penuh.
-- **Dua tingkat jawaban**, diwakili `kind: "rule" | "context" | "none"`.
-  `grounded: boolean` dihapus dari kontrak; satu sumber kebenaran, tiga keadaan
-  eksplisit.
+- **Cakupan selebar mungkin, dibatasi volatilitas dan bukan topik.** Adat,
+  makna budaya, sejarah, dan latar pariwisata semuanya masuk. Yang ditolak
+  hanya fakta yang berubah — `docs/adr/0004-no-open-closed-status.md` berlaku
+  penuh.
+- **Tiga tingkat jawaban**, diwakili
+  `kind: "rule" | "context" | "general" | "none"`. `grounded: boolean` dihapus
+  dari kontrak; satu sumber kebenaran, empat keadaan eksplisit.
+
+  *Direvisi 2026-09-06.* Rancangan awal berhenti di dua tingkat. Bukti dari
+  layar sungguhan mengubahnya: dua pertanyaan berturut-turut — "boleh membawa
+  makanan ke pura?" dan "ada penginapan bagus di Tanah Lot?" — dijawab dengan
+  kalimat penolakan yang sama persis, padahal sebabnya berbeda. Yang pertama
+  lubang KB, yang kedua memang di luar. Tingkat 3 dibuka untuk yang kedua.
 - **Server hanya boleh menurunkan tingkat, tidak pernah menaikkan.** Model
   mengajukan `kind`, server memverifikasi terhadap KB dan menurunkannya kalau
   klaimnya tidak berdiri. Setiap kegagalan model mendorong jawaban ke arah yang
   lebih hati-hati.
-- **Pagar volatilitas, bukan pagar topik.** Tingkat 2 boleh menjelaskan *apa
-  arti sesuatu*, tidak pernah *apa yang sedang terjadi*. Semua fakta yang
-  berubah menurut tanggal, jam, harga, cuaca, atau jadwal dilarang mutlak —
-  prompt plus saringan di server.
+- **Pagar volatilitas, bukan pagar topik.** Tingkat 2 dan 3 boleh menjelaskan
+  *apa arti sesuatu* dan *apa yang pernah terjadi*, tidak pernah *apa yang
+  sedang terjadi*. Semua fakta yang berubah menurut tanggal, jam, harga, cuaca,
+  atau jadwal dilarang mutlak. Rekomendasi bisnis — hotel, restoran, pemandu,
+  tur — ikut ditolak: tidak ada cara memeriksa tempatnya masih ada atau masih
+  bagus. Ditegakkan lewat prompt sebagai pagar utama, plus saringan sempit di
+  server sebagai jaring.
 
   Ini pergeseran cara pikir yang penting: bahayanya bukan topik, melainkan
   volatilitas. Fakta yang berubah adalah fakta yang akan menjadi salah, dan
@@ -116,10 +126,10 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 
 | PR | Isi | Status |
 | --- | --- | --- |
-| 1 | Kontrak: `kind` + `ruleIds` menggantikan `grounded` + `source`. Tabel area README. | sedang dikerjakan |
-| 2 | Tingkat 2 di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | belum |
+| 1 | Kontrak: `kind` + `ruleIds` menggantikan `grounded` + `source`. Tabel area README. | selesai, belum di-merge |
+| 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | sedang dikerjakan |
 | 3 | Penolakan yang mengalihkan lewat `searchRules()`. | belum |
-| 4 | UI dua tingkat: ikon + copy di `SourceReference`. | belum |
+| 4 | UI tiga tingkat: ikon + copy di `SourceReference`. | belum |
 | 5 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
 | 6 | Cache SQLite + `GET /api/stats`. | belum |
 

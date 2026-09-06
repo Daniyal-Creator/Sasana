@@ -127,7 +127,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | PR | Isi | Status |
 | --- | --- | --- |
 | 1 | Kontrak: `kind` + `ruleIds` menggantikan `grounded` + `source`. Tabel area README. | selesai, belum di-merge |
-| 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | sedang dikerjakan |
+| 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | selesai, belum di-merge |
 | 3 | Penolakan yang mengalihkan lewat `searchRules()`. | belum |
 | 4 | UI tiga tingkat: ikon + copy di `SourceReference`. | belum |
 | 5 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
@@ -148,10 +148,9 @@ lebih baik dan cakupan yang hampir sama.
 
 Dua, sebagai bagian dari PR yang bersangkutan.
 
-- **Tingkat 2 melonggarkan guardrail W6** (`docs/design-guardrails.md`:
-  *"Never invent a rule. Ungrounded answers say so plainly."*). ADR-nya harus
-  menyebut klausul yang dilonggarkan, pagar volatilitas sebagai gantinya, dan
-  siapa yang menegakkannya. Ditulis bersama PR-2.
+- **Tingkat 2 dan 3 melonggarkan guardrail W6** (`docs/design-guardrails.md`:
+  *"Never invent a rule. Ungrounded answers say so plainly."*) — ditulis sebagai
+  [`docs/adr/0014-assistant-answer-tiers.md`](../../docs/adr/0014-assistant-answer-tiers.md).
 - **Cache persisten dan pilihan SQLite**, termasuk alasan hash `rules.json`
   supaya orang berikutnya tidak menghapusnya karena mengira berlebihan.
   Ditulis bersama PR-6.

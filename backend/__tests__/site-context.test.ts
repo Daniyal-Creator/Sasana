@@ -248,6 +248,7 @@ describe("the Site reaching the routes", () => {
       .mockResolvedValueOnce({
         text: JSON.stringify({
           answer: "At Tirta Empul, keep your shoulders covered.",
+          kind: "rule",
           ruleIds: ["temple-attire"],
         }),
         usageMetadata: { totalTokenCount: 100 },
@@ -255,6 +256,7 @@ describe("the Site reaching the routes", () => {
       .mockResolvedValueOnce({
         text: JSON.stringify({
           answer: "At Besakih, keep your shoulders covered.",
+          kind: "rule",
           ruleIds: ["temple-attire"],
         }),
         usageMetadata: { totalTokenCount: 100 },
@@ -285,6 +287,7 @@ describe("the Site reaching the routes", () => {
     generateContent.mockResolvedValue({
       text: JSON.stringify({
         answer: "Keep your shoulders covered.",
+        kind: "rule",
         ruleIds: ["temple-attire"],
       }),
       usageMetadata: { totalTokenCount: 100 },

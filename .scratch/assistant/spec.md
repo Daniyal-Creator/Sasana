@@ -144,6 +144,12 @@ Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
 - **`node:sqlite` bawaan Node.** `backend/Dockerfile` memakai `node:24-alpine`,
   jadi modul ini tersedia tanpa dependensi baru — lolos `AGENTS.md` aturan 4
   tanpa menyentuh `package.json`. Butuh volume baru di `docker-compose.yml`.
+
+  *Menaikkan batas Node proyek ke 24.* `node:sqlite` baru ada sejak 22.5.
+  Ketahuan karena CI merah padahal lokal hijau: workflow menguji di Node 20
+  sementara kedua Dockerfile mengirim Node 24, jadi **CI selama ini membuktikan
+  kode bekerja di runtime yang tidak pernah dideploy**. Sekarang keduanya 24,
+  dan README menyebut batas yang sebenarnya.
 - **Invalidasi lewat hash isi `rules.json`**, dihitung sekali di `loadRules()`.
   Hash berbeda = anggap miss. Versi manual ditolak karena bergantung pada
   disiplin manusia yang pasti gagal di malam sebelum demo.

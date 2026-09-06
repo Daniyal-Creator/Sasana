@@ -2,6 +2,8 @@ import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { env } from "@/lib/env";
 import { describeError, toGeminiError } from "@/lib/errors";
 import { rulesByIds } from "@/lib/knowledge";
+import { PLACES_SOURCE } from "@/lib/places";
+import type { Place } from "@/lib/places";
 import { logError, logInfo } from "@/lib/logger";
 import {
   buildChatSystemPrompt,
@@ -55,7 +57,20 @@ const VISION_SCHEMA = {
   propertyOrdering: ["status", "reason", "suggestion", "reference"],
 };
 
-const CHAT_KINDS: ChatKind[] = ["rule", "context", "general", "none"];
+// Written as a Record keyed by ChatKind rather than a plain array, because an
+// array of the right type can silently be missing a member - `places` was added
+// to the contract and left out here, and every answer claiming the new tier was
+// quietly refused, schema enum included. A Record literal has to name every
+// member or it does not compile, so the next tier added to `ChatKind` breaks the
+// build here rather than failing in production.
+const CHAT_KIND_SET: Record<ChatKind, true> = {
+  rule: true,
+  context: true,
+  general: true,
+  places: true,
+  none: true,
+};
+const CHAT_KINDS = Object.keys(CHAT_KIND_SET) as ChatKind[];
 
 // The model names rule ids and declares its own tier; it no longer types the
 // attribution itself. All three fields are required, so "forgot to fill it in"
@@ -160,13 +175,21 @@ export function safeParseVision(text: string | undefined, lang: Lang): VisionRes
   }
 }
 
+/** Everything the answer is built from besides the question and the history. */
+export interface ChatRequestContext {
+  site?: SiteContext;
+  /** Resolved server-side from the ids the request named. */
+  siteRules?: Rule[];
+  /** Read from OpenStreetMap for this request, empty when none was needed. */
+  places?: Place[];
+}
+
 export async function askQuestion(
   message: string,
   history: ChatMessage[],
   lang: Lang,
   rules: Rule[],
-  site?: SiteContext,
-  siteRules: Rule[] = [],
+  { site, siteRules = [], places = [] }: ChatRequestContext = {},
 ): Promise<ChatResponse> {
   const started = Date.now();
   const contents = [
@@ -182,7 +205,7 @@ export async function askQuestion(
       model: env.GEMINI_CHAT_MODEL,
       contents,
       config: {
-        systemInstruction: buildChatSystemPrompt(rules, lang, site, siteRules),
+        systemInstruction: buildChatSystemPrompt(rules, lang, { site, siteRules, places }),
         temperature: 0.3,
         maxOutputTokens: 800,
         thinkingConfig: THINKING,
@@ -198,7 +221,7 @@ export async function askQuestion(
       env.GEMINI_CHAT_TIMEOUT_MS,
       "chat",
     );
-    const result = safeParseChat(res.text, lang, rules);
+    const result = safeParseChat(res.text, lang, rules, places.length > 0);
     logInfo({
       route: "chat",
       event: "gemini_ok",
@@ -246,6 +269,8 @@ export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
+  /** Whether the server actually put a map lookup in front of the model. */
+  hasPlaces = false,
 ): ChatResponse {
   let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
@@ -287,6 +312,15 @@ export function safeParseChat(
     // stands on.
     const source = [...new Set(cited.map((rule) => rule.source))].join(" · ");
     return { answer, kind: "rule", ruleIds: cited.map((rule) => rule.id), source };
+  }
+
+  // The map tier is verifiable in the one way that matters: the server knows
+  // whether it performed a lookup. A model that reaches for "places" without
+  // one in front of it is naming hotels out of memory, which is the exact
+  // failure this tier was built to end.
+  if (claimedKind === "places") {
+    if (!hasPlaces) return refused;
+    return { answer, kind: "places", ruleIds: [], source: PLACES_SOURCE };
   }
 
   if (claimedKind === "context" || claimedKind === "general") {

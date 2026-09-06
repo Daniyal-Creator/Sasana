@@ -64,7 +64,26 @@ export function validateSiteContext(raw: unknown): SiteContext | undefined {
   // is the same as having no Site at all.
   if (ruleIds.length === 0) return undefined;
 
-  return { id, name, ruleIds };
+  const site: SiteContext = { id, name, ruleIds };
+
+  // Coordinates travel together or not at all: half a position is not a place
+  // to search around. A bad pair is dropped rather than rejected, like every
+  // other optional field here - the visitor loses the map lookup and keeps the
+  // Customs, which is the right way round.
+  const lat = typeof s.lat === "number" ? s.lat : NaN;
+  const lng = typeof s.lng === "number" ? s.lng : NaN;
+  if (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    !(lat === 0 && lng === 0)
+  ) {
+    site.lat = roundTo(lat, COORD_DECIMALS);
+    site.lng = roundTo(lng, COORD_DECIMALS);
+  }
+
+  return site;
 }
 
 // Local wall clock as `buildPhotoMeta` writes it. Seconds optional, no zone:

@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { MapPin, ShieldCheck } from "lucide-react";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
 import type { ChatKind } from "@shared/contract";
@@ -13,18 +13,22 @@ interface SourceReferenceProps {
 export function SourceReference({ source, kind }: SourceReferenceProps) {
   const { lang } = useLang();
 
-  // `context` reads as "no official source" for now, which is true of it: it is
-  // an answer with no Rule behind it. Giving it its own icon and wording is the
-  // tier-2 UI, and it lands with the server half that starts producing it - see
-  // .scratch/assistant/spec.md. Until then nothing returns this kind.
-  if (kind !== "rule" || !source) {
+  // `context` and `general` read as "no official source", which is true of
+  // them: they carry no Rule. Giving each its own icon and wording is the tier
+  // UI, and it lands with its own change - see .scratch/assistant/spec.md.
+  if (!source || (kind !== "rule" && kind !== "places")) {
     return <p className="mt-2 text-sm italic text-text-muted">{t(lang, "assistant.nosource")}</p>;
   }
+
+  // A map is a source, but not an official one, so it does not get the shield.
+  // A visitor who sees the same badge under "the Circular says" and under
+  // "OpenStreetMap says" has been told the two carry equal weight.
+  const Icon = kind === "places" ? MapPin : ShieldCheck;
 
   return (
     <div className="mt-3 border-t border-accent pt-2">
       <p className="flex items-center gap-1.5 text-sm text-text-secondary">
-        <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
+        <Icon size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
         {t(lang, "assistant.source", { source })}
       </p>
     </div>

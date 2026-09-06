@@ -3,11 +3,18 @@ import { askQuestion } from "@/lib/gemini";
 import { handleApiError, parseJsonBody } from "@/lib/http";
 import { loadRules, rulesByIds } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
+import { detectPlaceQuery, findNearbyPlaces } from "@/lib/places";
 import { validateChatRequest } from "@/lib/validation";
 import type { Lang } from "@shared/contract";
 
 // F2 Custom Assistant (backend-spec §2.2). The Gemini key is read only here,
 // server-side; the browser never sees it.
+
+// Three kilometres is a short drive rather than a walk, which matches how a
+// visitor at a temple actually looks for somewhere to sleep or eat. Five is
+// what fits in a chat bubble without becoming a directory listing.
+const PLACES_RADIUS_M = 3000;
+const PLACES_LIMIT = 5;
 
 export async function POST(req: Request): Promise<Response> {
   const started = Date.now();
@@ -44,15 +51,33 @@ export async function POST(req: Request): Promise<Response> {
     // Rule text always comes from here, never from the request body. The client
     // only named which ids apply where the visitor is standing.
     const siteRules = parsed.site ? rulesByIds(rules, parsed.site.ruleIds) : [];
-    const answer = await askQuestion(
-      parsed.message,
-      parsed.history,
-      lang,
-      rules,
-      parsed.site,
+
+    // Asking the map is decided before Gemini is called, not by Gemini: a regex
+    // over the question is cheaper than a round trip spent letting the model
+    // request a tool. It needs somewhere to search from, so a question about
+    // what is nearby with no Site attached simply gets no list, and the
+    // assistant says it cannot answer rather than guessing a location too.
+    const category = detectPlaceQuery(parsed.message);
+    const origin = parsed.site;
+    const places =
+      category && typeof origin?.lat === "number" && typeof origin?.lng === "number"
+        ? await findNearbyPlaces(origin.lat, origin.lng, category, {
+            radiusM: PLACES_RADIUS_M,
+            limit: PLACES_LIMIT,
+          })
+        : [];
+
+    const answer = await askQuestion(parsed.message, parsed.history, lang, rules, {
+      site: parsed.site,
       siteRules,
-    );
-    if (cacheable) chatCache.set(key, answer);
+      places,
+    });
+
+    // A map answer is never cached. Everything else here is derived from a
+    // knowledge base that changes when somebody edits it; this one describes
+    // the world, which changes on its own. A guest house that closes would
+    // otherwise keep being recommended by a stored sentence.
+    if (cacheable && answer.kind !== "places") chatCache.set(key, answer);
 
     logInfo({
       route: "chat",
@@ -62,6 +87,8 @@ export async function POST(req: Request): Promise<Response> {
       citedRules: answer.ruleIds.length,
       siteId: parsed.site?.id,
       siteRules: siteRules.length,
+      placeQuery: category ?? undefined,
+      places: places.length,
       lang,
     });
     return Response.json(answer, { status: 200, headers: { "x-cache": "MISS" } });

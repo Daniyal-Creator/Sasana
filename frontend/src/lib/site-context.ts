@@ -34,7 +34,11 @@ export function siteContextFrom(site: Site): SiteContext | null {
   const ruleIds = [...new Set(site.customs.flatMap((custom) => custom.ruleIds))];
   if (ruleIds.length === 0) return null;
 
-  return { id: site.id, name: site.name, ruleIds };
+  // The coordinates travel too, so the assistant can look up what is really
+  // near the place rather than reciting what a model half-remembers about it.
+  // They are already public - the Site catalogue ships in this bundle - and a
+  // Dummy Site's invented position never gets here, having returned above.
+  return { id: site.id, name: site.name, ruleIds, lat: site.lat, lng: site.lng };
 }
 
 /** Reads the active Site. Null during SSR, or when storage is unavailable. */
@@ -54,7 +58,18 @@ export function readActiveSite(): SiteContext | null {
     ) {
       return null;
     }
-    return { id: parsed.id, name: parsed.name, ruleIds: parsed.ruleIds.map(String) };
+    const site: SiteContext = {
+      id: parsed.id,
+      name: parsed.name,
+      ruleIds: parsed.ruleIds.map(String),
+    };
+    // Written by an older version, before Sites carried a position. Reading it
+    // back without one is fine: the answer loses the map lookup, nothing else.
+    if (typeof parsed.lat === "number" && typeof parsed.lng === "number") {
+      site.lat = parsed.lat;
+      site.lng = parsed.lng;
+    }
+    return site;
   } catch {
     // Corrupted JSON, quota, or a browser refusing storage in private mode.
     return null;
@@ -73,6 +88,26 @@ export function writeActiveSite(site: SiteContext | null): void {
   } catch {
     // Losing the Site costs the next answer its specificity, nothing more.
   }
+}
+
+/**
+ * The Site a question names, if it names one.
+ *
+ * A visitor who types "is there anywhere to stay near Pura Tanah Lot" is asking
+ * about a Site without being at it, and without having passed through Explore.
+ * Nothing else in the app would attach one, so the question would reach the
+ * server with no place to answer about.
+ *
+ * Matching is on the distinctive part of the name rather than the whole of it:
+ * every Site here begins with "Pura", and almost nobody types it.
+ */
+export function siteContextNamed(question: string): SiteContext | null {
+  const haystack = question.toLowerCase();
+  const match = SITES.find((site) => {
+    const distinctive = site.name.toLowerCase().replace(/^pura\s+(luhur\s+)?/, "");
+    return distinctive.length > 3 && haystack.includes(distinctive);
+  });
+  return match ? siteContextFrom(match) : null;
 }
 
 /**

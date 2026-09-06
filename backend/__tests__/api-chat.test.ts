@@ -57,6 +57,7 @@ const EN_FALLBACK = "I don't have official information on that in the Bali code 
 const ID_FALLBACK = "Saya tidak punya informasi resmi soal itu dalam tata krama Bali.";
 
 beforeEach(() => {
+  vi.restoreAllMocks();
   generateContent.mockReset();
   chatCache.clear(); // module singleton; a leftover entry would mask a real call
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -265,6 +266,113 @@ describe("POST /api/chat — volatility fence", () => {
     const res = await POST(post({ message: "Kapan boleh masuk?", lang: "id", history: [] }));
 
     expect((await readBody(res)).kind).toBe("rule");
+  });
+});
+
+describe("POST /api/chat — nearby places from the map", () => {
+  const TANAH_LOT = {
+    id: "pura-tanah-lot",
+    name: "Pura Tanah Lot",
+    ruleIds: ["temple-attire"],
+    lat: -8.6212,
+    lng: 115.0868,
+  };
+
+  const overpass = (names: string[]) =>
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          elements: names.map((name, i) => ({
+            lat: -8.6212 + (i + 1) * 0.001,
+            lon: 115.0868,
+            tags: { name, tourism: "guest_house" },
+          })),
+        }),
+        { status: 200 },
+      ),
+    );
+
+  const ask = (message: string, site?: unknown) =>
+    POST(post({ message, lang: "id", history: [], ...(site ? { site } : {}) }));
+
+  it("puts the real map results in the prompt and answers from them", async () => {
+    overpass(["Guest House Melati", "Puri Bagus"]);
+    mockAnswer({
+      answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
+      kind: "places",
+      ruleIds: [],
+    });
+
+    const res = await ask("adakah penginapan terdekat di sekitar pura tanah lot?", TANAH_LOT);
+
+    const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
+    expect(systemInstruction).toContain("NEARBY PLACES");
+    expect(systemInstruction).toContain("Guest House Melati");
+    expect(systemInstruction).toContain("around Pura Tanah Lot");
+
+    expect(await readBody(res)).toEqual({
+      answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
+      kind: "places",
+      ruleIds: [],
+      source: "OpenStreetMap contributors",
+    });
+  });
+
+  // Without somewhere to search from there is nothing to look up, and guessing
+  // the location as well as the answer is exactly what this tier exists to stop.
+  it("does not call the map when no Site is attached", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    mockAnswer({ answer: "Saya tidak tahu di mana Anda.", kind: "none", ruleIds: [] });
+
+    const res = await ask("adakah penginapan terdekat?");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect((await readBody(res)).kind).toBe("none");
+  });
+
+  it("does not call the map for an ordinary custom question", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // The server knows whether it performed a lookup, so this claim is one of the
+  // few a model makes that can be checked outright.
+  it("refuses a places answer when no lookup was made", async () => {
+    mockAnswer({ answer: "Menginaplah di Hotel Karangan.", kind: "places", ruleIds: [] });
+
+    const res = await ask("apa itu canang?", TANAH_LOT);
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("none");
+    expect(json.answer).toBe(ID_FALLBACK);
+  });
+
+  it("still answers when Overpass is down, without an error card", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("ECONNREFUSED"));
+    mockAnswer({ answer: "Maaf, saya tidak punya datanya.", kind: "none", ruleIds: [] });
+
+    const res = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    expect(res.status).toBe(200);
+    expect((await readBody(res)).kind).toBe("none");
+  });
+
+  // Everything else here is derived from a knowledge base that changes when
+  // somebody edits it. This one describes the world, which changes on its own.
+  it("never caches a map answer", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({ answer: "Ada Guest House Melati.", kind: "places", ruleIds: [] });
+
+    const first = await ask("ada penginapan dekat sini?", TANAH_LOT);
+    const second = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("MISS");
+    expect(generateContent).toHaveBeenCalledTimes(2);
   });
 });
 

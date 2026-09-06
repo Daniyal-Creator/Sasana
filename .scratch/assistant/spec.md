@@ -81,6 +81,20 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   pada pertanyaan yang gagal; rule yang nyaris cocok ditawarkan. Daftar kategori
   statis jadi jaring saat hasilnya kosong. Fungsi itu sudah ditulis dan diuji
   sejak awal tapi belum pernah dipanggil di produksi.
+- **Tempat terdekat dibaca dari OpenStreetMap, bukan dari model.** Tingkat
+  `places`: Overpass ditanya penginapan atau tempat makan bernama dalam radius
+  **3 km** dari Site, **5 terdekat** masuk prompt, model hanya merangkai
+  kalimatnya. Deteksi lewat regex sebelum Gemini dipanggil, bukan lewat function
+  calling yang memakan satu round trip tambahan tiap pertanyaan.
+
+  *Ditambahkan 2026-09-06,* setelah pertanyaan "adakah penginapan terdekat di
+  sekitar Pura Tanah Lot?" ditolak. Mencabut pagarnya tidak akan menjawabnya —
+  model tidak punya peta, jadi yang keluar adalah nama hotel karangan yang
+  diucapkan sepercaya nama asli. Jawabannya harus datang dari peta.
+  [`docs/adr/0015`](../../docs/adr/0015-nearby-places-from-openstreetmap.md).
+  Konsekuensinya `SiteContext` membawa `lat`/`lng`, dan **jawaban peta tidak
+  pernah di-cache**: yang lain diturunkan dari KB yang berubah kalau diedit,
+  yang ini menggambarkan dunia yang berubah sendiri.
 - **KB naik ke ~40 rule.** Sumber wajib: dokumen resmi, atau sumber adat yang
   **disebutkan namanya** (buku, jurnal, laman dinas). "Adat" sebagai selimut
   tidak diterima — sumber yang tidak bisa ditelusuri sama saja dengan tanpa
@@ -120,24 +134,25 @@ Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
 
 ## Urutan pengerjaan
 
-Enam pull request. **Garis potong ada setelah PR-3** — kalau waktu habis,
-berhenti di sana: PR-2 dan PR-3 sendirian sudah menyelesaikan keluhan aslinya,
+Tujuh pull request. **Garis potong ada setelah PR-4** — kalau waktu habis,
+berhenti di sana: PR-2 sampai PR-4 sendirian sudah menyelesaikan keluhan aslinya,
 dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 
 | PR | Isi | Status |
 | --- | --- | --- |
 | 1 | Kontrak: `kind` + `ruleIds` menggantikan `grounded` + `source`. Tabel area README. | selesai, belum di-merge |
 | 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | selesai, belum di-merge |
-| 3 | Penolakan yang mengalihkan lewat `searchRules()`. | belum |
-| 4 | UI tiga tingkat: ikon + copy di `SourceReference`. | belum |
-| 5 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
-| 6 | Cache SQLite + `GET /api/stats`. | belum |
+| 3 | Tempat terdekat dari OpenStreetMap (`kind: "places"`). | selesai, belum di-merge |
+| 4 | Penolakan yang mengalihkan lewat `searchRules()`. | belum |
+| 5 | UI per tingkat: ikon + copy di `SourceReference`. | belum |
+| 6 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
+| 7 | Cache SQLite + `GET /api/stats`. | belum |
 
 Cache sengaja ditaruh terakhir. Cache yang dibangun di atas gerbang yang masih
 membuang jawaban bagus akan meng-cache kegagalan itu dan mengabadikannya.
 Perbaiki dulu apa yang di-cache, baru cache-nya.
 
-**PR-5 adalah satu-satunya yang tidak bisa dikerjakan agen.** Lima PR lain
+**PR-6 adalah satu-satunya yang tidak bisa dikerjakan agen.** PR lainnya
 selesai dalam hitungan hari; 27 rule dengan sumber nyata butuh orang duduk
 membaca. Kalau itu tidak dijadwalkan, chatbot akan punya arsitektur yang jauh
 lebih baik dan cakupan yang hampir sama.
@@ -153,7 +168,7 @@ Dua, sebagai bagian dari PR yang bersangkutan.
   [`docs/adr/0014-assistant-answer-tiers.md`](../../docs/adr/0014-assistant-answer-tiers.md).
 - **Cache persisten dan pilihan SQLite**, termasuk alasan hash `rules.json`
   supaya orang berikutnya tidak menghapusnya karena mengira berlebihan.
-  Ditulis bersama PR-6.
+  Ditulis bersama PR-7 sebagai ADR-0016.
 
 `docs/adr/0004-no-open-closed-status.md` **tidak dicabut.** Ia melarang jam buka
 dan status buka/tutup; pagar volatilitas melarang kelas fakta yang persis sama.

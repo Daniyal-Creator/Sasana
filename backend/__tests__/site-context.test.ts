@@ -186,12 +186,10 @@ describe("buildChatSystemPrompt", () => {
 
   it("names the Site while keeping the whole knowledge base available", () => {
     const rules = loadRules();
-    const prompt = buildChatSystemPrompt(
-      rules,
-      "en",
-      TIRTA_EMPUL,
-      rulesByIds(rules, TIRTA_EMPUL.ruleIds),
-    );
+    const prompt = buildChatSystemPrompt(rules, "en", {
+      site: TIRTA_EMPUL,
+      siteRules: rulesByIds(rules, TIRTA_EMPUL.ruleIds),
+    });
 
     expect(prompt).toContain("WHERE THE VISITOR IS: Pura Tirta Empul");
     // Narrowing the list would turn an answerable general question into a

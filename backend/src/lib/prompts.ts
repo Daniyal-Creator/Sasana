@@ -1,4 +1,6 @@
 import { formatRulesForPrompt } from "@/lib/knowledge";
+import { formatPlacesForPrompt } from "@/lib/places";
+import type { Place } from "@/lib/places";
 import type { Rule } from "@/lib/types";
 import type { Lang, PhotoMeta, SiteContext, VisionContext } from "@shared/contract";
 
@@ -130,14 +132,26 @@ export const VISION_PARSE_FALLBACK: Record<Lang, { reason: string; suggestion: s
   },
 };
 
+/** Everything the chat prompt knows besides the question itself. */
+export interface ChatPromptContext {
+  site?: SiteContext;
+  /** Resolved server-side from the ids the request named. */
+  siteRules?: Rule[];
+  /** Read from OpenStreetMap for this request, when the question asked for it. */
+  places?: Place[];
+}
+
 // Context stuffing: the whole KB goes into the system prompt (PRD §12,
 // backend-spec §2.2). Wording lives here so it can be tuned without touching
 // route or client logic.
+//
+// An options object rather than a growing tail of positional arguments, for the
+// same reason `analyzeImage` uses one: a reader should not have to count commas
+// to work out which of three optional things they are looking at.
 export function buildChatSystemPrompt(
   rules: Rule[],
   lang: Lang,
-  site?: SiteContext,
-  siteRules: Rule[] = [],
+  { site, siteRules = [], places = [] }: ChatPromptContext = {},
 ): string {
   // The whole KB stays in RULES even when a Site is known: a visitor standing
   // at Besakih may still ask something general, and narrowing the list would
@@ -153,6 +167,20 @@ ${formatRulesForPrompt(siteRules, lang, { withIds: true })}
 When the question is about where they are, answer from these first. The full RULES list still governs everything else, and the tiers still apply: if no rule covers the question, drop to "context" or "general" rather than stretching one to fit.`
       : "";
 
+  // Only present when the question asked for nearby places AND the lookup
+  // returned some. The model is given the answer and asked to write it out;
+  // it is not being asked what it knows about the area, because it does not
+  // know, and the whole point of this block is that it no longer has to guess.
+  const nearby =
+    places.length > 0
+      ? `
+
+NEARBY PLACES, read from OpenStreetMap just now${site ? ` around ${site.name}` : ""}:
+${formatPlacesForPrompt(places)}
+
+Answer the question using ONLY this list, and set "kind" to "places". Name the places and their distances as given; do not add one that is not listed, do not rank them by quality, and do not say anything about prices, opening times, or whether they are any good - the map records what is there, nothing more. If the list does not answer what was asked, say so plainly and set "kind" to "none".`
+      : "";
+
   return `You are SASANA, a knowledgeable and friendly guide to Bali - its customs, its sacred places, its history, and the official code of conduct for visitors.
 
 Every answer belongs to exactly one tier. Put it in "kind" and choose the STRONGEST tier that honestly applies:
@@ -160,11 +188,12 @@ Every answer belongs to exactly one tier. Put it in "kind" and choose the STRONG
 1. "rule" - the answer follows from the RULES listed below. List every rule you used in "ruleIds", most relevant first, using the exact strings printed as "(id: ...)". This tier is the only one that carries official weight, so reach for it whenever a rule covers the question. Never invent an id: the server checks each one against its own copy of the rules and drops any it does not recognise, and an answer left holding none of them is refused outright.
 2. "context" - the question is about Balinese custom, ritual, or the meaning of something, and no listed rule covers it. Explain it from what you know. Leave "ruleIds" empty.
 3. "general" - the question is about Bali more broadly: history, geography, art, language, religion, or how its tourism came to be. Answer from what you know. Leave "ruleIds" empty.
-4. "none" - you cannot answer. Leave "ruleIds" empty.
+4. "places" - ONLY when a NEARBY PLACES list appears below. Those are real places read from a map for this question; you may not use this tier without that list, and you may not put a place in the answer that is not on it.
+5. "none" - you cannot answer. Leave "ruleIds" empty.
 
 WHAT YOU MUST NEVER STATE, in any tier:
 - Anything that changes with the date, the hour, the season, or the price. Opening and closing times, ticket prices, entrance fees, ceremony dates, what is happening at a place right now, whether somewhere is open, busy, or closed today.
-- Recommendations of specific businesses: hotels, villas, restaurants, warungs, guides, drivers, tours, shops. You have no way to check that one still exists or was ever any good.
+- Recommendations of specific businesses: hotels, villas, restaurants, warungs, guides, drivers, tours, shops. You have no way to check that one still exists or was ever any good. The NEARBY PLACES list is the one exception, and only because a map was read for this question - even then you report what is there rather than recommending any of it.
 This is not caution for its own sake. Your answers are stored and served to other visitors later, so a fact that changes becomes a lie with time, and a recommendation outlives the place it named.
 When you are asked for one of these, set "kind" to "none".
 
@@ -174,7 +203,7 @@ Also follow these:
 - Each rule carries a "Why it matters" note explaining the custom behind it. That note is part of the rule, so you may use it to explain what something means or why it is done, not only what is allowed.
 
 Return ONLY a JSON object with keys: answer (string), kind (string), ruleIds (array of strings).
-${location}
+${location}${nearby}
 
 RULES:
 ${formatRulesForPrompt(rules, lang, { withIds: true })}`;

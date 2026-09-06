@@ -32,6 +32,19 @@ export interface SiteContext {
   name: string;
   /** Rule ids drawn from the Site's own Customs. Resolved server-side. */
   ruleIds: string[];
+  /**
+   * Where the Site is. Sent so the assistant can answer "what is near here"
+   * from real map data rather than from the model's memory of Bali.
+   *
+   * Unlike `ruleIds` these are values rather than names to resolve, for the
+   * plain reason that there is nothing to resolve them against: the Site
+   * catalogue lives in the frontend bundle, and copying it into the backend
+   * would create a second copy to keep true. The blast radius is small - the
+   * worst a crafted pair achieves is a search around the wrong point, which
+   * returns places that are really there, just not near the visitor.
+   */
+  lat?: number;
+  lng?: number;
 }
 
 /**
@@ -91,17 +104,19 @@ export interface VisionResult {
  *   behind it. Answered, never presented as official guidance.
  * - `general` — Bali more broadly: history, culture, geography, the background
  *   of its tourism. The model's own knowledge, labelled as such.
+ * - `places` — real places near a Site, read from OpenStreetMap at request
+ *   time. The model only puts the results into sentences; every name, category
+ *   and distance comes from the map. `source` carries the OSM attribution.
  * - `none` — the question cannot be answered, so the answer is the official
  *   fallback. Covers both "nothing covers this" and the refusals the
- *   volatility fence requires (opening hours, prices, what is happening today,
- *   which hotel to book).
+ *   volatility fence requires (opening hours, prices, what is happening today).
  *
  * This replaced a `grounded: boolean`, which could not tell any of the middle
  * states from each other: "I can explain, without an official rule", "here is
  * background about Bali", and "I cannot help" are three different things to
  * read on a phone at a temple gate.
  */
-export type ChatKind = "rule" | "context" | "general" | "none";
+export type ChatKind = "rule" | "context" | "general" | "places" | "none";
 
 /** `POST /api/chat` response body. */
 export interface ChatResponse {
@@ -113,7 +128,10 @@ export interface ChatResponse {
    * Always empty unless `kind` is `"rule"`.
    */
   ruleIds: string[];
-  /** Attribution of the cited Rules, joined when they carry more than one. */
+  /**
+   * Where the answer's facts came from: the cited Rules' attribution for
+   * `rule`, the map's for `places`, and null for everything else.
+   */
   source: string | null;
 }
 

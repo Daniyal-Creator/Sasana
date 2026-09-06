@@ -228,11 +228,16 @@ const REFUSAL_LEAD: Record<RefusalReason, Record<Lang, string>> = {
     id: "Saya belum punya aturan resmi soal itu.",
   },
   // Naming the class rather than the question, and pointing somewhere real.
-  // Anyone standing at a temple has a better source for today's hours than an
-  // app does, and saying so is more use than an apology.
+  // Whoever is at the place has a better source for today's hours than an app
+  // does, and saying so is more use than an apology.
+  //
+  // "Ask at the place itself" rather than "the temple staff will know", because
+  // this wording is reached by any question shaped like a request for a time or
+  // a price, and not all of them are about a temple. A pointer that is merely
+  // unhelpful for an odd question is better than one that is wrong.
   volatile: {
-    en: "I don't give opening times, prices, or ceremony dates. Those change, and I have no source I can stand behind. The temple staff will know.",
-    id: "Saya tidak menyebutkan jam buka, harga, atau tanggal upacara. Hal seperti itu berubah dan saya tidak punya sumber yang bisa saya pertanggungjawabkan. Petugas pura tahu jawabannya.",
+    en: "I don't give opening times, prices, or ceremony dates. Those change, and I have no source I can stand behind. Ask at the place itself.",
+    id: "Saya tidak menyebutkan jam buka, harga, atau tanggal upacara. Hal seperti itu berubah dan saya tidak punya sumber yang bisa saya pertanggungjawabkan. Tanyakan langsung di tempatnya.",
   },
 };
 

@@ -48,7 +48,7 @@ describe("buildRefusal — a question about something that expires", () => {
     const text = buildRefusal("berapa harga tiket masuk?", "id", rules, "volatile");
 
     expect(text).toContain("jam buka, harga, atau tanggal upacara");
-    expect(text).toContain("Petugas pura tahu jawabannya.");
+    expect(text).toContain("Tanyakan langsung di tempatnya.");
   });
 
   // The regression this guards: `searchRules` scores "berapa harga tiket masuk"

@@ -59,6 +59,7 @@ const GROUNDED = {
 const EN_REFUSED = "I don't have an official rule for that yet.";
 const ID_REFUSED = "Saya belum punya aturan resmi soal itu.";
 const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
+const EN_ASK_THERE = "Ask at the place itself.";
 
 beforeEach(() => {
   vi.restoreAllMocks();
@@ -117,7 +118,9 @@ describe("POST /api/chat — grounded answers", () => {
 describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   it("replaces the answer with the fallback when the model cites no rule", async () => {
     mockAnswer({ answer: "Sure, drones are totally fine!", kind: "none", ruleIds: [] });
-    const res = await POST(post({ message: "What time is the football match?", lang: "en", history: [] }));
+    // Deliberately not a question about a time or a price: those get the other
+    // refusal now, which the volatility block below covers.
+    const res = await POST(post({ message: "Who won the World Cup?", lang: "en", history: [] }));
 
     const json = await readBody(res);
     expect(json).toMatchObject({ kind: "none", ruleIds: [], source: null });
@@ -251,7 +254,7 @@ describe("POST /api/chat — volatility fence", () => {
     // and pointed at someone who does know, rather than being told there is no
     // rule - which was never what they asked about.
     expect(json.answer).toContain(EN_VOLATILE);
-    expect(json.answer).toContain("temple staff");
+    expect(json.answer).toContain(EN_ASK_THERE);
   });
 
   // The fence must not fire on the answers this app exists to give. "tutup"
@@ -547,8 +550,8 @@ describe("POST /api/chat — first-turn answer cache", () => {
   // a question the app can perfectly well handle.
   it("never stores a refusal", async () => {
     mockAnswer({ answer: "Sure, whatever.", kind: "none", ruleIds: [] });
-    await ask("what time is the football match?");
-    const res = await ask("what time is the football match?");
+    await ask("who won the world cup?");
+    const res = await ask("who won the world cup?");
 
     expect(res.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);

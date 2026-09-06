@@ -12,6 +12,7 @@ import type { Lang } from "@/lib/i18n";
 import { tExplore } from "@/lib/i18n.explore";
 import { SITES } from "@/data/sites";
 import { APPROACH_BUFFER_M, type LatLng } from "@/lib/geo";
+import { MERU_BASE, MERU_PATHS } from "@/components/explore/meru";
 
 const BALI_CENTER: LatLng = { lat: -8.42, lng: 115.16 };
 const BALI_ZOOM = 9;
@@ -81,12 +82,12 @@ function ApproachDiagram() {
           <line x1="194" y1="94" x2="194" y2="106" />
         </g>
 
-        {/* The Site, as the same meru pictogram the map markers use. */}
+        {/* The Site, as the same pura pictogram the map markers use. */}
         <g transform="translate(96 87.5)" fill="#1D4E89">
-          <path d="M12 3 L15.6 7 H8.4 Z" />
-          <path d="M8.9 8.6 H15.1 L17.2 12.3 H6.8 Z" />
-          <path d="M6.4 13.9 H17.6 L19.8 17.8 H4.2 Z" />
-          <rect x="10.4" y="18.9" width="3.2" height="2.6" rx="0.4" />
+          {MERU_PATHS.map((d) => (
+            <path key={d} d={d} />
+          ))}
+          <rect {...MERU_BASE} />
         </g>
       </svg>
 

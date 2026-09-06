@@ -122,6 +122,28 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   tidak diterima — sumber yang tidak bisa ditelusuri sama saja dengan tanpa
   sumber.
 
+  *Sebagian dikerjakan 2026-09-06: 13 → 27 rule.* Empat belas klausul SE No. 7
+  Tahun 2025 yang belum tercakup ditambahkan, dibaca dari daftar klausul yang
+  dikutip laman resmi Pemprov Bali (bmc.baliprov.go.id, 24 Maret 2025) karena
+  PDF aslinya memakai font CID yang tidak bisa diekstrak. `source` menyebut
+  otoritasnya untuk pengunjung; `why_source` mencatat halaman yang benar-benar
+  dibaca, supaya bisa ditelusuri ulang.
+
+  **Sisa utang: 13 rule lagi, dan 7 rule lama yang masih memakai selimut
+  "Balinese Hindu custom (adat)".** Ketujuhnya didaftar eksplisit di
+  `__tests__/rules-sourcing.test.ts` sebagai `UNSOURCED_LEGACY` supaya utangnya
+  terhitung dan hanya bisa mengecil. Menulis ulang atribusinya tanpa membaca
+  sumber nyata sama saja dengan mengarang sumber, yang lebih buruk daripada
+  mengakui utangnya.
+- **Standar sumber ditegakkan sebagai test, bukan sebagai niat.**
+  `rules-sourcing.test.ts` menolak sumber di luar daftar, rule tanpa keyword
+  yang muncul di teks Indonesianya, dan — pelajaran mahal — **keyword yang
+  muncul di lebih dari separuh rule**. Menambahkan "pura" ke 13 rule sekaligus
+  membuat semua pertanyaan bahasa Indonesia mencocoki semuanya, dan penolakan
+  yang mengalihkan mulai menawarkan Tata Busana kepada orang yang bertanya soal
+  makanan. Kata yang berguna adalah kata yang **membedakan** satu rule dari
+  yang lain.
+
 ### Cache dan hemat token
 
 Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
@@ -174,7 +196,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 3 | Tempat terdekat dari OpenStreetMap (`kind: "places"`). | selesai, belum di-merge |
 | 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
 | 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
-| 6 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
+| 6 | Isi KB: 13 → 27 rule bersumber, plus standar sumber sebagai test. | sebagian, belum di-merge |
 | 7 | Cache SQLite + `GET /api/stats`. | selesai, belum di-merge |
 
 Cache sengaja ditaruh terakhir. Cache yang dibangun di atas gerbang yang masih

@@ -73,10 +73,19 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   begitu cache persisten masuk, satu halusinasi menjadi halusinasi permanen.
   Prompt vision sudah memakai pagar yang sama (`lib/prompts.ts`,
   `buildPhotoMetaLine`), jadi ini konsisten dengan sistem, bukan aturan baru.
-- **Perbedaan tingkat terlihat oleh pengunjung.** Ikon Lucide berbeda plus copy
-  berbeda di slot `SourceReference` yang sudah ada. Tanpa warna baru, tanpa
-  badge, tanpa background baru. Terverifikasi patuh guardrail I1, I5, dan C6 —
-  C6 justru **mewajibkan** dua keadaan dibedakan oleh lebih dari warna.
+- **Perbedaan tingkat terlihat oleh pengunjung.** Tiap tingkat punya ikon Lucide
+  dan kalimatnya sendiri di `SourceReference`: `shield-check` untuk aturan resmi,
+  `map-pin` untuk data peta, `book-open` untuk penjelasan adat, `globe` untuk
+  latar Bali, dan tidak ada baris sama sekali untuk penolakan. Bobotnya mengikuti
+  atribusi: yang bisa menyebut sumber dapat garis pemisah dan warna aksen, yang
+  tidak tetap muted. Tanpa warna baru, tanpa badge, tanpa background baru.
+  Terverifikasi patuh guardrail I1, I5, dan C6 — C6 justru **mewajibkan** dua
+  keadaan dibedakan oleh lebih dari warna.
+- **Klaim di UI ikut dikoreksi.** Lima kalimat menjanjikan bahwa setiap jawaban
+  berasal dari aturan resmi. Sejak tingkat 2 dan 3 dibuka itu jadi overclaim,
+  dan ADR-0014 tegas bahwa perbedaannya harus sampai ke pengunjung. Sekarang
+  yang dijanjikan adalah yang benar: jawaban resmi membawa sumbernya, sisanya
+  menyatakan dirinya bukan aturan resmi.
 - **Penolakan mengalihkan, bukan menutup pintu.** Penolakan dibangun per
   pertanyaan, dan bentuknya ditentukan oleh **alasan** penolakan: `uncovered`
   menawarkan topik yang dipunya KB, `volatile` menyebut kelas faktanya lalu
@@ -157,7 +166,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | selesai, belum di-merge |
 | 3 | Tempat terdekat dari OpenStreetMap (`kind: "places"`). | selesai, belum di-merge |
 | 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
-| 5 | UI per tingkat: ikon + copy di `SourceReference`. | belum |
+| 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
 | 6 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
 | 7 | Cache SQLite + `GET /api/stats`. | belum |
 

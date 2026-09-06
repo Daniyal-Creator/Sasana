@@ -77,10 +77,23 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   berbeda di slot `SourceReference` yang sudah ada. Tanpa warna baru, tanpa
   badge, tanpa background baru. Terverifikasi patuh guardrail I1, I5, dan C6 —
   C6 justru **mewajibkan** dua keadaan dibedakan oleh lebih dari warna.
-- **Penolakan mengalihkan, bukan menutup pintu.** `searchRules()` dijalankan
-  pada pertanyaan yang gagal; rule yang nyaris cocok ditawarkan. Daftar kategori
-  statis jadi jaring saat hasilnya kosong. Fungsi itu sudah ditulis dan diuji
-  sejak awal tapi belum pernah dipanggil di produksi.
+- **Penolakan mengalihkan, bukan menutup pintu.** Penolakan dibangun per
+  pertanyaan, dan bentuknya ditentukan oleh **alasan** penolakan: `uncovered`
+  menawarkan topik yang dipunya KB, `volatile` menyebut kelas faktanya lalu
+  menunjuk petugas pura.
+
+  *Direvisi 2026-09-06.* Rancangan awal menjadikan `searchRules()` mekanisme
+  utamanya. Pengukuran membatalkan itu: skornya tidak memisahkan kecocokan asli
+  dari kebetulan. "apakah harus melepas sepatu" mendapat 5 di `shoe-removal`,
+  tapi "berapa harga tiket masuk" mendapat 3 di `sacred-area-entry` semata-mata
+  karena "masuk" adalah keyword, dan tidak ada ambang yang duduk di antara
+  keduanya. Jadi `searchRules()` tetap dipakai, tapi hanya untuk **melunakkan
+  kata-kata** dari daftar topik menjadi tawaran; daftar kategori KB adalah jalur
+  yang selalu bekerja. Keyword yang lebih tajam adalah pekerjaan KB, bukan kode.
+
+  Penolakan `volatile` tidak pernah menawarkan rule sama sekali — menjawab
+  pertanyaan harga dengan "mau saya jelaskan soal area suci?" persis bentuk
+  non-sequitur yang membuat asisten terasa rusak.
 - **Tempat terdekat dibaca dari OpenStreetMap, bukan dari model.** Tingkat
   `places`: Overpass ditanya penginapan atau tempat makan bernama dalam radius
   **3 km** dari Site, **5 terdekat** masuk prompt, model hanya merangkai
@@ -143,7 +156,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 1 | Kontrak: `kind` + `ruleIds` menggantikan `grounded` + `source`. Tabel area README. | selesai, belum di-merge |
 | 2 | Tiga tingkat di server: `kind` diajukan model, penurunan oleh server, pagar volatilitas. | selesai, belum di-merge |
 | 3 | Tempat terdekat dari OpenStreetMap (`kind: "places"`). | selesai, belum di-merge |
-| 4 | Penolakan yang mengalihkan lewat `searchRules()`. | belum |
+| 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
 | 5 | UI per tingkat: ikon + copy di `SourceReference`. | belum |
 | 6 | Isi KB: rule baru dengan sumber, dicicil per batch. | belum |
 | 7 | Cache SQLite + `GET /api/stats`. | belum |

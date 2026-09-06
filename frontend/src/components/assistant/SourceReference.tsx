@@ -13,9 +13,16 @@ interface SourceReferenceProps {
 export function SourceReference({ source, kind }: SourceReferenceProps) {
   const { lang } = useLang();
 
-  // `context` and `general` read as "no official source", which is true of
-  // them: they carry no Rule. Giving each its own icon and wording is the tier
-  // UI, and it lands with its own change - see .scratch/assistant/spec.md.
+  // A refusal already opens by saying it has no rule for the question, and then
+  // spends its remaining words offering what it does have. Repeating "no
+  // official rule found" underneath undoes that: the visitor is left on the
+  // negative note the refusal was rewritten to move them off.
+  if (kind === "none") return null;
+
+  // `context` and `general` do carry this line, and there it earns its place:
+  // those answers read with authority and have no Rule behind them, so the
+  // absence is the one thing the visitor cannot see for themselves. Giving each
+  // its own icon and wording is the tier UI - see .scratch/assistant/spec.md.
   if (!source || (kind !== "rule" && kind !== "places")) {
     return <p className="mt-2 text-sm italic text-text-muted">{t(lang, "assistant.nosource")}</p>;
   }

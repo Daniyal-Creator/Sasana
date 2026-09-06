@@ -9,10 +9,11 @@ import {
   buildChatSystemPrompt,
   buildPhotoMetaLine,
   buildVisionContextLine,
+  buildRefusal,
   buildVisionSystemPrompt,
-  chatFallback,
   VISION_PARSE_FALLBACK,
 } from "@/lib/prompts";
+import type { RefusalReason } from "@/lib/prompts";
 import { withRetry } from "@/lib/retry";
 import { withTimeout } from "@/lib/timeout";
 import { HISTORY_LIMIT } from "@/lib/validation";
@@ -221,7 +222,10 @@ export async function askQuestion(
       env.GEMINI_CHAT_TIMEOUT_MS,
       "chat",
     );
-    const result = safeParseChat(res.text, lang, rules, places.length > 0);
+    const result = safeParseChat(res.text, lang, rules, {
+      message,
+      hasPlaces: places.length > 0,
+    });
     logInfo({
       route: "chat",
       event: "gemini_ok",
@@ -265,12 +269,19 @@ export async function askQuestion(
 // model can misbehave - overclaiming, citing ids that do not exist, wandering
 // into facts that expire - therefore lands on a more careful answer than the
 // one it wanted to give, and no failure path ends anywhere else.
+/** What the server knows about the request that the model's reply cannot say. */
+export interface ChatParseContext {
+  /** The question, so a refusal can offer what the knowledge base does hold. */
+  message: string;
+  /** Whether the server actually put a map lookup in front of the model. */
+  hasPlaces?: boolean;
+}
+
 export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
-  /** Whether the server actually put a map lookup in front of the model. */
-  hasPlaces = false,
+  { message, hasPlaces = false }: ChatParseContext,
 ): ChatResponse {
   let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
@@ -279,12 +290,15 @@ export function safeParseChat(
     raw = null;
   }
 
-  const refused: ChatResponse = {
-    answer: chatFallback(lang),
+  // A refusal is built rather than looked up: which one a visitor reads depends
+  // on why the answer was refused, and only this function knows that.
+  const refuse = (reason: RefusalReason = "uncovered"): ChatResponse => ({
+    answer: buildRefusal(message, lang, rules, reason),
     kind: "none",
     ruleIds: [],
     source: null,
-  };
+  });
+  const refused = refuse();
 
   const answer = typeof raw?.answer === "string" ? raw.answer.trim() : "";
   if (!answer) return refused;
@@ -325,7 +339,7 @@ export function safeParseChat(
 
   if (claimedKind === "context" || claimedKind === "general") {
     // The net. See volatility.ts for why grounded answers skip it.
-    if (statesVolatileFact(answer)) return refused;
+    if (statesVolatileFact(answer)) return refuse("volatile");
     // `ruleIds` is only meaningful at the "rule" tier, so it is cleared rather
     // than passed through: an ungrounded answer carrying rule ids would read to
     // every later consumer as if it were sourced.

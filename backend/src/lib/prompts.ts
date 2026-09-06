@@ -1,4 +1,4 @@
-import { formatRulesForPrompt } from "@/lib/knowledge";
+import { formatRulesForPrompt, searchRules } from "@/lib/knowledge";
 import { formatPlacesForPrompt } from "@/lib/places";
 import type { Place } from "@/lib/places";
 import type { Rule } from "@/lib/types";
@@ -209,15 +209,88 @@ RULES:
 ${formatRulesForPrompt(rules, lang, { withIds: true })}`;
 }
 
-// The server safety net (FR2.1) is what produces this answer, so the string
-// belongs to the server. It used to be read from the client copy dictionary,
-// which is no longer reachable from here; the wording is carried over unchanged
-// and the UI no longer ships a copy of it.
-const CHAT_FALLBACK: Record<Lang, string> = {
-  en: "I don't have official information on that in the Bali code of conduct.",
-  id: "Saya tidak punya informasi resmi soal itu dalam tata krama Bali.",
+// The server safety net (FR2.1) is what produces this answer, so the wording
+// belongs to the server rather than to the client copy dictionary.
+//
+// Why a refusal is worth this much care: two questions typed one after another
+// used to come back with the identical flat sentence, one an etiquette question
+// the app is for and one about hotels. A visitor reading the same dead end
+// twice concludes the assistant knows nothing, which is false and sends them to
+// whichever app will answer, including the ones that make things up. Guardrail
+// W4 - lead with the fix, not the fault - applies to refusals too.
+
+/** Why an answer was refused. Decides which refusal the visitor reads. */
+export type RefusalReason = "uncovered" | "volatile";
+
+const REFUSAL_LEAD: Record<RefusalReason, Record<Lang, string>> = {
+  uncovered: {
+    en: "I don't have an official rule for that yet.",
+    id: "Saya belum punya aturan resmi soal itu.",
+  },
+  // Naming the class rather than the question, and pointing somewhere real.
+  // Anyone standing at a temple has a better source for today's hours than an
+  // app does, and saying so is more use than an apology.
+  volatile: {
+    en: "I don't give opening times, prices, or ceremony dates. Those change, and I have no source I can stand behind. The temple staff will know.",
+    id: "Saya tidak menyebutkan jam buka, harga, atau tanggal upacara. Hal seperti itu berubah dan saya tidak punya sumber yang bisa saya pertanggungjawabkan. Petugas pura tahu jawabannya.",
+  },
 };
 
-export function chatFallback(lang: Lang): string {
-  return CHAT_FALLBACK[lang];
+const OFFER: Record<Lang, string> = {
+  en: "What I can help with:",
+  id: "Yang bisa saya bantu:",
+};
+
+// Offered when the question lexically brushes a rule the model still declined.
+// Deliberately worded as proximity rather than as an answer: the match may be a
+// coincidence on a shared word, and "the closest I have" survives that where
+// "this covers your question" would not.
+const NEAREST: Record<Lang, string> = {
+  en: "The closest I have:",
+  id: "Yang paling dekat dari yang saya punya:",
+};
+
+/** How many topics a refusal names before it stops being an offer and becomes a menu. */
+const MAX_TOPICS = 4;
+
+function categoryOf(rule: Rule, lang: Lang): string {
+  return lang === "id" ? rule.category_id : rule.category_en;
+}
+
+/** Distinct rule categories, in knowledge-base order, so the list grows with the KB. */
+function topicMenu(rules: Rule[], lang: Lang): string[] {
+  return [...new Set(rules.map((rule) => categoryOf(rule, lang)))].slice(0, MAX_TOPICS);
+}
+
+/**
+ * The refusal a visitor actually reads.
+ *
+ * `searchRules` is consulted but not trusted. Measured against the current
+ * knowledge base its scores do not separate a real near miss from a coincidence
+ * - "apakah harus melepas sepatu" scores 5 on shoe-removal, but "berapa harga
+ * tiket masuk" scores 3 on sacred-area-entry purely because "masuk" is a
+ * keyword, and no threshold sits between them. So a hit only softens the
+ * wording from a menu to an offer; the menu of KB categories is the path that
+ * always works. Sharper keywords are knowledge-base work, not code.
+ */
+export function buildRefusal(
+  message: string,
+  lang: Lang,
+  rules: Rule[],
+  reason: RefusalReason = "uncovered",
+): string {
+  const lead = REFUSAL_LEAD[reason][lang];
+
+  // A volatile refusal never offers a rule. The question was about a price or
+  // an hour, and answering it with "would you like to hear about the inner
+  // courtyard instead" is the non sequitur that makes an assistant feel broken.
+  const nearest =
+    reason === "uncovered"
+      ? [...new Set(searchRules(rules, message).map((rule) => categoryOf(rule, lang)))].slice(0, 2)
+      : [];
+
+  const topics = nearest.length > 0 ? nearest : topicMenu(rules, lang);
+  const offer = nearest.length > 0 ? NEAREST[lang] : OFFER[lang];
+
+  return `${lead} ${offer} ${topics.join(", ")}.`;
 }

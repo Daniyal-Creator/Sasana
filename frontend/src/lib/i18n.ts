@@ -421,8 +421,8 @@ const dict = {
 
   "assistant.welcome.title": { en: "Hi, I'm Sasana", id: "Hai, saya Sasana" },
   "assistant.welcome.body": {
-    en: "Ask me anything about Balinese customs and sacred sites. I answer from the official rules.",
-    id: "Tanyakan apa saja tentang adat Bali dan tempat suci. Saya menjawab dari aturan resmi.",
+    en: "Ask me anything about Balinese customs, sacred sites, and Bali itself.",
+    id: "Tanyakan apa saja tentang adat Bali, tempat suci, dan Bali sendiri.",
   },
   "assistant.tryasking": { en: "Try asking:", id: "Coba tanyakan:" },
   "assistant.chip.shorts": {
@@ -440,11 +440,26 @@ const dict = {
   },
   "assistant.input.placeholder": { en: "Ask about a custom…", id: "Tanya tentang adat…" },
   "assistant.send": { en: "Send", id: "Kirim" },
+  // These four lines used to promise that every answer came from an official
+  // rule. Since the assistant also explains customs and Bali's background with
+  // no rule behind them, that promise became an overclaim, and ADR-0014 is
+  // explicit that the difference has to reach the visitor. They now promise
+  // what is actually true: the official answers carry a source, and the rest
+  // says so.
   "assistant.helper": {
-    en: "Answers come from official rules, not opinions.",
-    id: "Jawaban berasal dari aturan resmi, bukan opini.",
+    en: "Official rules carry their source. The rest is background.",
+    id: "Aturan resmi menyertakan sumbernya. Sisanya penjelasan umum.",
   },
   "assistant.source": { en: "Source: {source}", id: "Sumber: {source}" },
+  "assistant.source.map": { en: "Map data: {source}", id: "Data peta: {source}" },
+  "assistant.tier.context": {
+    en: "Cultural background, not an official rule",
+    id: "Penjelasan adat, bukan aturan resmi",
+  },
+  "assistant.tier.general": {
+    en: "General knowledge about Bali, not an official rule",
+    id: "Pengetahuan umum tentang Bali, bukan aturan resmi",
+  },
   "assistant.typing": { en: "Sasana is typing…", id: "Sasana sedang mengetik…" },
   "assistant.error": {
     en: "I couldn't reach the assistant just now. Please try again.",
@@ -456,8 +471,8 @@ const dict = {
   },
   "assistant.eyebrow": { en: "BALI \u2022 CUSTOMS \u2022 RESPECT", id: "BALI \u2022 ADAT \u2022 HORMAT" },
   "assistant.trust": {
-    en: "Answers grounded in official rules",
-    id: "Jawaban berdasarkan aturan resmi",
+    en: "Every official rule shows its source",
+    id: "Setiap aturan resmi menyebutkan sumbernya",
   },
   "assistant.explore.heading": {
     en: "What would you like to explore?",
@@ -507,8 +522,8 @@ const dict = {
   "assistant.sidebar.explore": { en: "Explore", id: "Jelajahi" },
   "assistant.sidebar.about.title": { en: "About sources", id: "Tentang sumber" },
   "assistant.sidebar.about.body": {
-    en: "Information is based on official regulations and local guidance.",
-    id: "Informasi berdasarkan regulasi resmi dan pedoman lokal.",
+    en: "Official rules cite their source. Cultural background and history do not, and are marked as such.",
+    id: "Aturan resmi mengutip sumbernya. Penjelasan budaya dan sejarah tidak, dan ditandai begitu.",
   },
   "assistant.input.placeholder.long": {
     en: "Ask Sasana about Balinese customs\u2026",
@@ -516,8 +531,8 @@ const dict = {
   },
   "assistant.chatheader.title": { en: "Sasana Guide", id: "Panduan Sasana" },
   "assistant.chatheader.subtitle": {
-    en: "Official-rules based assistant",
-    id: "Asisten berbasis aturan resmi",
+    en: "Customs, official rules, and Bali background",
+    id: "Adat, aturan resmi, dan latar Bali",
   },
   "sr.you": { en: "You said", id: "Anda berkata" },
   "sr.assistant": { en: "Sasana said", id: "Sasana berkata" },

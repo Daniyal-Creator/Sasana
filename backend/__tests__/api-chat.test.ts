@@ -160,8 +160,10 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   });
 
   it("lists every distinct source when the answer stands on more than one", async () => {
+    // The question has to be one that actually retrieves both rules: since the
+    // prompt carries a selection, citing a rule that was not sent is refused.
     mockAnswer({ answer: "Cover up and keep out of the inner court.", kind: "rule", ruleIds: ["temple-attire", "menstruation-entry"] });
-    const res = await POST(post({ message: "What are the rules here?", lang: "en", history: [] }));
+    const res = await POST(post({ message: "Aturan pakaian dan haid di pura?", lang: "en", history: [] }));
 
     const json = await readBody(res);
     expect(json.source).toBe(`${CIRCULAR} · Balinese Hindu custom (adat)`);

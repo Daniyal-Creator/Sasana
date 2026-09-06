@@ -17,8 +17,18 @@ const rules = loadRules();
  * accident.
  */
 const ALLOWED_SOURCES = new Set([
+  // Surat Edaran Gubernur Bali No. 7 Tahun 2025, the conduct circular for
+  // foreign visitors.
   "Bali Governor Circular No. 7 of 2025",
+  // The blanket attribution the standard forbids. Present only for the entries
+  // that predate the standard - see UNSOURCED_LEGACY.
   "Balinese Hindu custom (adat)",
+  // The joint appeal issued before each Nyepi by the province's interfaith
+  // forum and the religious affairs office. What it asks of a visitor does not
+  // change from year to year; only the date does, and no rule carries one.
+  "Seruan Bersama Hari Suci Nyepi",
+  // The province's own visitor guidance, published on lovebali.baliprov.go.id.
+  "Bali Government travel guidelines",
 ]);
 
 /**

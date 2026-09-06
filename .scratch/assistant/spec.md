@@ -129,7 +129,19 @@ Diambil lewat sesi grilling penuh, 23 pertanyaan, lima ronde.
   otoritasnya untuk pengunjung; `why_source` mencatat halaman yang benar-benar
   dibaca, supaya bisa ditelusuri ulang.
 
-  **Sisa utang: 13 rule lagi, dan 7 rule lama yang masih memakai selimut
+  *Putaran kedua 2026-09-07: 27 -> 35.* Empat klausul SE yang masih tersisa,
+  tiga aturan Nyepi dari Seruan Bersama Hari Suci Nyepi (perilakunya saja,
+  **tanpa tanggal** — tanggal berubah tiap tahun dan itu kelas fakta yang pagar
+  volatilitas larang), dan satu soal menawar dari panduan resmi Love Bali.
+
+  **Berhenti di 35, bukan 40.** Lima rule terakhir tidak ditulis karena tidak
+  ada sumber resmi yang bisa saya baca untuknya. Yang tersisa adalah wilayah
+  adat murni — membawa makanan ke pura, hewan, merokok, melukat, memberi dengan
+  tangan kiri — dan menuliskannya dengan selimut "adat" persis yang standar ini
+  larang. Butuh sumber bernama: buku, jurnal, atau orang lokal yang meninjau dan
+  namanya dicatat.
+
+  **Sisa utang: 7 rule lama yang masih memakai selimut
   "Balinese Hindu custom (adat)".** Ketujuhnya didaftar eksplisit di
   `__tests__/rules-sourcing.test.ts` sebagai `UNSOURCED_LEGACY` supaya utangnya
   terhitung dan hanya bisa mengecil. Menulis ulang atribusinya tanpa membaca
@@ -216,7 +228,8 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
 | 6 | Isi KB: 13 → 27 rule bersumber, plus standar sumber sebagai test. | sebagian, belum di-merge |
 | 7 | Cache SQLite + `GET /api/stats`. | selesai |
-| 8 | Retrieval: prompt hanya membawa rule yang relevan. | sedang dikerjakan |
+| 8 | Retrieval: prompt hanya membawa rule yang relevan. | selesai |
+| 9 | Isi KB putaran dua: 27 -> 35 rule bersumber. | sedang dikerjakan |
 
 Cache sengaja ditaruh terakhir. Cache yang dibangun di atas gerbang yang masih
 membuang jawaban bagus akan meng-cache kegagalan itu dan mengabadikannya.

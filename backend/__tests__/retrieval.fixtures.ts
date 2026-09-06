@@ -59,4 +59,16 @@ export const RETRIEVAL_CASES: RetrievalCase[] = [
   { question: "Boleh menyebar hoaks tentang Bali di media sosial?", expected: "online-conduct" },
   { question: "Boleh bekerja di Bali tanpa dokumen resmi?", expected: "work-permits" },
   { question: "Boleh beli artefak budaya sebagai oleh-oleh?", expected: "protected-goods" },
+
+  // Added with the second round of rules. A rule whose keywords do not reach it
+  // passes its own sourcing test and then sits in the knowledge base unread, so
+  // every new entry earns a line here.
+  { question: "Boleh menyentuh pratima saat upacara?", expected: "honour-sacred-objects" },
+  { question: "Harus menghormati adat dan tradisi setempat?", expected: "respect-adat-culture" },
+  { question: "Tiap pura aturannya beda-beda ya?", expected: "site-specific-rules" },
+  { question: "Boleh berenang di mata air suci?", expected: "protect-water" },
+  { question: "Boleh keluar hotel saat Nyepi?", expected: "nyepi-stay-in" },
+  { question: "Boleh nyalakan lampu terang saat Nyepi?", expected: "nyepi-quiet-dark" },
+  { question: "Bandara tutup saat Nyepi?", expected: "nyepi-no-transport" },
+  { question: "Boleh menawar harga di pasar?", expected: "bargaining-conduct" },
 ];

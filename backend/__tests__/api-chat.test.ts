@@ -49,6 +49,7 @@ const CIRCULAR = "Bali Governor Circular No. 7 of 2025";
 // ids resolve to.
 const GROUNDED = {
   answer: "Wear a kamen and sash when entering temple grounds.",
+  kind: "rule",
   ruleIds: ["temple-attire"],
 };
 
@@ -77,14 +78,23 @@ describe("POST /api/chat — grounded answers", () => {
     });
   });
 
-  it("sends the whole knowledge base and the anti-fabrication instruction in the system prompt", async () => {
+  it("sends the whole knowledge base, the tier ladder and both fences in the system prompt", async () => {
     mockAnswer(GROUNDED);
     await POST(post({ message: "Can I fly a drone?", lang: "en", history: [] }));
 
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
-    expect(systemInstruction).toContain("ONLY using the RULES listed below");
-    expect(systemInstruction).toContain("Do not guess and do not fabricate a rule");
+    // The whole KB, every rule addressable by id.
     expect(systemInstruction).toContain("1. (id: temple-attire) [Dress Code]");
+    expect(systemInstruction).toContain("13. (id: no-littering)");
+    // All four tiers offered, strongest first.
+    expect(systemInstruction).toContain('1. "rule"');
+    expect(systemInstruction).toContain('2. "context"');
+    expect(systemInstruction).toContain('3. "general"');
+    // The fence against fabricated grounding.
+    expect(systemInstruction).toContain("Never invent an id");
+    // The fence against facts that expire, and against recommending places.
+    expect(systemInstruction).toContain("changes with the date, the hour, the season, or the price");
+    expect(systemInstruction).toContain("Recommendations of specific businesses");
     expect(systemInstruction).toContain("Reply in the user's language: English");
   });
 
@@ -101,7 +111,7 @@ describe("POST /api/chat — grounded answers", () => {
 
 describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   it("replaces the answer with the fallback when the model cites no rule", async () => {
-    mockAnswer({ answer: "Sure, drones are totally fine!", ruleIds: [] });
+    mockAnswer({ answer: "Sure, drones are totally fine!", kind: "none", ruleIds: [] });
     const res = await POST(post({ message: "What time is the football match?", lang: "en", history: [] }));
 
     const json = await readBody(res);
@@ -111,7 +121,7 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   // The heart of it: the model can claim grounding, but only the knowledge base
   // can grant it. An id the KB does not know buys the answer nothing.
   it("refuses an answer whose cited rule ids are invented", async () => {
-    mockAnswer({ answer: "Rule 12 says you may climb shrines.", ruleIds: ["rule-12", "made-up"] });
+    mockAnswer({ answer: "Rule 12 says you may climb shrines.", kind: "rule", ruleIds: ["rule-12", "made-up"] });
     const res = await POST(post({ message: "Can I climb a shrine?", lang: "en", history: [] }));
 
     const json = await readBody(res);
@@ -126,6 +136,7 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   it("keeps a real answer that cites one real rule among invented ones", async () => {
     mockAnswer({
       answer: "Wear a kamen and sash.",
+      kind: "rule",
       ruleIds: ["nope", "temple-attire", "also-nope"],
     });
     const res = await POST(post({ message: "What do I wear?", lang: "en", history: [] }));
@@ -137,7 +148,7 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   });
 
   it("lists every distinct source when the answer stands on more than one", async () => {
-    mockAnswer({ answer: "Cover up and keep out of the inner court.", ruleIds: ["temple-attire", "menstruation-entry"] });
+    mockAnswer({ answer: "Cover up and keep out of the inner court.", kind: "rule", ruleIds: ["temple-attire", "menstruation-entry"] });
     const res = await POST(post({ message: "What are the rules here?", lang: "en", history: [] }));
 
     const json = await readBody(res);
@@ -154,10 +165,106 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
   });
 
   it("falls back when ruleIds is not an array", async () => {
-    mockAnswer({ answer: "Anything goes.", ruleIds: "temple-attire" });
+    mockAnswer({ answer: "Anything goes.", kind: "rule", ruleIds: "temple-attire" });
     const res = await POST(post({ message: "Can I wear shorts?", lang: "en", history: [] }));
 
     expect((await readBody(res)).kind).toBe("none");
+  });
+});
+
+describe("POST /api/chat — answering tiers", () => {
+  it("passes a context answer through with no rule ids and no source", async () => {
+    mockAnswer({
+      answer: "Melasti is a purification procession to the sea before Nyepi.",
+      kind: "context",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Apa itu Melasti?", lang: "en", history: [] }));
+
+    expect(await readBody(res)).toEqual({
+      answer: "Melasti is a purification procession to the sea before Nyepi.",
+      kind: "context",
+      ruleIds: [],
+      source: null,
+    });
+  });
+
+  it("passes a general answer through", async () => {
+    mockAnswer({
+      answer: "Tanah Lot was founded by the priest Dang Hyang Nirartha in the 16th century.",
+      kind: "general",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Sejarah Tanah Lot?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("general");
+    expect(json.source).toBeNull();
+  });
+
+  // Server demotes, never promotes: an ungrounded tier that arrives carrying
+  // rule ids must not read as sourced to anything downstream.
+  it("strips rule ids from an ungrounded tier even when they are real", async () => {
+    mockAnswer({
+      answer: "Balinese dress is layered with meaning.",
+      kind: "context",
+      ruleIds: ["temple-attire"],
+    });
+    const res = await POST(post({ message: "Tell me about Balinese dress", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("context");
+    expect(json.ruleIds).toEqual([]);
+    expect(json.source).toBeNull();
+  });
+
+  it("refuses a kind it does not recognise", async () => {
+    mockAnswer({ answer: "Trust me.", kind: "definitely-fine", ruleIds: [] });
+    const res = await POST(post({ message: "hello", lang: "en", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("none");
+  });
+});
+
+describe("POST /api/chat — volatility fence", () => {
+  const volatile = [
+    ["opening hours in Indonesian", "Pura Tanah Lot jam buka 07:00 sampai 19:00."],
+    ["a ticket price", "Tiket masuk harganya Rp 60.000 per orang."],
+    ["an English opening time", "The temple opens at 7am every day."],
+    ["a ceremony timetable", "Jadwal upacara tahun ini jatuh pada bulan Maret."],
+  ];
+
+  it.each(volatile)("refuses a general answer that states %s", async (_label, answer) => {
+    mockAnswer({ answer, kind: "general", ruleIds: [] });
+    const res = await POST(post({ message: "Tanah Lot?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("none");
+    expect(json.answer).toBe(EN_FALLBACK);
+  });
+
+  // The fence must not fire on the answers this app exists to give. "tutup"
+  // sits inside "menutupi", which is how you say "cover your shoulders".
+  it("leaves an ordinary custom answer alone", async () => {
+    mockAnswer({
+      answer: "Sebaiknya menutupi bahu dan lutut, dan tutup rambut jika diminta.",
+      kind: "context",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Pakaian di pura?", lang: "id", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("context");
+  });
+
+  it("does not run the fence over a grounded answer", async () => {
+    mockAnswer({
+      answer: "Aturan menyebut jam buka tidak diatur; ikuti petugas.",
+      kind: "rule",
+      ruleIds: ["general-conduct"],
+    });
+    const res = await POST(post({ message: "Kapan boleh masuk?", lang: "id", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("rule");
   });
 });
 
@@ -255,7 +362,7 @@ describe("POST /api/chat — request validation", () => {
   });
 
   it("coerces an unknown lang to English", async () => {
-    mockAnswer({ answer: "x", ruleIds: [] });
+    mockAnswer({ answer: "x", kind: "none", ruleIds: [] });
     const res = await POST(post({ message: "hello", lang: "fr", history: [] }));
 
     expect((await readBody(res)).answer).toBe(EN_FALLBACK);

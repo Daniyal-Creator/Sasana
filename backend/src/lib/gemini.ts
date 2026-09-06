@@ -14,8 +14,10 @@ import {
 import { withRetry } from "@/lib/retry";
 import { withTimeout } from "@/lib/timeout";
 import { HISTORY_LIMIT } from "@/lib/validation";
+import { statesVolatileFact } from "@/lib/volatility";
 import type { Rule } from "@/lib/types";
 import type {
+  ChatKind,
   ChatMessage,
   ChatResponse,
   Lang,
@@ -53,17 +55,20 @@ const VISION_SCHEMA = {
   propertyOrdering: ["status", "reason", "suggestion", "reference"],
 };
 
-// The model names rule ids; it no longer types the attribution itself. Both
-// fields are required, so "forgot to fill it in" - which used to sink a good
-// answer - is not a state the schema can produce.
+const CHAT_KINDS: ChatKind[] = ["rule", "context", "general", "none"];
+
+// The model names rule ids and declares its own tier; it no longer types the
+// attribution itself. All three fields are required, so "forgot to fill it in"
+// - which used to sink a good answer - is not a state the schema can produce.
 const CHAT_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     answer: { type: Type.STRING },
+    kind: { type: Type.STRING, enum: CHAT_KINDS },
     ruleIds: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
-  required: ["answer", "ruleIds"],
-  propertyOrdering: ["answer", "ruleIds"],
+  required: ["answer", "kind", "ruleIds"],
+  propertyOrdering: ["answer", "kind", "ruleIds"],
 };
 
 /** Everything the prompt knows besides the pixels. */
@@ -232,31 +237,66 @@ export async function askQuestion(
 // the claim is checked rather than trusted. Ids the KB does not know simply
 // vanish; an answer left with none of them is not grounded, whatever it says
 // about itself.
+// The tiers are a one-way street. The model PROPOSES a `kind`; this function
+// checks the proposal and may push it DOWN the ladder, never up. Every way a
+// model can misbehave - overclaiming, citing ids that do not exist, wandering
+// into facts that expire - therefore lands on a more careful answer than the
+// one it wanted to give, and no failure path ends anywhere else.
 export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
 ): ChatResponse {
-  let raw: { answer?: unknown; ruleIds?: unknown } | null = null;
+  let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
     raw = JSON.parse(text ?? "");
   } catch {
     raw = null;
   }
 
-  const answer = typeof raw?.answer === "string" ? raw.answer.trim() : "";
-  const claimed = Array.isArray(raw?.ruleIds)
-    ? raw.ruleIds.filter((id): id is string => typeof id === "string")
-    : [];
-  const cited = rulesByIds(rules, claimed);
+  const refused: ChatResponse = {
+    answer: chatFallback(lang),
+    kind: "none",
+    ruleIds: [],
+    source: null,
+  };
 
-  if (!answer || cited.length === 0) {
-    return { answer: chatFallback(lang), kind: "none", ruleIds: [], source: null };
+  const answer = typeof raw?.answer === "string" ? raw.answer.trim() : "";
+  if (!answer) return refused;
+
+  const claimedKind = CHAT_KINDS.includes(raw?.kind as ChatKind)
+    ? (raw?.kind as ChatKind)
+    : "none";
+
+  if (claimedKind === "rule") {
+    const claimedIds = Array.isArray(raw?.ruleIds)
+      ? raw.ruleIds.filter((id): id is string => typeof id === "string")
+      : [];
+    const cited = rulesByIds(rules, claimedIds);
+
+    // A claim of grounding with nothing behind it is refused outright rather
+    // than softened into a lower tier. The answer asserted a rule, and a
+    // visitor acts on a rule whatever label ends up printed beneath it -
+    // relabelling a fabricated instruction as "general knowledge" would hide
+    // the problem instead of stopping it.
+    if (cited.length === 0) return refused;
+
+    // Both sources can legitimately appear at once - a question about attire in
+    // a sacred area draws on the Circular and on adat. Listing both is the
+    // honest reading; picking one would attribute the answer to less than it
+    // stands on.
+    const source = [...new Set(cited.map((rule) => rule.source))].join(" · ");
+    return { answer, kind: "rule", ruleIds: cited.map((rule) => rule.id), source };
   }
 
-  // Both sources can legitimately appear at once - a question about attire in a
-  // sacred area draws on the Circular and on adat. Listing both is the honest
-  // reading; picking one would attribute the answer to less than it stands on.
-  const source = [...new Set(cited.map((rule) => rule.source))].join(" · ");
-  return { answer, kind: "rule", ruleIds: cited.map((rule) => rule.id), source };
+  if (claimedKind === "context" || claimedKind === "general") {
+    // The net. See volatility.ts for why grounded answers skip it.
+    if (statesVolatileFact(answer)) return refused;
+    // `ruleIds` is only meaningful at the "rule" tier, so it is cleared rather
+    // than passed through: an ungrounded answer carrying rule ids would read to
+    // every later consumer as if it were sourced.
+    return { answer, kind: claimedKind, ruleIds: [], source: null };
+  }
+
+  return refused;
 }

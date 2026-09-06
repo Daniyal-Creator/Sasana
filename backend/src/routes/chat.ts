@@ -33,7 +33,7 @@ export async function POST(req: Request): Promise<Response> {
           route: "chat",
           event: "cache_hit",
           durationMs: Date.now() - started,
-          grounded: hit.grounded,
+          kind: hit.kind,
           lang,
         });
         return Response.json(hit, { status: 200, headers: { "x-cache": "HIT" } });
@@ -58,7 +58,8 @@ export async function POST(req: Request): Promise<Response> {
       route: "chat",
       event: "ok",
       durationMs: Date.now() - started,
-      grounded: answer.grounded,
+      kind: answer.kind,
+      citedRules: answer.ruleIds.length,
       siteId: parsed.site?.id,
       siteRules: siteRules.length,
       lang,

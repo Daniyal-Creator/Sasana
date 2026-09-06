@@ -1,6 +1,7 @@
 import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { env } from "@/lib/env";
 import { describeError, toGeminiError } from "@/lib/errors";
+import { rulesByIds } from "@/lib/knowledge";
 import { logError, logInfo } from "@/lib/logger";
 import {
   buildChatSystemPrompt,
@@ -52,15 +53,17 @@ const VISION_SCHEMA = {
   propertyOrdering: ["status", "reason", "suggestion", "reference"],
 };
 
+// The model names rule ids; it no longer types the attribution itself. Both
+// fields are required, so "forgot to fill it in" - which used to sink a good
+// answer - is not a state the schema can produce.
 const CHAT_SCHEMA = {
   type: Type.OBJECT,
   properties: {
     answer: { type: Type.STRING },
-    source: { type: Type.STRING, nullable: true },
-    grounded: { type: Type.BOOLEAN },
+    ruleIds: { type: Type.ARRAY, items: { type: Type.STRING } },
   },
-  required: ["answer", "grounded"],
-  propertyOrdering: ["answer", "source", "grounded"],
+  required: ["answer", "ruleIds"],
+  propertyOrdering: ["answer", "ruleIds"],
 };
 
 /** Everything the prompt knows besides the pixels. */
@@ -190,12 +193,13 @@ export async function askQuestion(
       env.GEMINI_CHAT_TIMEOUT_MS,
       "chat",
     );
-    const result = safeParseChat(res.text, lang, rules.length);
+    const result = safeParseChat(res.text, lang, rules);
     logInfo({
       route: "chat",
       event: "gemini_ok",
       durationMs: Date.now() - started,
-      grounded: result.grounded,
+      kind: result.kind,
+      citedRules: result.ruleIds.length,
       historyTurns: contents.length - 1,
       promptTokens: res.usageMetadata?.promptTokenCount,
       outputTokens: res.usageMetadata?.candidatesTokenCount,
@@ -215,28 +219,44 @@ export async function askQuestion(
 
 // The server-side half of the grounding guarantee (FR2.1, backend-spec §2.2).
 // The prompt asks the model to decline when no rule covers the question; this
-// enforces it. Anything short of a grounded answer with a real source becomes
-// the official fallback, so a misbehaving model can never surface an invented
-// rule to a tourist.
+// enforces it, so a misbehaving model can never surface an invented rule to a
+// tourist.
+//
+// What changed, and why it matters: grounding used to hang on a `grounded`
+// boolean and a `source` STRING the model typed itself, which meant the server
+// was checking that the model had made a claim, not that the claim was true.
+// An answer built correctly from the rules but missing its `source` was thrown
+// away, while a confident fabrication that filled the field in was let through.
+// Now the model names ids, `rulesByIds` resolves them against the server's own
+// knowledge base, and the attribution is read off the rules that survive - so
+// the claim is checked rather than trusted. Ids the KB does not know simply
+// vanish; an answer left with none of them is not grounded, whatever it says
+// about itself.
 export function safeParseChat(
   text: string | undefined,
   lang: Lang,
-  ruleCount: number,
+  rules: Rule[],
 ): ChatResponse {
-  let raw: { answer?: unknown; source?: unknown; grounded?: unknown } | null = null;
+  let raw: { answer?: unknown; ruleIds?: unknown } | null = null;
   try {
     raw = JSON.parse(text ?? "");
   } catch {
     raw = null;
   }
 
-  const grounded = raw?.grounded === true;
-  const source =
-    typeof raw?.source === "string" && raw.source.trim() ? raw.source.trim() : null;
   const answer = typeof raw?.answer === "string" ? raw.answer.trim() : "";
+  const claimed = Array.isArray(raw?.ruleIds)
+    ? raw.ruleIds.filter((id): id is string => typeof id === "string")
+    : [];
+  const cited = rulesByIds(rules, claimed);
 
-  if (!grounded || !source || !answer || ruleCount === 0) {
-    return { answer: chatFallback(lang), source: null, grounded: false };
+  if (!answer || cited.length === 0) {
+    return { answer: chatFallback(lang), kind: "none", ruleIds: [], source: null };
   }
-  return { answer, source, grounded: true };
+
+  // Both sources can legitimately appear at once - a question about attire in a
+  // sacred area draws on the Circular and on adat. Listing both is the honest
+  // reading; picking one would attribute the answer to less than it stands on.
+  const source = [...new Set(cited.map((rule) => rule.source))].join(" · ");
+  return { answer, kind: "rule", ruleIds: cited.map((rule) => rule.id), source };
 }

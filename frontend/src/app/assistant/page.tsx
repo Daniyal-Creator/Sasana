@@ -76,7 +76,7 @@ export default function AssistantPage() {
       const data = (await res.json()) as ChatResponse;
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.answer, source: data.source, grounded: data.grounded },
+        { role: "assistant", content: data.answer, source: data.source, kind: data.kind, ruleIds: data.ruleIds },
       ]);
     } catch {
       setFailed(question);
@@ -192,7 +192,7 @@ export default function AssistantPage() {
                   content={message.content}
                   imageUrl={message.imageUrl}
                   source={message.source}
-                  grounded={message.grounded}
+                  kind={message.kind}
                   isFirstOfTurn={message.role === "user" || messages[i - 1]?.role !== "assistant"}
                 />
               ))}

@@ -73,14 +73,20 @@ skills-lock.json
 !.scratch/explore-approach/issues/
 .scratch/explore-approach/issues/*
 !.scratch/explore-approach/issues/*.md
-# The three areas being worked in parallel. Each owner's spec.md has to travel
-# with the repo or the other two cannot read what "done" means for that area.
+# The areas being worked in parallel. Each owner's spec.md has to travel with
+# the repo or the others cannot read what "done" means for that area.
 !.scratch/geofencing/
 .scratch/geofencing/*
 !.scratch/geofencing/*.md
 !.scratch/geofencing/issues/
 .scratch/geofencing/issues/*
 !.scratch/geofencing/issues/*.md
+!.scratch/assistant/
+.scratch/assistant/*
+!.scratch/assistant/*.md
+!.scratch/assistant/issues/
+.scratch/assistant/issues/*
+!.scratch/assistant/issues/*.md
 # One effort of its own, allow-listed the same way. Its issues are cited by
 # ADR-0012, ADR-0013 and guardrails 11.2; left out, those links point at
 # nothing.

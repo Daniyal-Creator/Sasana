@@ -149,7 +149,7 @@ export function buildChatSystemPrompt(
 
 WHERE THE VISITOR IS: ${site.name}.
 Words like "here", "this temple", or "this place" refer to ${site.name}. These of the RULES below apply there:
-${formatRulesForPrompt(siteRules, lang)}
+${formatRulesForPrompt(siteRules, lang, { withIds: true })}
 When the question is about where they are, answer from these first. The full RULES list still governs everything else, and rule 2 still holds: if nothing covers the question, say so.`
       : "";
 
@@ -157,16 +157,16 @@ When the question is about where they are, answer from these first. The full RUL
 
 Follow these instructions strictly:
 1. Answer the user's question ONLY using the RULES listed below. Do NOT invent, assume, or add any rule that is not in the list. Each rule carries a "Why it matters" note explaining the custom behind it; that note is part of the rules, so you may use it to explain what something means or why it is done, not only what is allowed.
-2. If the RULES do not cover the question, you MUST set "grounded" to false and reply that no official information is available. Do not guess and do not fabricate a rule.
-3. When your answer is based on one or more rules, set "grounded" to true and set "source" to the source text of the most relevant rule.
+2. If the RULES do not cover the question, reply that no official information is available and return an EMPTY "ruleIds" array. Do not guess and do not fabricate a rule.
+3. When your answer is based on one or more rules, list their ids in "ruleIds" - the exact strings printed as "(id: ...)" next to each rule. Cite every rule you actually used, most relevant first. Never invent an id: the server checks each one against its own copy of the rules and silently drops any it does not recognise, so a made-up id only costs your answer its grounding.
 4. Reply in the user's language: ${LANG_NAME[lang]}. Keep the tone warm, respectful, concise, and never judgmental.
 5. Do not give legal advice or describe penalties beyond what the rules state.
 
-Return ONLY a JSON object with keys: answer (string), source (string or null), grounded (boolean).
+Return ONLY a JSON object with keys: answer (string), ruleIds (array of strings).
 ${location}
 
 RULES:
-${formatRulesForPrompt(rules, lang)}`;
+${formatRulesForPrompt(rules, lang, { withIds: true })}`;
 }
 
 // The server safety net (FR2.1) is what produces this answer, so the string

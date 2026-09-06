@@ -204,17 +204,31 @@ and local to your machine.
 
 ## Working together
 
-Three people work this repo in parallel, each owning one area:
+The repo is carved into areas, each owned by one person:
 
 | Area | Owner | Branch prefix | Spec |
 | --- | --- | --- | --- |
 | Geofencing | Daniyal | `geofencing/` | `.scratch/geofencing/spec.md` |
+| Assistant | Daniyal | `assistant/` | `.scratch/assistant/spec.md` |
 | AI vision | Manu | `vision/` | `.scratch/vision/spec.md` |
 | Landing page | Rafli | `landing/` | `.scratch/landing/spec.md` |
 
 Each owner writes their own `spec.md` and has it read before starting. Writing
 it is the point: it is where you decide what "done" means for your area, so
 nobody discovers three different answers in the last week.
+
+**Development is centralised on Daniyal as of 2026-09-05.** Manu and Rafli are
+paused, so their areas have no active owner and Daniyal picks up work that
+lands in them. The table stays as it is rather than being rewritten: the
+pause is temporary, and an area with a named owner is easier to hand back than
+one that has been dissolved. What does *not* change while it holds is the rule
+below on files more than one area touches — a contract change is still its own
+pull request, merged first, because the reason for that is the dependency
+order, not the head count.
+
+The Assistant area was added the same day. The chatbot used to sit between
+backend and frontend owned by nobody, which is part of why a grounding bug in
+`safeParseChat` survived as long as it did.
 
 **Branch, merge, repeat**
 

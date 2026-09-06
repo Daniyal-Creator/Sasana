@@ -4,13 +4,14 @@ import Image from "next/image";
 import { SourceReference } from "@/components/assistant/SourceReference";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
+import type { ChatKind } from "@shared/contract";
 
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string | null;
   source?: string | null;
-  grounded?: boolean;
+  kind?: ChatKind;
   isFirstOfTurn?: boolean;
 }
 
@@ -41,7 +42,7 @@ export function ChatBubble({
   content,
   imageUrl,
   source,
-  grounded,
+  kind,
   isFirstOfTurn = true,
 }: ChatBubbleProps) {
   const { lang } = useLang();
@@ -70,7 +71,7 @@ export function ChatBubble({
           </div>
         )}
         <p className="whitespace-pre-wrap text-base">{content}</p>
-        {!isUser && grounded !== undefined && <SourceReference source={source ?? null} grounded={grounded} />}
+        {!isUser && kind !== undefined && <SourceReference source={source ?? null} kind={kind} />}
       </div>
     </li>
   );

@@ -153,6 +153,41 @@ and Explore says so on its own permission screen.
 
 ---
 
+## Measuring what the answer cache saves
+
+The assistant stores an answer to a first-turn question and serves it again
+when somebody asks the same thing, however they word it. `GET /api/stats`
+reports what that has been worth, and `/stats` shows the same numbers on a
+screen. Neither is linked from the header: they are maintenance readings, not
+something a visitor came for.
+
+The saving is measured rather than estimated. Each entry records what its
+original Gemini call actually cost, and every later hit adds that figure again.
+
+To measure it yourself, run the same questions twice, once with the cache off
+and once with it on. Misses are counted either way, so the two readings compare:
+
+```bash
+CACHE_ENABLED=false docker compose up -d backend
+```
+
+Ask a set of questions, note `/api/stats`, then repeat with the cache on and a
+fresh database (`rm backend/data/answers.db`). One such run, sixteen questions
+being eight asked twice in different words:
+
+| | Cache off | Cache on |
+| --- | --- | --- |
+| Questions asked | 16 | 16 |
+| Gemini calls | 16 | 9 |
+| Tokens spent | 61,532 | 34,639 |
+
+A 43.7% saving, and `tokensSaved` reported 26,932 against a measured difference
+of 26,893. Seven of the eight pairs collapsed to one entry; the pair that did
+not was "bawa drone" against "menerbangkan drone", which is the synonym limit
+[ADR-0016](docs/adr/0016-persistent-answer-cache.md) records.
+
+---
+
 ## Project structure
 
 ```

@@ -534,6 +534,31 @@ const dict = {
     en: "Customs, official rules, and Bali background",
     id: "Adat, aturan resmi, dan latar Bali",
   },
+  // The answer cache's reading, on /stats. Not linked from the header: it is a
+  // maintenance number, not something a visitor came for.
+  "stats.title": { en: "Answer cache", id: "Cache jawaban" },
+  "stats.body": {
+    en: "What the cache has saved by answering a repeated question without asking the model again.",
+    id: "Yang dihemat cache dengan menjawab pertanyaan berulang tanpa bertanya lagi ke model.",
+  },
+  "stats.tokens": { en: "Tokens saved", id: "Token dihemat" },
+  "stats.hitrate": { en: "Served from cache", id: "Dilayani dari cache" },
+  "stats.answered": { en: "Cached / asked", id: "Dari cache / ditanya" },
+  "stats.entries": { en: "Answers stored", id: "Jawaban tersimpan" },
+  "stats.on": {
+    en: "The cache is on. Repeated questions are answered without calling the model.",
+    id: "Cache aktif. Pertanyaan berulang dijawab tanpa memanggil model.",
+  },
+  "stats.off": {
+    en: "The cache is off. Every question reaches the model, and misses are still counted, which is what makes this reading comparable with a run where it is on.",
+    id: "Cache mati. Setiap pertanyaan sampai ke model, dan miss tetap dihitung, sehingga angka ini bisa dibandingkan dengan run saat cache aktif.",
+  },
+  "stats.kb": { en: "Knowledge base {hash}", id: "Basis pengetahuan {hash}" },
+  "stats.refresh": { en: "Refresh", id: "Muat ulang" },
+  "stats.error": {
+    en: "Could not read the cache figures.",
+    id: "Tidak bisa membaca angka cache.",
+  },
   "sr.you": { en: "You said", id: "Anda berkata" },
   "sr.assistant": { en: "Sasana said", id: "Sasana berkata" },
 

@@ -136,3 +136,25 @@ describe("resolveTierLine", () => {
     expect(line?.attributed).toBe(false);
   });
 });
+
+// The /stats page is a client component that fetches, so the node test
+// environment cannot render it. What it can check is that none of its copy is
+// missing in either language, which is the failure that would actually ship.
+describe("stats page copy", () => {
+  it.each([
+    "stats.title", "stats.body", "stats.tokens", "stats.hitrate", "stats.answered",
+    "stats.entries", "stats.on", "stats.off", "stats.kb", "stats.refresh", "stats.error",
+  ] as const)("%s is written in both languages", (key) => {
+    for (const lang of LANGS) {
+      const text = t(lang, key, { hash: "abc123" });
+      expect(text.length).toBeGreaterThan(0);
+      expect(text).not.toBe(key);
+      expect(text).not.toContain("—"); // W1
+    }
+  });
+
+  it("interpolates the knowledge-base hash rather than printing the placeholder", () => {
+    expect(t("id", "stats.kb", { hash: "49cde010" })).toContain("49cde010");
+    expect(t("id", "stats.kb", { hash: "49cde010" })).not.toContain("{hash}");
+  });
+});

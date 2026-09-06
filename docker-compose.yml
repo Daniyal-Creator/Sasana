@@ -27,6 +27,14 @@ services:
       # Where the Next.js dev server runs. Add a deployed domain here, comma
       # separated, when the frontend is hosted somewhere else.
       ALLOWED_ORIGINS: http://localhost:3000
+      # Interpolated so the answer cache can be turned off for one run without
+      # editing this file:
+      #
+      #   CACHE_ENABLED=false docker compose up -d backend
+      #
+      # Misses are still counted with it off, which is what makes a cold run and
+      # a warm run comparable. See docs/adr/0016.
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
     ports:
       - "3001:3001"
     # Source is mounted so `tsx watch` picks up edits without rebuilding the

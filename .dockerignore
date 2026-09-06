@@ -16,6 +16,11 @@
 .scratch
 docs
 *.md
+
+# The answer cache's database. `COPY backend ./backend` would otherwise bake a
+# developer's local answers into an image layer and ship them to the server,
+# where the volume mounted over this path is what should hold them.
+backend/data
 **/*.tsbuildinfo
 
 # frontend/ used to be excluded here, back when the only image was the backend.

@@ -49,7 +49,11 @@ The Gemini API key lives **only** in the backend. The browser never receives it.
 
 ## Getting started
 
-**Requirements:** Node.js 20.18 or newer, npm, and Docker Desktop.
+**Requirements:** Node.js 24 or newer, npm, and Docker Desktop.
+
+> Node 24 is what both Dockerfiles ship and what CI now runs. The floor used to
+> be 20.18; the answer cache raised it, because it stores its table through
+> `node:sqlite`, which Node did not carry before 22.5.
 
 **1. Give the backend a key.** Copy the example file and fill in your own Gemini
 API key. Get one free (no credit card) at <https://aistudio.google.com/apikey>:

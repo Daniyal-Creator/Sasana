@@ -183,7 +183,15 @@ function keywordMatchesToken(keyword: string, token: string): boolean {
 
 export function searchRules(rules: Rule[], query: string): Rule[] {
   const q = query.toLowerCase();
-  const tokens = q.split(/\W+/).filter((t) => t.length > 2 && !STOPWORDS.has(t));
+  // Clitics come off here for the same reason they come off in
+  // `normalizeQuestion`: the two are asking the same thing about a question, so
+  // they have to read it the same way. They had drifted, and it cost real
+  // matches - "aturannya" never reached the keyword "aturan", so a question
+  // about each temple having its own rules found nothing.
+  const tokens = q
+    .split(/\W+/)
+    .map(stripClitic)
+    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
   return rules
     .map((rule) => {
       const phraseHits = rule.keywords.reduce((sum, k) => sum + (q.includes(k) ? 2 : 0), 0);

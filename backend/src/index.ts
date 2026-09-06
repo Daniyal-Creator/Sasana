@@ -11,6 +11,7 @@ import { cors } from "hono/cors";
 
 import { logInfo } from "@/lib/logger";
 import { POST as chat } from "@/routes/chat";
+import { GET as stats } from "@/routes/stats";
 import { POST as vision } from "@/routes/vision";
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -29,7 +30,7 @@ app.use(
   "/api/*",
   cors({
     origin: ALLOWED_ORIGINS,
-    allowMethods: ["POST", "OPTIONS"],
+    allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type"],
   }),
 );
@@ -40,6 +41,9 @@ app.get("/health", (c) => c.json({ ok: true }));
 
 app.post("/api/chat", (c) => chat(c.req.raw));
 app.post("/api/vision", (c) => vision(c.req.raw));
+// Read-only aggregates over the answer cache. Spends no quota, so it is safe to
+// poll while demonstrating the saving.
+app.get("/api/stats", () => stats());
 
 serve({ fetch: app.fetch, port: PORT }, (info) => {
   logInfo({ route: "server", event: "listening", port: info.port, origins: ALLOWED_ORIGINS });

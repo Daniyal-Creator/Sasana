@@ -47,6 +47,12 @@ services:
       # 0.0.0.0 and punch through the host firewall, putting the API on the
       # public internet without TLS and beside nginx rather than behind it.
       - "127.0.0.1:3001:3001"
+    volumes:
+      # The answer cache. Without this the saving resets on every deploy, which
+      # would leave the one number this feature exists to produce permanently
+      # near zero. Named rather than bind-mounted so Docker owns the path and
+      # permissions; the `name: sasana` above is what keeps it findable.
+      - answer-cache:/app/backend/data
     restart: unless-stopped
     healthcheck:
       # The script must stay quoted: unquoted, YAML reads the "? " and ": " in
@@ -88,3 +94,6 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+volumes:
+  answer-cache:

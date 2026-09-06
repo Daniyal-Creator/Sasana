@@ -41,4 +41,12 @@ export const env = {
   GEMINI_VISION_TIMEOUT_MS: optNumber("GEMINI_VISION_TIMEOUT_MS", 30000),
   GEMINI_CHAT_TIMEOUT_MS: optNumber("GEMINI_CHAT_TIMEOUT_MS", 15000),
   GEMINI_RETRY_BACKOFF_MS: optNumber("GEMINI_RETRY_BACKOFF_MS", 1500),
+  // Where the answer cache keeps its table. Relative to the working directory,
+  // which is /app/backend in the container; docker-compose mounts a volume
+  // there so the answers survive a rebuild.
+  CACHE_DB_PATH: process.env.CACHE_DB_PATH?.trim() || "./data/answers.db",
+  // The switch that makes the saving measurable. Turning it off still records
+  // misses, so the same questions can be run twice - once cold, once warm - and
+  // the two /api/stats readings put side by side.
+  CACHE_ENABLED: process.env.CACHE_ENABLED?.trim() !== "false",
 } as const;

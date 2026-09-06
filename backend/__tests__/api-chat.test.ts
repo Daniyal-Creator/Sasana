@@ -11,7 +11,7 @@ vi.mock("@google/genai", () => ({
 }));
 
 import { POST } from "@/routes/chat";
-import { chatCache } from "@/lib/cache";
+import { answerCache } from "@/lib/answer-cache";
 
 // Response.json() is typed `unknown` on Node (it comes from @types/node, not
 // from the DOM lib), so every body is read through this helper.
@@ -63,7 +63,7 @@ const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
 beforeEach(() => {
   vi.restoreAllMocks();
   generateContent.mockReset();
-  chatCache.clear(); // module singleton; a leftover entry would mask a real call
+  answerCache.clear(); // module singleton; a leftover entry would mask a real call
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -527,6 +527,28 @@ describe("POST /api/chat — first-turn answer cache", () => {
       { role: "user", content: "earlier question" },
       { role: "assistant", content: "earlier answer" },
     ]);
+
+    expect(res.headers.get("x-cache")).toBe("MISS");
+    expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  // The point of normalising the key: the second visitor to ask the same thing
+  // in their own words pays nothing.
+  it("serves a differently worded version of the same question from cache", async () => {
+    mockAnswer(GROUNDED);
+    await ask("Apakah saya boleh pakai celana pendek?", "id");
+    const res = await ask("Bolehkah pakai celana pendek?", "id");
+
+    expect(res.headers.get("x-cache")).toBe("HIT");
+    expect(generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  // Storing failures would let one unlucky call become the permanent answer to
+  // a question the app can perfectly well handle.
+  it("never stores a refusal", async () => {
+    mockAnswer({ answer: "Sure, whatever.", kind: "none", ruleIds: [] });
+    await ask("what time is the football match?");
+    const res = await ask("what time is the football match?");
 
     expect(res.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);

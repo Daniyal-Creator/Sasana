@@ -11,8 +11,10 @@ vi.mock("@google/genai", () => ({
   ThinkingLevel: { MINIMAL: "MINIMAL", LOW: "LOW" },
 }));
 
-import { chatCache, chatCacheKey } from "@/lib/cache";
+import { answerCache } from "@/lib/answer-cache";
+import { answerKey } from "@/lib/cache";
 import { loadRules, rulesByIds } from "@/lib/knowledge";
+import { normalizeQuestion } from "@/lib/knowledge";
 import { buildChatSystemPrompt, buildVisionContextLine } from "@/lib/prompts";
 import { SITE_RULE_IDS_LIMIT, validateSiteContext } from "@/lib/validation";
 import { POST as chat } from "@/routes/chat";
@@ -42,7 +44,7 @@ function promptText(): string {
 
 beforeEach(() => {
   generateContent.mockReset();
-  chatCache.clear();
+  answerCache.clear();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
@@ -124,24 +126,25 @@ describe("validateSiteContext", () => {
   });
 });
 
-describe("chatCacheKey", () => {
+describe("answerKey and the Site", () => {
+  const key = (message: string, lang: string, siteId?: string) =>
+    answerKey(normalizeQuestion(message), lang, siteId);
+
   it("gives the same question at two Sites two different keys", () => {
     // Without this, an answer cached at Tanah Lot is served to somebody
     // standing at Besakih - a confident wrong Custom.
-    const atTanahLot = chatCacheKey("boleh foto di sini?", "id", "pura-tanah-lot");
-    const atBesakih = chatCacheKey("boleh foto di sini?", "id", "pura-besakih");
+    const atTanahLot = key("boleh foto di sini?", "id", "pura-tanah-lot");
+    const atBesakih = key("boleh foto di sini?", "id", "pura-besakih");
 
     expect(atTanahLot).not.toBe(atBesakih);
   });
 
   it("separates a question asked at a Site from the same one asked nowhere", () => {
-    expect(chatCacheKey("boleh foto?", "id", "pura-besakih")).not.toBe(
-      chatCacheKey("boleh foto?", "id"),
-    );
+    expect(key("boleh foto?", "id", "pura-besakih")).not.toBe(key("boleh foto?", "id"));
   });
 
   it("keeps one shared key for visitors with no Site", () => {
-    expect(chatCacheKey("Can I wear shorts?", "en")).toBe(chatCacheKey("can i wear  shorts?", "en"));
+    expect(key("Can I wear shorts?", "en")).toBe(key("can i wear  shorts?", "en"));
   });
 });
 

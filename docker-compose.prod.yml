@@ -1,0 +1,90 @@
+# Production on the school VPS. Both services, one command:
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# This is NOT docker-compose.yml. That file is the development compose: it bind-
+# mounts source, runs `tsx watch`, and deliberately leaves the frontend out
+# because Next.js file watching through a Windows bind mount is unreliable and
+# the frontend developers depend on fast HMR. None of those reasons exist on the
+# server - no Windows, no bind mount, no HMR - so here the frontend is a
+# container like any other. The two files are kept apart rather than merged
+# because their goals genuinely conflict.
+#
+# nginx on the host terminates TLS and proxies two subdomains:
+#
+#   https://sasana.smkwikrama.sch.id     ->  127.0.0.1:3000   frontend
+#   https://sasana-be.smkwikrama.sch.id  ->  127.0.0.1:3001   backend
+#
+# Override either hostname without editing this file:
+#   PUBLIC_WEB_ORIGIN=https://... PUBLIC_API_ORIGIN=https://... docker compose ...
+
+# Pinned on purpose. Without it Compose derives the project name from whichever
+# directory this file sits in, and that name prefixes the container names, the
+# network, and - once the answer cache gets a database - the named volume that
+# holds its data. A renamed or relocated folder would then quietly point at a
+# different volume, and the stored data would look lost when it is merely
+# somewhere else.
+name: sasana
+
+services:
+  backend:
+    build:
+      # Repository root, so the image can copy shared/ - the type-only API
+      # contract lives outside backend/.
+      context: .
+      dockerfile: backend/Dockerfile
+    # GEMINI_API_KEY comes from here. The file is git-ignored and lives only on
+    # the server; it is never baked into an image layer.
+    env_file: ./backend/.env
+    environment:
+      PORT: 3001
+      # The browser calls this API cross-origin, from the frontend's hostname.
+      # Get this wrong and every request is refused by CORS, with the failure
+      # visible only in the visitor's console.
+      ALLOWED_ORIGINS: ${PUBLIC_WEB_ORIGIN:-https://sasana.smkwikrama.sch.id}
+    ports:
+      # Bound to 127.0.0.1 on purpose. Plain "3001:3001" makes Docker publish on
+      # 0.0.0.0 and punch through the host firewall, putting the API on the
+      # public internet without TLS and beside nginx rather than behind it.
+      - "127.0.0.1:3001:3001"
+    restart: unless-stopped
+    healthcheck:
+      # The script must stay quoted: unquoted, YAML reads the "? " and ": " in
+      # the ternary as mapping syntax instead of as part of the string.
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3001/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # A BUILD argument, not an environment variable, and the distinction is
+        # not cosmetic: next build inlines NEXT_PUBLIC_* into the browser bundle
+        # and nothing reads it at run time. See the long note in
+        # frontend/Dockerfile. Changing this value requires --build.
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_ORIGIN:-https://sasana-be.smkwikrama.sch.id}
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+    # No depends_on. The two are independent once running - the browser calls the
+    # API directly, nginx routes each subdomain on its own - and coupling them
+    # would mean a backend that fails its healthcheck also takes down the landing
+    # page and the map, which do not need it.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

@@ -14,7 +14,12 @@
 .claude
 .agents
 .scratch
-frontend
 docs
 *.md
 **/*.tsbuildinfo
+
+# frontend/ used to be excluded here, back when the only image was the backend.
+# It cannot be: frontend/Dockerfile builds from this same context root, because
+# frontend/src imports the shared contract through "@shared/*". Excluding it
+# made the frontend build fail on a COPY that silently found nothing.
+# The backend image never copies frontend/, so nothing about it changes.

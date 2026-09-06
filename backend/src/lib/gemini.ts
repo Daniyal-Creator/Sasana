@@ -183,6 +183,11 @@ export interface ChatRequestContext {
   siteRules?: Rule[];
   /** Read from OpenStreetMap for this request, empty when none was needed. */
   places?: Place[];
+  /**
+   * The full knowledge base, when `rules` is the narrowed selection actually
+   * sent. Only a refusal uses it, to name topics beyond this question's slice.
+   */
+  allRules?: Rule[];
 }
 
 /** An answer plus what it cost, which is what the cache records as saved. */
@@ -197,7 +202,7 @@ export async function askQuestion(
   history: ChatMessage[],
   lang: Lang,
   rules: Rule[],
-  { site, siteRules = [], places = [] }: ChatRequestContext = {},
+  { site, siteRules = [], places = [], allRules = rules }: ChatRequestContext = {},
 ): Promise<AnsweredQuestion> {
   const started = Date.now();
   const contents = [
@@ -232,6 +237,7 @@ export async function askQuestion(
     const result = safeParseChat(res.text, lang, rules, {
       message,
       hasPlaces: places.length > 0,
+      allRules,
     });
     logInfo({
       route: "chat",
@@ -239,6 +245,7 @@ export async function askQuestion(
       durationMs: Date.now() - started,
       kind: result.kind,
       citedRules: result.ruleIds.length,
+      rulesSent: rules.length,
       historyTurns: contents.length - 1,
       promptTokens: res.usageMetadata?.promptTokenCount,
       outputTokens: res.usageMetadata?.candidatesTokenCount,
@@ -282,13 +289,22 @@ export interface ChatParseContext {
   message: string;
   /** Whether the server actually put a map lookup in front of the model. */
   hasPlaces?: boolean;
+  /**
+   * The whole knowledge base, when the prompt carried only part of it.
+   *
+   * Citations resolve against what was SENT - a model naming a rule it was not
+   * shown is working from memory, which is the thing being guarded against -
+   * but a refusal offers topics from everything the assistant knows, because
+   * "what I can help with" is a claim about the app, not about this request.
+   */
+  allRules?: Rule[];
 }
 
 export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
-  { message, hasPlaces = false }: ChatParseContext,
+  { message, hasPlaces = false, allRules = rules }: ChatParseContext,
 ): ChatResponse {
   let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
@@ -310,7 +326,7 @@ export function safeParseChat(
     answer: buildRefusal(
       message,
       lang,
-      rules,
+      allRules,
       reason ?? (asksForVolatileFact(message) ? "volatile" : "uncovered"),
     ),
     kind: "none",

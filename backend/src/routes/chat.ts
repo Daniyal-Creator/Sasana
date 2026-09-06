@@ -2,7 +2,7 @@ import { answerCache } from "@/lib/answer-cache";
 import { answerKey } from "@/lib/cache";
 import { askQuestion } from "@/lib/gemini";
 import { handleApiError, parseJsonBody } from "@/lib/http";
-import { loadRules, normalizeQuestion, rulesByIds, rulesHash } from "@/lib/knowledge";
+import { loadRules, normalizeQuestion, rulesByIds, rulesHash, selectRules } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
 import { detectPlaceQuery, findNearbyPlaces } from "@/lib/places";
 import { validateChatRequest } from "@/lib/validation";
@@ -66,12 +66,18 @@ export async function POST(req: Request): Promise<Response> {
           })
         : [];
 
+    // Only the rules this question is about go into the prompt. An empty
+    // retrieval falls back to the whole knowledge base, which is what keeps a
+    // question worded away from the rules' own vocabulary answerable - see
+    // selectRules.
+    const sent = selectRules(rules, parsed.message, siteRules);
+
     const { response: answer, totalTokens } = await askQuestion(
       parsed.message,
       parsed.history,
       lang,
-      rules,
-      { site: parsed.site, siteRules, places },
+      sent,
+      { site: parsed.site, siteRules, places, allRules: rules },
     );
 
     // Two kinds are deliberately never stored.
@@ -97,6 +103,8 @@ export async function POST(req: Request): Promise<Response> {
       siteRules: siteRules.length,
       placeQuery: category ?? undefined,
       places: places.length,
+      rulesSent: sent.length,
+      rulesTotal: rules.length,
       cached: cacheable && storable,
       lang,
     });

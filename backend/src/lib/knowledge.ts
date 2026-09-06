@@ -203,3 +203,39 @@ export function searchRules(rules: Rule[], query: string): Rule[] {
     .sort((a, b) => b.score - a.score)
     .map((x) => x.rule);
 }
+
+/**
+ * The rules worth putting in front of the model for one question.
+ *
+ * Stuffing all of them was right when there were thirteen. At twenty-seven the
+ * prompt is 3,838 tokens and, measured live, 98% of what a question costs -
+ * output averages 73. Sending only what the question is about cuts the average
+ * to about 1,240.
+ *
+ * The safety of that rests on one measurement rather than on hope. Across
+ * fifty labelled questions, including a set deliberately worded to avoid the
+ * rules' own vocabulary, `searchRules` never once ranked the answering rule low:
+ * when it found anything at all, the right rule was in the top three. It failed
+ * only by returning NOTHING - "Ada yang ditaruh di tanah depan pintu" finds no
+ * rule, though offerings-canang answers it.
+ *
+ * So an empty result is the one case that must not be trusted, and it falls
+ * back to the whole knowledge base. That is the case which used to be
+ * answerable, and it stays answerable; every other case is narrowed.
+ *
+ * The Site's own rules are always included. A visitor standing somewhere is
+ * owed what applies there whether or not their wording happened to match it.
+ */
+export function selectRules(
+  rules: Rule[],
+  message: string,
+  siteRules: Rule[] = [],
+  limit = 5,
+): Rule[] {
+  const found = searchRules(rules, message);
+  if (found.length === 0) return rules;
+
+  const wanted = new Set([...found.slice(0, limit), ...siteRules].map((rule) => rule.id));
+  // Knowledge-base order, so the same question always reads the same way.
+  return rules.filter((rule) => wanted.has(rule.id));
+}

@@ -1,0 +1,53 @@
+// The Hono app: routes, CORS and nothing else.
+//
+// Deliberately free of any call that binds a port or starts a process, because
+// two different entry points import it and only one of them is allowed to
+// listen (ADR-0018):
+//
+//   src/index.ts   default-exports this app. Vercel imports it and calls it
+//                  per request; a `serve()` here would try to open a socket
+//                  inside a serverless function.
+//   src/server.ts  imports it and calls `serve()`. This is what `npm run dev`,
+//                  `npm run start` and the development container run.
+//
+// The route handlers stay plain Web-standard `(Request) => Promise<Response>`
+// functions. Hono hands them the untouched request via `c.req.raw` and uses the
+// returned Response as-is, so the handlers depend on no framework at all -
+// which is also why the test suite can call them directly.
+
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+
+import { POST as chat } from "@/routes/chat";
+import { GET as stats } from "@/routes/stats";
+import { POST as vision } from "@/routes/vision";
+
+// The browser calls this server cross-origin, from the frontend's own hostname.
+// Comma-separated so a deploy can add its domain without a code change.
+export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const app = new Hono();
+
+app.use(
+  "/api/*",
+  cors({
+    origin: ALLOWED_ORIGINS,
+    allowMethods: ["GET", "POST", "OPTIONS"],
+    allowHeaders: ["Content-Type"],
+  }),
+);
+
+// Liveness probe. Lets a frontend developer confirm the server is up without
+// spending Gemini quota.
+app.get("/health", (c) => c.json({ ok: true }));
+
+app.post("/api/chat", (c) => chat(c.req.raw));
+app.post("/api/vision", (c) => vision(c.req.raw));
+// Read-only aggregates over the answer cache. Spends no quota, so it is safe to
+// poll while demonstrating the saving.
+app.get("/api/stats", () => stats());
+
+export default app;

@@ -199,14 +199,19 @@ frontend/            Next.js app - everything the browser runs
   public/              Static images
 
 backend/             Hono API - everything that touches Gemini
-  src/routes/          POST /api/chat, POST /api/vision
+  src/app.ts           The Hono app: routes and CORS, binds no port
+  src/index.ts         Vercel entry - default-exports the app
+  src/server.ts        Node entry - `npm run dev` / `start`, the dev container
+  src/routes/          POST /api/chat, POST /api/vision, GET /api/stats
   src/lib/             Gemini client, knowledge base, prompts, validation,
                        errors, caching, logging
   src/data/            rules.json - the knowledge base
   __tests__/           Vitest suites
-  Dockerfile
+  Dockerfile           Development container only; production is Vercel
 
 shared/              contract.ts - the API types both sides share (types only)
+supabase/migrations/ The answer cache's schema. Apply before the code that
+                     needs it - see Deployment.
 docs/                PRD, technical / backend / UI specs, ADRs
 .scratch/            Working notes. Only the effort being worked by more than
   explore-approach/  one person is committed; the rest is local and ignored.
@@ -221,23 +226,59 @@ every place on both sides that has to follow.
 
 ## Deployment
 
-The two services deploy separately, and no host is chosen yet.
+**Vercel for both services, Supabase for the answer cache.** The reasoning, and
+what the choice costs, is [ADR-0018](docs/adr/0018-deploy-to-vercel-answer-cache-to-postgres.md).
+There is no VPS and no container in production; `docker-compose.yml` is for
+laptops only.
 
-**Frontend** — import the repository at [vercel.com](https://vercel.com) with
-`frontend/` as the root directory; Next.js is detected automatically. Set
-`NEXT_PUBLIC_API_URL` to the deployed backend URL.
+```
+frontend/  ──▶  Vercel project  ──▶  sasana.smkwikrama.sch.id
+backend/   ──▶  Vercel project  ──▶  sasana-be.smkwikrama.sch.id
+                     │
+                     └────────────▶  Supabase Postgres (answer cache)
+```
 
-**Backend** — `backend/Dockerfile` runs anywhere that accepts a container:
-Railway, Render, Fly.io, Google Cloud Run, or a plain VPS. Set `GEMINI_API_KEY`
-and add the deployed frontend origin to `ALLOWED_ORIGINS`, or the browser will be
-refused by CORS.
+### First time
 
-Note that the image build context is the **repository root**, not `backend/`,
-because the image also needs `shared/`. `docker-compose.yml` already does this;
-a host that builds the Dockerfile itself has to be told the same.
+**1. Supabase.** Create a project, then apply the migration in
+`supabase/migrations/` — either `supabase db push` with the CLI, or by pasting
+the file into the dashboard's SQL editor. Copy the **transaction pooler**
+connection string (Connect → Transaction pooler, port **6543**). The direct
+connection on 5432 will run out of connections under serverless.
 
-`.env` files are never deployed and never enter the image; they are git-ignored
-and local to your machine.
+**2. Two Vercel projects, both importing this repository**, differing only in
+Root Directory:
+
+| Project | Root Directory | Framework | Environment |
+| --- | --- | --- | --- |
+| frontend | `frontend/` | Next.js (detected) | `NEXT_PUBLIC_API_URL` = the backend's URL |
+| backend | `backend/` | Hono (detected) | `GEMINI_API_KEY`, `DATABASE_URL`, `ALLOWED_ORIGINS` |
+
+`ALLOWED_ORIGINS` must contain the frontend's own origin or every request is
+refused by CORS, with the failure visible only in the visitor's console.
+
+`NEXT_PUBLIC_API_URL` is inlined into the browser bundle at build time, not read
+at run time. Changing it needs a redeploy of the frontend, not a restart.
+
+**3. Point the subdomains** at Vercel with a CNAME each, and add both as domains
+on their respective projects. TLS is issued automatically.
+
+### Every deploy after that
+
+Merge to `main`. Vercel builds and promotes both projects on its own; there is
+nothing to run by hand.
+
+The exception is a change under `supabase/migrations/`: **apply the migration
+before the code that needs it goes live**, or the first request will look for a
+table that does not exist yet.
+
+### Secrets
+
+`.env` files are never deployed and never committed — they are git-ignored and
+local to your machine. Production values live in each Vercel project's
+environment settings. `DATABASE_URL` and `GEMINI_API_KEY` belong to the backend
+project only; anything named `NEXT_PUBLIC_*` is compiled into the browser bundle
+and is readable by every visitor, so nothing secret may ever be given that name.
 
 ---
 

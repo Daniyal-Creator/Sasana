@@ -42,9 +42,9 @@ function promptText(): string {
   return JSON.stringify(generateContent.mock.calls);
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   generateContent.mockReset();
-  answerCache.clear();
+  await answerCache.clear();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });

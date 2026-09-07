@@ -4,12 +4,13 @@
 # Windows bind mount is unreliable, and the frontend developers depend on fast
 # HMR. Run it natively with `npm run dev` inside frontend/.
 
-# Pinned, and deliberately NOT "sasana" - that name belongs to
-# docker-compose.prod.yml. The project name is Compose's namespace: sharing one
-# means `up` on either file adopts and recreates the other's containers, and
-# once the answer cache has a database, both would point at the same named
-# volume. Separate names keep a production dry-run on a laptop from disturbing
-# whatever is running for development.
+# Pinned. The project name is Compose's namespace - it prefixes the container
+# names, the network and any volume - so a renamed or relocated folder would
+# otherwise quietly point at a different set of them, and a developer's cached
+# answers would look lost when they are merely somewhere else.
+#
+# There is no production compose file to keep apart from any more: production is
+# Vercel, and there is no container in it (ADR-0018). This file is for laptops.
 name: sasana-dev
 
 services:

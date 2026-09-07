@@ -8,9 +8,9 @@ import { rulesHash } from "@/lib/knowledge";
 //
 // Nothing here is sensitive: the store holds normalised keys, never the
 // sentences visitors typed, and these are aggregates over those.
-export function GET(): Response {
+export async function GET(): Promise<Response> {
   try {
-    return Response.json(answerCache.stats(rulesHash()), { status: 200 });
+    return Response.json(await answerCache.stats(rulesHash()), { status: 200 });
   } catch (err) {
     return handleApiError(err, { route: "stats", startedAt: Date.now(), lang: "en" });
   }

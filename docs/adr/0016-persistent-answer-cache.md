@@ -1,8 +1,27 @@
 # ADR-0016 — The answer cache is SQLite, invalidated by the knowledge base rather than by time
 
-**Status:** Accepted
+**Status:** Accepted, superseded in part
 **Date:** 2026-09-06
 **Replaces:** the in-memory `TTLCache` introduced with the chat route
+**Superseded in part by:**
+[ADR-0018](0018-deploy-to-vercel-answer-cache-to-postgres.md)
+
+> **Read the storage section against ADR-0018.** In production the cache is
+> Supabase Postgres, because Vercel gives a function no disk that survives the
+> request. SQLite is still what local development and the test suite use, so
+> `npm run dev` and `npm run test:run` need no database and no credentials;
+> `DATABASE_URL` is what selects between them.
+>
+> Three claims below are now true only of the local engine: that no dependency
+> is added (`pg` is one), that both compose files mount a volume for the file
+> (`docker-compose.prod.yml` has since been deleted), and that one process holds
+> one handle.
+>
+> Everything else stands, and it is the part worth keeping: the normalised key,
+> invalidation by knowledge-base hash rather than by time, refusing to store
+> `places` and `none`, storing what a call actually cost so the saving is
+> measured, the `CACHE_ENABLED` switch that makes it comparable, and the privacy
+> property that only a normalised key is kept and never a visitor's sentence.
 
 ## Context
 

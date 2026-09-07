@@ -191,6 +191,14 @@ Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
   jadi modul ini tersedia tanpa dependensi baru — lolos `AGENTS.md` aturan 4
   tanpa menyentuh `package.json`. Butuh volume baru di `docker-compose.yml`.
 
+  *Direvisi 2026-09-07:* **di produksi cache-nya Supabase Postgres**, karena
+  Vercel tidak memberi fungsi disk yang bertahan. SQLite tetap dipakai untuk
+  pengembangan lokal dan test, jadi `npm run dev` dan `npm run test:run` tetap
+  tidak butuh basis data maupun kredensial; `DATABASE_URL` yang memilih di
+  antara keduanya. Yang berubah hanya mesinnya — kunci, invalidasi, dan sifat
+  privasinya tetap.
+  [`docs/adr/0018`](../../docs/adr/0018-deploy-to-vercel-answer-cache-to-postgres.md).
+
   *Menaikkan batas Node proyek ke 24.* `node:sqlite` baru ada sejak 22.5.
   Ketahuan karena CI merah padahal lokal hijau: workflow menguji di Node 20
   sementara kedua Dockerfile mengirim Node 24, jadi **CI selama ini membuktikan
@@ -206,7 +214,7 @@ Diminta sebagai deliverable akademik. Yang dinilai rancangan dan buktinya.
 - **Teks asli pengunjung tidak disimpan.** Hanya kunci ternormalisasi, jawaban,
   dan pencacah frekuensi. Kuncinya masih terbaca manusia dan berguna untuk
   analisis topik, tapi bukan lagi kalimat yang diketik seseorang.
-- **`TTLCache` dihapus beserta test-nya.** SQLite jadi satu-satunya cache, dan
+- **`TTLCache` dihapus beserta test-nya.** Hanya ada satu lapis cache, dan
   konsep TTL ikut dibuang: jawaban turunan KB tidak basi karena waktu berlalu,
   ia basi ketika `rules.json` berubah — dan hash sudah menangkap itu dengan
   tepat. Dua lapis cache hanya menambah dua hal yang bisa tidak sinkron.
@@ -227,7 +235,7 @@ dan keduanya perubahan backend murni yang tidak bisa merusak tampilan.
 | 4 | Penolakan yang mengalihkan, dibentuk oleh alasan penolakan. | selesai, belum di-merge |
 | 5 | UI per tingkat: ikon + copy di `SourceReference`, plus koreksi klaim. | selesai, belum di-merge |
 | 6 | Isi KB: 13 → 27 rule bersumber, plus standar sumber sebagai test. | sebagian, belum di-merge |
-| 7 | Cache SQLite + `GET /api/stats`. | selesai |
+| 7 | Cache persisten + `GET /api/stats`. | selesai |
 | 8 | Retrieval: prompt hanya membawa rule yang relevan. | selesai |
 | 9 | Isi KB putaran dua: 27 -> 35 rule bersumber. | sedang dikerjakan |
 
@@ -249,10 +257,12 @@ Dua, sebagai bagian dari PR yang bersangkutan.
 - **Tingkat 2 dan 3 melonggarkan guardrail W6** (`docs/design-guardrails.md`:
   *"Never invent a rule. Ungrounded answers say so plainly."*) — ditulis sebagai
   [`docs/adr/0014-assistant-answer-tiers.md`](../../docs/adr/0014-assistant-answer-tiers.md).
-- **Cache persisten dan pilihan SQLite**, termasuk alasan hash `rules.json`
-  supaya orang berikutnya tidak menghapusnya karena mengira berlebihan —
-  ditulis sebagai
-  [`docs/adr/0016-persistent-answer-cache.md`](../../docs/adr/0016-persistent-answer-cache.md).
+- **Cache persisten**, termasuk alasan hash `rules.json` supaya orang berikutnya
+  tidak menghapusnya karena mengira berlebihan — ditulis sebagai
+  [`docs/adr/0016`](../../docs/adr/0016-persistent-answer-cache.md), yang bagian
+  penyimpanannya kemudian digantikan
+  [`docs/adr/0018`](../../docs/adr/0018-deploy-to-vercel-answer-cache-to-postgres.md)
+  saat deploy pindah ke Vercel.
 
 `docs/adr/0004-no-open-closed-status.md` **tidak dicabut.** Ia melarang jam buka
 dan status buka/tutup; pagar volatilitas melarang kelas fakta yang persis sama.

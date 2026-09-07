@@ -38,16 +38,16 @@ function answer(tokens: number) {
 
 const read = (res: Response) => res.json() as Promise<Record<string, number | string | boolean>>;
 
-beforeEach(() => {
+beforeEach(async () => {
   generateContent.mockReset();
-  answerCache.clear();
+  await answerCache.clear();
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("GET /api/stats", () => {
   it("starts empty rather than dividing by nothing", async () => {
-    expect(await read(stats())).toMatchObject({
+    expect(await read(await stats())).toMatchObject({
       entries: 0,
       hits: 0,
       misses: 0,
@@ -58,7 +58,7 @@ describe("GET /api/stats", () => {
   });
 
   it("reports the knowledge base the numbers belong to", async () => {
-    expect((await read(stats())).kbHash).toBe(rulesHash());
+    expect((await read(await stats())).kbHash).toBe(rulesHash());
   });
 
   // The measurement the whole cache exists to produce: what the first call
@@ -69,7 +69,7 @@ describe("GET /api/stats", () => {
     await ask("Can I wear shorts at a temple?"); // hit, pays nothing
     await ask("Can I wear shorts at a temple?"); // hit, pays nothing
 
-    expect(await read(stats())).toMatchObject({
+    expect(await read(await stats())).toMatchObject({
       entries: 1,
       hits: 2,
       misses: 1,
@@ -85,11 +85,11 @@ describe("GET /api/stats", () => {
     await ask("Can I fly a drone?");
 
     // Two misses, one hit.
-    expect(await read(stats())).toMatchObject({ hits: 1, misses: 2, hitRate: 0.3333 });
+    expect(await read(await stats())).toMatchObject({ hits: 1, misses: 2, hitRate: 0.3333 });
   });
 
   it("spends no Gemini quota of its own", async () => {
-    stats();
+    await stats();
     expect(generateContent).not.toHaveBeenCalled();
   });
 });

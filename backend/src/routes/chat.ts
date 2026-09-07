@@ -33,7 +33,7 @@ export async function POST(req: Request): Promise<Response> {
     const key = answerKey(normalizeQuestion(parsed.message), lang, parsed.site?.id);
 
     if (cacheable) {
-      const hit = answerCache.get(key, kbHash);
+      const hit = await answerCache.get(key, kbHash);
       if (hit) {
         logInfo({
           route: "chat",
@@ -91,7 +91,7 @@ export async function POST(req: Request): Promise<Response> {
     // become the permanent answer to a question the app can perfectly well
     // handle - which is the shape of the bug this whole effort started from.
     const storable = answer.kind !== "places" && answer.kind !== "none";
-    if (cacheable && storable) answerCache.set(key, answer, totalTokens ?? 0, kbHash);
+    if (cacheable && storable) await answerCache.set(key, answer, totalTokens ?? 0, kbHash);
 
     logInfo({
       route: "chat",

@@ -1,5 +1,5 @@
-// The answer cache: a small SQLite table that lets a question already answered
-// be served again without spending a Gemini call.
+// The answer cache: a small table that lets a question already answered be
+// served again without spending a Gemini call.
 //
 // It replaces an in-memory Map with a one-hour TTL. Two things were wrong with
 // that. It died with the process, so a restart threw away every answer the app
@@ -9,9 +9,12 @@
 // correct while keeping any that were not. The knowledge-base hash below is the
 // invalidation that actually matches the data.
 //
-// `node:sqlite` is Node's own module, so this costs no dependency (the
-// container runs node:24-alpine). It prints an ExperimentalWarning at startup;
-// that is the whole price.
+// This file holds the SQLite implementation, which is what local development
+// and the test suite run on: `node:sqlite` is Node's own module, so it costs no
+// dependency and needs no credentials, and `:memory:` gives every test its own
+// clean store. Production runs the Postgres implementation in
+// `cache-postgres.ts` instead, because Vercel has no disk that survives between
+// requests (ADR-0018). `answer-cache.ts` is what picks between them.
 //
 // PRIVACY: what is stored is the NORMALISED key - content words, sorted - never
 // the sentence a visitor typed. `celana|pakai|pendek` is still readable enough
@@ -23,8 +26,8 @@ import { dirname } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import type { ChatResponse } from "@shared/contract";
 
-/** Oldest entries are dropped past this, so the file cannot grow without end. */
-const MAX_ENTRIES = 5000;
+/** Oldest entries are dropped past this, so the store cannot grow without end. */
+export const MAX_ENTRIES = 5000;
 
 export interface CacheStats {
   entries: number;
@@ -42,7 +45,29 @@ export interface CacheStats {
   enabled: boolean;
 }
 
-export class AnswerCache {
+/**
+ * What the routes are allowed to depend on.
+ *
+ * Asynchronous because one of the two implementations talks to a database over
+ * a network and cannot be anything else. SQLite pays for a promise it does not
+ * need so that the routes never have to know which store is underneath them.
+ */
+export interface AnswerStore {
+  get(key: string, kbHash: string): Promise<ChatResponse | undefined>;
+  set(key: string, response: ChatResponse, tokens: number, kbHash: string): Promise<void>;
+  stats(kbHash: string): Promise<CacheStats>;
+  /** Tests only. Wipes both tables so one case cannot colour the next. */
+  clear(): Promise<void>;
+  close(): Promise<void>;
+}
+
+/** Shared by both stores, so a hit rate means the same thing in either. */
+export function hitRate(hits: number, misses: number): number {
+  const asked = hits + misses;
+  return asked === 0 ? 0 : Number((hits / asked).toFixed(4));
+}
+
+export class AnswerCache implements AnswerStore {
   private readonly db: DatabaseSync;
 
   constructor(
@@ -76,18 +101,18 @@ export class AnswerCache {
    * therefore still records misses, which is what makes an on/off comparison
    * meaningful.
    */
-  get(key: string, kbHash: string): ChatResponse | undefined {
+  async get(key: string, kbHash: string): Promise<ChatResponse | undefined> {
     if (!this.enabled) {
       this.bump("misses");
       return undefined;
     }
 
-    const row = this.db
-      .prepare("SELECT response, kb_hash FROM answers WHERE key = ?")
-      .get(key) as { response?: string; kb_hash?: string } | undefined;
+    const row = this.db.prepare("SELECT response, kb_hash FROM answers WHERE key = ?").get(key) as
+      | { response?: string; kb_hash?: string }
+      | undefined;
 
     // A row written against a different knowledge base is not evidence of
-    // anything any more. Deleting it rather than ignoring it keeps the file
+    // anything any more. Deleting it rather than ignoring it keeps the store
     // from filling with answers no version will ever serve.
     if (row && row.kb_hash !== kbHash) {
       this.db.prepare("DELETE FROM answers WHERE key = ?").run(key);
@@ -104,7 +129,7 @@ export class AnswerCache {
     return JSON.parse(row.response as string) as ChatResponse;
   }
 
-  set(key: string, response: ChatResponse, tokens: number, kbHash: string): void {
+  async set(key: string, response: ChatResponse, tokens: number, kbHash: string): Promise<void> {
     if (!this.enabled) return;
 
     const now = Date.now();
@@ -137,27 +162,27 @@ export class AnswerCache {
       .run(n - MAX_ENTRIES);
   }
 
-  stats(kbHash: string): CacheStats {
+  async stats(kbHash: string): Promise<CacheStats> {
     const { entries, tokensSaved } = this.db
-      .prepare("SELECT COUNT(*) AS entries, COALESCE(SUM(hits * tokens), 0) AS tokensSaved FROM answers")
+      .prepare(
+        "SELECT COUNT(*) AS entries, COALESCE(SUM(hits * tokens), 0) AS tokensSaved FROM answers",
+      )
       .get() as { entries: number; tokensSaved: number };
     const hits = this.counter("hits");
     const misses = this.counter("misses");
-    const asked = hits + misses;
 
     return {
       entries,
       hits,
       misses,
-      hitRate: asked === 0 ? 0 : Number((hits / asked).toFixed(4)),
+      hitRate: hitRate(hits, misses),
       tokensSaved,
       kbHash,
       enabled: this.enabled,
     };
   }
 
-  /** Tests only. Wipes both tables so one case cannot colour the next. */
-  clear(): void {
+  async clear(): Promise<void> {
     this.db.exec("DELETE FROM answers; DELETE FROM counters;");
   }
 
@@ -169,7 +194,7 @@ export class AnswerCache {
    * exists because on Windows an open handle locks the file, so anything that
    * wants to delete or move the database has to close it first.
    */
-  close(): void {
+  async close(): Promise<void> {
     this.db.close();
   }
 

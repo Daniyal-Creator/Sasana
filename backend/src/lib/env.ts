@@ -41,9 +41,23 @@ export const env = {
   GEMINI_VISION_TIMEOUT_MS: optNumber("GEMINI_VISION_TIMEOUT_MS", 30000),
   GEMINI_CHAT_TIMEOUT_MS: optNumber("GEMINI_CHAT_TIMEOUT_MS", 15000),
   GEMINI_RETRY_BACKOFF_MS: optNumber("GEMINI_RETRY_BACKOFF_MS", 1500),
-  // Where the answer cache keeps its table. Relative to the working directory,
-  // which is /app/backend in the container; docker-compose mounts a volume
-  // there so the answers survive a rebuild.
+  // Supabase Postgres, and the switch between the cache's two stores
+  // (ADR-0018). Set, the answer cache is the hosted table; unset, it is the
+  // local SQLite file below.
+  //
+  // Unset is the right default and not merely a convenience: `npm run dev` and
+  // `npm run test:run` then need no database, no credentials and no network,
+  // so somebody working on the landing page can run the whole suite without a
+  // Supabase account. Production sets it in the Vercel project's environment.
+  //
+  // Use the TRANSACTION POOLER string (port 6543), not the direct connection.
+  // Serverless opens and drops connections constantly, which is what the
+  // pooler exists for; the direct port will exhaust its connection limit.
+  DATABASE_URL: process.env.DATABASE_URL?.trim() || "",
+  // Where the SQLite answer cache keeps its table, when that is the store in
+  // use. Relative to the working directory, which is /app/backend in the
+  // development container; docker-compose mounts a volume there so the answers
+  // survive a rebuild.
   CACHE_DB_PATH: process.env.CACHE_DB_PATH?.trim() || "./data/answers.db",
   // The switch that makes the saving measurable. Turning it off still records
   // misses, so the same questions can be run twice - once cold, once warm - and

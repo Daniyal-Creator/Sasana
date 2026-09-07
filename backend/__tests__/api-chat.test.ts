@@ -61,10 +61,10 @@ const ID_REFUSED = "Saya belum punya aturan resmi soal itu.";
 const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
 const EN_ASK_THERE = "Ask at the place itself.";
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.restoreAllMocks();
   generateContent.mockReset();
-  answerCache.clear(); // module singleton; a leftover entry would mask a real call
+  await answerCache.clear(); // module singleton; a leftover entry would mask a real call
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });

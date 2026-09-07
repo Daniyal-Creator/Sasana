@@ -12,14 +12,18 @@ import { t } from "@/lib/i18n";
 function Wordmark({ lang }: { lang: "id" | "en" }) {
   return (
     <Link href="/" className="flex items-center gap-2.5 group">
+      {/* The size is stated once, in width/height, and not repeated as h-8 w-8.
+          Saying it twice is what produced Next's "width or height modified, but
+          not the other" warning: the two only have to disagree for a moment
+          during hydration for the aspect ratio to look wrong to it. */}
       <Image
         src="/sasana-logo.png"
         alt=""
         aria-hidden
-        width={64}
-        height={64}
+        width={32}
+        height={32}
         loading="eager"
-        className="h-8 w-8 shrink-0 object-contain"
+        className="shrink-0"
       />
       <span className="font-display text-lg font-semibold tracking-wide text-text transition-colors group-hover:text-primary">
         {t(lang, "app.name")}
@@ -76,10 +80,10 @@ export function Header() {
                 src="/sasana-logo.png"
                 alt=""
                 aria-hidden
-                width={64}
-                height={64}
+                width={32}
+                height={32}
                 loading="eager"
-                className="h-8 w-8 shrink-0 object-contain transition-opacity duration-150"
+                className="shrink-0 transition-opacity duration-150"
               />
             )}
             <span

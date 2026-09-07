@@ -25,12 +25,14 @@ export function SasanaAvatar({ size = "md" }: { size?: "md" | "lg" }) {
         isLg ? "h-16 w-16" : "h-7 w-7",
       ].join(" ")}
     >
+      {/* Sized by width/height alone. `h-full w-full` said the same thing a
+          second time, through the parent, and the two disagreeing for a frame
+          is what Next reads as a broken aspect ratio. */}
       <Image
         src="/sasana-logo.png"
         alt="Sasana"
         width={isLg ? 64 : 28}
         height={isLg ? 64 : 28}
-        className="h-full w-full object-contain"
         priority={isLg}
       />
     </span>

@@ -469,6 +469,9 @@ const dict = {
     en: "No official rule found for this",
     id: "Tidak ada aturan resmi yang ditemukan untuk ini",
   },
+  "assistant.photo.preview": { en: "Photo preview", id: "Pratinjau foto" },
+  "assistant.photo.view": { en: "View photo", id: "Lihat foto" },
+  "assistant.photo.close": { en: "Close photo preview", id: "Tutup pratinjau foto" },
   "assistant.eyebrow": { en: "BALI \u2022 CUSTOMS \u2022 RESPECT", id: "BALI \u2022 ADAT \u2022 HORMAT" },
   "assistant.trust": {
     en: "Every official rule shows its source",

@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import { Maximize2 } from "lucide-react";
 import { SourceReference } from "@/components/assistant/SourceReference";
+import { ImagePreviewModal } from "@/components/assistant/ImagePreviewModal";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
 import type { ChatKind } from "@shared/contract";
@@ -46,6 +49,7 @@ export function ChatBubble({
   isFirstOfTurn = true,
 }: ChatBubbleProps) {
   const { lang } = useLang();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isUser = role === "user";
 
   return (
@@ -61,12 +65,29 @@ export function ChatBubble({
       >
         <span className="sr-only">{t(lang, isUser ? "sr.you" : "sr.assistant")}: </span>
         {imageUrl && (
-          <div className="mb-2 overflow-hidden rounded-md border border-border/30">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={t(lang, "check.photo.alt")}
-              className="max-h-48 w-full object-cover"
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label={t(lang, "assistant.photo.view")}
+              className="group relative block w-full overflow-hidden rounded-md border border-border/30 text-left transition-transform duration-150 active:scale-[0.99] focus-visible:shadow-focus cursor-pointer"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={t(lang, "check.photo.alt")}
+                className="max-h-48 w-full object-cover transition-opacity duration-150 group-hover:opacity-95"
+              />
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-text/75 px-2 py-1 text-xs font-medium text-surface shadow-sm transition-colors duration-150 group-hover:bg-text/90">
+                <Maximize2 size={12} strokeWidth={1.75} aria-hidden />
+                <span>{t(lang, "assistant.photo.view")}</span>
+              </span>
+            </button>
+            <ImagePreviewModal
+              isOpen={isPreviewOpen}
+              onClose={() => setIsPreviewOpen(false)}
+              imageUrl={imageUrl}
+              altText={t(lang, "check.photo.alt")}
             />
           </div>
         )}

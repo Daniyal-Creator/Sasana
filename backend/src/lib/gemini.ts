@@ -1,5 +1,5 @@
-import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
 import { env } from "@/lib/env";
+import { callModel, type JsonSchema, type ModelTurn } from "@/lib/provider";
 import { describeError, toGeminiError } from "@/lib/errors";
 import { rulesByIds } from "@/lib/knowledge";
 import { PLACES_SOURCE } from "@/lib/places";
@@ -31,14 +31,6 @@ import type {
   VisionStatus,
 } from "@shared/contract";
 
-const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
-
-// Gemini 3.x rejects the `thinkingBudget: 0` that backend-spec specifies (400
-// invalid argument); `thinkingLevel: MINIMAL` is its replacement and measurably
-// does the same job — it took gemini-3.6-flash from 221 thinking tokens and
-// 2.5s down to 0 tokens and 1.3s. Coupled to the 3.x model defaults above.
-const THINKING = { thinkingLevel: ThinkingLevel.MINIMAL };
-
 const VISION_STATUSES: VisionStatus[] = [
   "compliant",
   "needs_attention",
@@ -46,16 +38,18 @@ const VISION_STATUSES: VisionStatus[] = [
   "unclear",
 ];
 
-const VISION_SCHEMA = {
-  type: Type.OBJECT,
+// Written as plain JSON Schema; each provider translates it (see provider.ts).
+// `propertyOrdering`, which the Google request still carries, is derived there
+// from the declaration order rather than repeated here.
+const VISION_SCHEMA: JsonSchema = {
+  type: "object",
   properties: {
-    status: { type: Type.STRING, enum: VISION_STATUSES },
-    reason: { type: Type.STRING },
-    suggestion: { type: Type.STRING },
-    reference: { type: Type.STRING },
+    status: { type: "string", enum: VISION_STATUSES },
+    reason: { type: "string" },
+    suggestion: { type: "string" },
+    reference: { type: "string" },
   },
   required: ["status", "reason", "suggestion", "reference"],
-  propertyOrdering: ["status", "reason", "suggestion", "reference"],
 };
 
 // Written as a Record keyed by ChatKind rather than a plain array, because an
@@ -76,15 +70,14 @@ const CHAT_KINDS = Object.keys(CHAT_KIND_SET) as ChatKind[];
 // The model names rule ids and declares its own tier; it no longer types the
 // attribution itself. All three fields are required, so "forgot to fill it in"
 // - which used to sink a good answer - is not a state the schema can produce.
-const CHAT_SCHEMA = {
-  type: Type.OBJECT,
+const CHAT_SCHEMA: JsonSchema = {
+  type: "object",
   properties: {
-    answer: { type: Type.STRING },
-    kind: { type: Type.STRING, enum: CHAT_KINDS },
-    ruleIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+    answer: { type: "string" },
+    kind: { type: "string", enum: CHAT_KINDS },
+    ruleIds: { type: "array", items: { type: "string" } },
   },
   required: ["answer", "kind", "ruleIds"],
-  propertyOrdering: ["answer", "kind", "ruleIds"],
 };
 
 /** Everything the prompt knows besides the pixels. */
@@ -108,20 +101,19 @@ export async function analyzeImage(
 ): Promise<VisionResult> {
   const started = Date.now();
   const call = () =>
-    ai.models.generateContent({
-      model: env.GEMINI_VISION_MODEL,
-      contents: [
-        { inlineData: { data: base64Image, mimeType } },
-        buildVisionContextLine(context, lang, site, siteRules) + buildPhotoMetaLine(photo),
+    callModel("vision", {
+      schemaName: "sasana_vision",
+      systemInstruction: buildVisionSystemPrompt(lang),
+      turns: [
+        {
+          role: "user",
+          text: buildVisionContextLine(context, lang, site, siteRules) + buildPhotoMetaLine(photo),
+        },
       ],
-      config: {
-        systemInstruction: buildVisionSystemPrompt(lang),
-        temperature: 0.2,
-        maxOutputTokens: 512,
-        thinkingConfig: THINKING,
-        responseMimeType: "application/json",
-        responseSchema: VISION_SCHEMA,
-      },
+      image: { data: base64Image, mimeType },
+      temperature: 0.2,
+      maxOutputTokens: 512,
+      schema: VISION_SCHEMA,
     });
 
   try {
@@ -138,11 +130,12 @@ export async function analyzeImage(
     logInfo({
       route: "vision",
       event: "gemini_ok",
+      provider: env.AI_PROVIDER,
       durationMs: Date.now() - started,
       imageBytes: Math.floor((base64Image.length * 3) / 4),
-      promptTokens: res.usageMetadata?.promptTokenCount,
-      outputTokens: res.usageMetadata?.candidatesTokenCount,
-      totalTokens: res.usageMetadata?.totalTokenCount,
+      promptTokens: res.usage.promptTokens,
+      outputTokens: res.usage.outputTokens,
+      totalTokens: res.usage.totalTokens,
       status: result.status,
     });
     return result;
@@ -205,26 +198,22 @@ export async function askQuestion(
   { site, siteRules = [], places = [], allRules = rules }: ChatRequestContext = {},
 ): Promise<AnsweredQuestion> {
   const started = Date.now();
-  const contents = [
+  const contents: ModelTurn[] = [
     ...history.slice(-HISTORY_LIMIT).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
+      role: m.role === "assistant" ? ("model" as const) : ("user" as const),
+      text: m.content,
     })),
-    { role: "user", parts: [{ text: message }] },
+    { role: "user", text: message },
   ];
 
   const call = () =>
-    ai.models.generateContent({
-      model: env.GEMINI_CHAT_MODEL,
-      contents,
-      config: {
-        systemInstruction: buildChatSystemPrompt(rules, lang, { site, siteRules, places }),
-        temperature: 0.3,
-        maxOutputTokens: 800,
-        thinkingConfig: THINKING,
-        responseMimeType: "application/json",
-        responseSchema: CHAT_SCHEMA,
-      },
+    callModel("chat", {
+      schemaName: "sasana_chat",
+      systemInstruction: buildChatSystemPrompt(rules, lang, { site, siteRules, places }),
+      turns: contents,
+      temperature: 0.3,
+      maxOutputTokens: 800,
+      schema: CHAT_SCHEMA,
     });
 
   try {
@@ -242,16 +231,17 @@ export async function askQuestion(
     logInfo({
       route: "chat",
       event: "gemini_ok",
+      provider: env.AI_PROVIDER,
       durationMs: Date.now() - started,
       kind: result.kind,
       citedRules: result.ruleIds.length,
       rulesSent: rules.length,
       historyTurns: contents.length - 1,
-      promptTokens: res.usageMetadata?.promptTokenCount,
-      outputTokens: res.usageMetadata?.candidatesTokenCount,
-      totalTokens: res.usageMetadata?.totalTokenCount,
+      promptTokens: res.usage.promptTokens,
+      outputTokens: res.usage.outputTokens,
+      totalTokens: res.usage.totalTokens,
     });
-    return { response: result, totalTokens: res.usageMetadata?.totalTokenCount };
+    return { response: result, totalTokens: res.usage.totalTokens };
   } catch (err) {
     logError({
       route: "chat",

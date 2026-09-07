@@ -249,7 +249,6 @@ export function InteractiveFeatures() {
                 alt="SASANA Logo"
                 width={32}
                 height={32}
-                className="h-8 w-8 object-contain"
                 priority
               />
             </div>

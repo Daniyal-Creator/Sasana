@@ -37,6 +37,49 @@ import { logError } from "@/lib/logger";
 /** Postgres returns bigint as a string, so every count comes back through this. */
 const toInt = (value: string | number | null): number => Number(value ?? 0);
 
+/**
+ * A ChatResponse as the driver's json helper wants to see it.
+ *
+ * The value is plain JSON and always has been. The cast is a type-level
+ * formality: `JSONValue` is satisfied by an index signature, which an interface
+ * cannot provide structurally, and `ChatResponse` lives in `shared/contract.ts`
+ * - another area's file (AGENTS.md rule 4), so the adaptation belongs on this
+ * side of the boundary rather than in the shared type.
+ */
+const asJson = (response: ChatResponse): postgres.JSONValue =>
+  response as unknown as postgres.JSONValue;
+
+/**
+ * A stored answer, whichever shape the row is in.
+ *
+ * `response` is a jsonb column and the driver parses it, so a correctly written
+ * row arrives as an object and needs nothing done to it. Rows written before
+ * the double-encoding fix arrive as a string instead: `set` used to hand the
+ * driver an already-serialised answer, and a driver that serialises what it is
+ * given turned that into a jsonb string rather than a jsonb object.
+ *
+ * Those rows carry the same `kb_hash` as the correct ones, so no invalidation
+ * reaches them - they would keep serving an answer the frontend reads as
+ * `undefined` until something evicted them. Parsing the old shape here costs a
+ * type check on a path that is already a network round trip, and it means the
+ * fix needs no manual TRUNCATE against Supabase to take effect.
+ *
+ * Anything that is neither shape is treated as no answer at all. A cache must
+ * never break an answer: the caller spends Gemini quota, which is what it did
+ * before any cache existed.
+ */
+const decodeResponse = (stored: unknown): ChatResponse | undefined => {
+  if (typeof stored === "object" && stored !== null) return stored as ChatResponse;
+  if (typeof stored !== "string") return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    return typeof parsed === "object" && parsed !== null ? (parsed as ChatResponse) : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
 export class PostgresAnswerCache implements AnswerStore {
   private readonly sql: postgres.Sql;
 
@@ -75,7 +118,7 @@ export class PostgresAnswerCache implements AnswerStore {
     }
 
     try {
-      const rows = await this.sql<{ response: ChatResponse }[]>`
+      const rows = await this.sql<{ response: ChatResponse | string }[]>`
         WITH hit AS (
           UPDATE cache.answers
              SET hits = hits + 1, last_hit_at = now()
@@ -100,7 +143,7 @@ export class PostgresAnswerCache implements AnswerStore {
         SELECT response FROM hit
       `;
 
-      return rows[0]?.response;
+      return decodeResponse(rows[0]?.response);
     } catch (err) {
       logError({ route: "cache", event: "read_failed", error: String(err) });
       return undefined;
@@ -113,7 +156,12 @@ export class PostgresAnswerCache implements AnswerStore {
     try {
       await this.sql`
         INSERT INTO cache.answers (key, kb_hash, response, tokens)
-        VALUES (${key}, ${kbHash}, ${JSON.stringify(response)}::jsonb, ${tokens})
+        -- sql.json, not JSON.stringify. The driver serialises the value it is
+        -- handed for a json parameter, so serialising first sends it a string
+        -- and the column ends up holding a jsonb string instead of a jsonb
+        -- object - jsonb_typeof says "string", and every cache hit reaches the
+        -- browser as an escaped blob whose answer field cannot be read.
+        VALUES (${key}, ${kbHash}, ${this.sql.json(asJson(response))}::jsonb, ${tokens})
         ON CONFLICT (key) DO UPDATE SET
           kb_hash  = excluded.kb_hash,
           response = excluded.response,

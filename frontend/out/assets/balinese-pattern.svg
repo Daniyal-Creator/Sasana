@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 420 420" fill="none" stroke="#2A2520" stroke-width="0.5" opacity="1">
+  <!-- Repeating geometric Balinese-inspired pattern: interlocking petals and angular forms -->
+  <defs>
+    <pattern id="p" x="0" y="0" width="140" height="140" patternUnits="userSpaceOnUse">
+      <!-- Central diamond -->
+      <path d="M70 20 L120 70 L70 120 L20 70 Z"/>
+      <!-- Inner diamond -->
+      <path d="M70 40 L100 70 L70 100 L40 70 Z"/>
+      <!-- Petal arcs top -->
+      <path d="M70 20 Q85 5 100 20" />
+      <path d="M70 20 Q55 5 40 20" />
+      <!-- Petal arcs right -->
+      <path d="M120 70 Q135 55 120 40" />
+      <path d="M120 70 Q135 85 120 100" />
+      <!-- Petal arcs bottom -->
+      <path d="M70 120 Q85 135 100 120" />
+      <path d="M70 120 Q55 135 40 120" />
+      <!-- Petal arcs left -->
+      <path d="M20 70 Q5 55 20 40" />
+      <path d="M20 70 Q5 85 20 100" />
+      <!-- Corner connectors -->
+      <path d="M0 0 L20 20 M140 0 L120 20 M0 140 L20 120 M140 140 L120 120" />
+      <!-- Corner flourishes -->
+      <circle cx="0" cy="0" r="8" />
+      <circle cx="140" cy="0" r="8" />
+      <circle cx="0" cy="140" r="8" />
+      <circle cx="140" cy="140" r="8" />
+      <!-- Small dots at midpoints -->
+      <circle cx="70" cy="70" r="3" />
+    </pattern>
+  </defs>
+  <rect width="420" height="420" fill="url(#p)" />
+</svg>

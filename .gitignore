@@ -5,7 +5,14 @@ node_modules/
 
 # next.js
 .next/
-out/
+# `frontend/out/` is NOT ignored. It is the static export, and it is committed on
+# purpose (ADR-0019): the built site has to be readable in the repository by
+# people who do not run Node. `.next/` above stays ignored — it is 105MB of
+# compiler cache and server bundles, and none of it is the site.
+#
+# The export is reproducible (`generateBuildId` is pinned in next.config.mjs), so
+# rebuilding without changing code produces no diff at all. If you see `out/`
+# churn on a build that changed nothing, that pin has been lost.
 
 # production
 build/

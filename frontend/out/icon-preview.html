@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview Desain Icon Pura Sasana</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #F4EFEA;
+      color: #2A2520;
+      padding: 32px 24px;
+      margin: 0;
+    }
+    .header {
+      max-width: 960px;
+      margin: 0 auto 32px;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+      color: #1D4E89;
+    }
+    p.desc {
+      color: #5C544A;
+      font-size: 14px;
+      margin-top: 0;
+      line-height: 1.5;
+    }
+    .grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #FFFDF9;
+      border: 1.5px solid #E5DFD5;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(42, 37, 32, 0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .card.highlight {
+      border-color: #1D4E89;
+      box-shadow: 0 4px 16px rgba(29, 78, 137, 0.15);
+      position: relative;
+    }
+    .card h2 {
+      font-size: 16px;
+      margin: 0 0 4px 0;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+      align-self: flex-start;
+    }
+    .badge-old {
+      background: #FEE2E2;
+      color: #991B1B;
+    }
+    .badge-new {
+      background: #DBEAFE;
+      color: #1E40AF;
+    }
+    .badge-rec {
+      background: #DCFCE7;
+      color: #166534;
+    }
+    .preview-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      margin: 20px 0;
+      padding: 16px;
+      background: #F9F6F0;
+      border-radius: 8px;
+      border: 1px solid #ECE6DC;
+    }
+    .item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .label {
+      font-size: 10px;
+      color: #8A8073;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    /* Map Marker simulation */
+    .map-marker {
+      width: 30px;
+      height: 30px;
+      border-radius: 9999px;
+      border: 1.5px solid #CBBFA8;
+      background: #FFFDF9;
+      color: #1D4E89;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(42, 37, 32, 0.18);
+    }
+    /* SiteThumb simulation */
+    .site-thumb {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      border: 1px solid #E5DFD5;
+      background: #F4EFEA;
+      color: #1D4E89;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .large-preview {
+      width: 72px;
+      height: 72px;
+      border-radius: 10px;
+      background: #FFFDF9;
+      border: 1px solid #E5DFD5;
+      color: #1D4E89;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .features {
+      font-size: 13px;
+      color: #5C544A;
+      line-height: 1.5;
+      margin-top: auto;
+      padding-left: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Perbandingan Desain Icon Pura (Sasana)</h1>
+    <p class="desc">
+      Membandingkan icon lama (yang terlihat seperti pohon cemara) dengan alternatif desain icon Pura Bali pada ukuran <strong>Marker Peta (15px)</strong>, <strong>Thumbnail Card (26px)</strong>, dan <strong>Detail (48px)</strong>.<br>
+      Bisa dilihat langsung di browser via: <code>http://localhost:3000/icon-preview.html</code>
+    </p>
+  </div>
+
+  <div class="grid">
+    <!-- OLD ICON -->
+    <div class="card">
+      <span class="badge badge-old">Icon Saat Ini (Lama)</span>
+      <h2>Meru 3 Segitiga Polos</h2>
+      <p style="font-size: 12px; color: #8A8073; margin: 0;">3 segitiga bertumpuk + batang bawah lurus</p>
+
+      <div class="preview-row">
+        <div class="item">
+          <div class="map-marker">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <path d="M12 3 L15.6 7 H8.4 Z" />
+              <path d="M8.9 8.6 H15.1 L17.2 12.3 H6.8 Z" />
+              <path d="M6.4 13.9 H17.6 L19.8 17.8 H4.2 Z" />
+              <rect x="10.4" y="18.9" width="3.2" height="2.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Marker (15px)</span>
+        </div>
+
+        <div class="item">
+          <div class="site-thumb">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+              <path d="M12 3 L15.6 7 H8.4 Z" />
+              <path d="M8.9 8.6 H15.1 L17.2 12.3 H6.8 Z" />
+              <path d="M6.4 13.9 H17.6 L19.8 17.8 H4.2 Z" />
+              <rect x="10.4" y="18.9" width="3.2" height="2.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Thumb (26px)</span>
+        </div>
+
+        <div class="item">
+          <div class="large-preview">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M12 3 L15.6 7 H8.4 Z" />
+              <path d="M8.9 8.6 H15.1 L17.2 12.3 H6.8 Z" />
+              <path d="M6.4 13.9 H17.6 L19.8 17.8 H4.2 Z" />
+              <rect x="10.4" y="18.9" width="3.2" height="2.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Detail</span>
+        </div>
+      </div>
+
+      <ul class="features">
+        <li style="color: #B91C1C;"><strong>Kelemahan:</strong> Bentuk 3 tingkat segitiga mengerucut dengan batang kecil di tengah tampak persis seperti pohon cemara / pohon natal.</li>
+      </ul>
+    </div>
+
+    <!-- OPTION 1: CANDI BENTAR (RECOMMENDED) -->
+    <div class="card highlight">
+      <span class="badge badge-rec">Opsi 1 (Direkomendasikan)</span>
+      <h2>Candi Bentar (Gerbang Pura Bali)</h2>
+      <p style="font-size: 12px; color: #8A8073; margin: 0;">Siluet gerbang terbelah khas pura Bali</p>
+
+      <div class="preview-row">
+        <div class="item">
+          <div class="map-marker">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <!-- Left Tower with Balinese winged steps -->
+              <path d="M10.8 2.5H9.4L8.2 4.8H7.2L7.8 6.5H6.5L5.4 9H4.4L5.2 11.2H3.8L2.6 14H4L3 17.5H1.8V19.5H10.8V2.5Z" />
+              <!-- Right Tower (mirrored) -->
+              <path d="M13.2 2.5H14.6L15.8 4.8H16.8L16.2 6.5H17.5L18.6 9H19.6L18.8 11.2H20.2L21.4 14H20L21 17.5H22.2V19.5H13.2V2.5Z" />
+              <!-- Stepped Plinth Foundation -->
+              <rect x="1.5" y="20.2" width="21" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Marker (15px)</span>
+        </div>
+
+        <div class="item">
+          <div class="site-thumb">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+              <path d="M10.8 2.5H9.4L8.2 4.8H7.2L7.8 6.5H6.5L5.4 9H4.4L5.2 11.2H3.8L2.6 14H4L3 17.5H1.8V19.5H10.8V2.5Z" />
+              <path d="M13.2 2.5H14.6L15.8 4.8H16.8L16.2 6.5H17.5L18.6 9H19.6L18.8 11.2H20.2L21.4 14H20L21 17.5H22.2V19.5H13.2V2.5Z" />
+              <rect x="1.5" y="20.2" width="21" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Thumb (26px)</span>
+        </div>
+
+        <div class="item">
+          <div class="large-preview">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M10.8 2.5H9.4L8.2 4.8H7.2L7.8 6.5H6.5L5.4 9H4.4L5.2 11.2H3.8L2.6 14H4L3 17.5H1.8V19.5H10.8V2.5Z" />
+              <path d="M13.2 2.5H14.6L15.8 4.8H16.8L16.2 6.5H17.5L18.6 9H19.6L18.8 11.2H20.2L21.4 14H20L21 17.5H22.2V19.5H13.2V2.5Z" />
+              <rect x="1.5" y="20.2" width="21" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Detail</span>
+        </div>
+      </div>
+
+      <ul class="features">
+        <li style="color: #15803D;"><strong>Kelebihan:</strong> Simbol pura dan Bali paling universal (seperti gerbang Lempuyang/Besakih).</li>
+        <li>Lorong vertikal terbelah di tengah membuat bentuknya mustahil disalahartikan sebagai pohon.</li>
+        <li>Sangat kontras, tajam, dan mudah terbaca bahkan di marker peta kecil (15px).</li>
+      </ul>
+    </div>
+
+    <!-- OPTION 2: CANDI BENTAR MINIMALIS GEOMETRIS -->
+    <div class="card">
+      <span class="badge badge-new">Opsi 2</span>
+      <h2>Candi Bentar Modern Geometris</h2>
+      <p style="font-size: 12px; color: #8A8073; margin: 0;">Siluet undag bertingkat geometris bersih</p>
+
+      <div class="preview-row">
+        <div class="item">
+          <div class="map-marker">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <!-- Left tower stepped -->
+              <path d="M10.8 3H9.2V5.8H7.6V9H6V13H4.4V17.5H2.5V19.5H10.8V3Z" />
+              <!-- Right tower stepped -->
+              <path d="M13.2 3H14.8V5.8H16.4V9H18V13H19.6V17.5H21.5V19.5H13.2V3Z" />
+              <rect x="2" y="20.2" width="20" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Marker (15px)</span>
+        </div>
+
+        <div class="item">
+          <div class="site-thumb">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+              <path d="M10.8 3H9.2V5.8H7.6V9H6V13H4.4V17.5H2.5V19.5H10.8V3Z" />
+              <path d="M13.2 3H14.8V5.8H16.4V9H18V13H19.6V17.5H21.5V19.5H13.2V3Z" />
+              <rect x="2" y="20.2" width="20" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Thumb (26px)</span>
+        </div>
+
+        <div class="item">
+          <div class="large-preview">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M10.8 3H9.2V5.8H7.6V9H6V13H4.4V17.5H2.5V19.5H10.8V3Z" />
+              <path d="M13.2 3H14.8V5.8H16.4V9H18V13H19.6V17.5H21.5V19.5H13.2V3Z" />
+              <rect x="2" y="20.2" width="20" height="1.6" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Detail</span>
+        </div>
+      </div>
+
+      <ul class="features">
+        <li>Gaya modern pixel-grid yang lurus dan seragam.</li>
+        <li>Tampak rapi dan formal, sangat cocok dengan gaya ikonografi modern.</li>
+      </ul>
+    </div>
+
+    <!-- OPTION 3: PELINGGIH MERU REFINED -->
+    <div class="card">
+      <span class="badge badge-new">Opsi 3</span>
+      <h2>Pelinggih Meru Bertingkat Otentik</h2>
+      <p style="font-size: 12px; color: #8A8073; margin: 0;">Atap ijuk melengkung + tiang bale terbuka + batur batu</p>
+
+      <div class="preview-row">
+        <div class="item">
+          <div class="map-marker">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+              <!-- Murda / Finial -->
+              <path d="M12 2C11.4 2 11 2.5 11 3.2C11 3.8 11.5 4.3 12 4.6C12.5 4.3 13 3.8 13 3.2C13 2.5 12.6 2 12 2Z" />
+              <!-- Tier 1 Roof (Curved Pagoda Eaves) -->
+              <path d="M12 4.4C13 5.4 14.8 6.2 16.5 6.4C16.8 6.4 16.9 6.7 16.7 6.9C15.8 7.4 14.5 7.6 12 7.6C9.5 7.6 8.2 7.4 7.3 6.9C7.1 6.7 7.2 6.4 7.5 6.4C9.2 6.2 11 5.4 12 4.4Z" />
+              <!-- Tier 2 Roof -->
+              <path d="M12 8.2C13.5 9.3 16 10 18.2 10.3C18.6 10.3 18.7 10.7 18.4 10.9C17.2 11.5 15.5 11.7 12 11.7C8.5 11.7 6.8 11.5 5.6 10.9C5.3 10.7 5.4 10.3 5.8 10.3C8 10 10.5 9.3 12 8.2Z" />
+              <!-- Tier 3 Roof (Bottom Roof) -->
+              <path d="M12 12.3C14 13.5 17.2 14.3 20 14.7C20.4 14.8 20.5 15.2 20.2 15.4C18.8 16.1 16.5 16.4 12 16.4C7.5 16.4 5.2 16.1 3.8 15.4C3.5 15.2 3.6 14.8 4 14.7C6.8 14.3 10 13.5 12 12.3Z" />
+              <!-- Pillars / Bale chamber (Two distinct outer pillars showing hollow center) -->
+              <rect x="7.2" y="16.4" width="1.6" height="2.6" />
+              <rect x="15.2" y="16.4" width="1.6" height="2.6" />
+              <!-- Stepped Stone Plinth (Batur) -->
+              <rect x="5.5" y="19" width="13" height="1.4" rx="0.2" />
+              <rect x="3.5" y="20.4" width="17" height="1.8" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Marker (15px)</span>
+        </div>
+
+        <div class="item">
+          <div class="site-thumb">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor">
+              <path d="M12 2C11.4 2 11 2.5 11 3.2C11 3.8 11.5 4.3 12 4.6C12.5 4.3 13 3.8 13 3.2C13 2.5 12.6 2 12 2Z" />
+              <path d="M12 4.4C13 5.4 14.8 6.2 16.5 6.4C16.8 6.4 16.9 6.7 16.7 6.9C15.8 7.4 14.5 7.6 12 7.6C9.5 7.6 8.2 7.4 7.3 6.9C7.1 6.7 7.2 6.4 7.5 6.4C9.2 6.2 11 5.4 12 4.4Z" />
+              <path d="M12 8.2C13.5 9.3 16 10 18.2 10.3C18.6 10.3 18.7 10.7 18.4 10.9C17.2 11.5 15.5 11.7 12 11.7C8.5 11.7 6.8 11.5 5.6 10.9C5.3 10.7 5.4 10.3 5.8 10.3C8 10 10.5 9.3 12 8.2Z" />
+              <path d="M12 12.3C14 13.5 17.2 14.3 20 14.7C20.4 14.8 20.5 15.2 20.2 15.4C18.8 16.1 16.5 16.4 12 16.4C7.5 16.4 5.2 16.1 3.8 15.4C3.5 15.2 3.6 14.8 4 14.7C6.8 14.3 10 13.5 12 12.3Z" />
+              <rect x="7.2" y="16.4" width="1.6" height="2.6" />
+              <rect x="15.2" y="16.4" width="1.6" height="2.6" />
+              <rect x="5.5" y="19" width="13" height="1.4" rx="0.2" />
+              <rect x="3.5" y="20.4" width="17" height="1.8" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Thumb (26px)</span>
+        </div>
+
+        <div class="item">
+          <div class="large-preview">
+            <svg viewBox="0 0 24 24" width="48" height="48" fill="currentColor">
+              <path d="M12 2C11.4 2 11 2.5 11 3.2C11 3.8 11.5 4.3 12 4.6C12.5 4.3 13 3.8 13 3.2C13 2.5 12.6 2 12 2Z" />
+              <path d="M12 4.4C13 5.4 14.8 6.2 16.5 6.4C16.8 6.4 16.9 6.7 16.7 6.9C15.8 7.4 14.5 7.6 12 7.6C9.5 7.6 8.2 7.4 7.3 6.9C7.1 6.7 7.2 6.4 7.5 6.4C9.2 6.2 11 5.4 12 4.4Z" />
+              <path d="M12 8.2C13.5 9.3 16 10 18.2 10.3C18.6 10.3 18.7 10.7 18.4 10.9C17.2 11.5 15.5 11.7 12 11.7C8.5 11.7 6.8 11.5 5.6 10.9C5.3 10.7 5.4 10.3 5.8 10.3C8 10 10.5 9.3 12 8.2Z" />
+              <path d="M12 12.3C14 13.5 17.2 14.3 20 14.7C20.4 14.8 20.5 15.2 20.2 15.4C18.8 16.1 16.5 16.4 12 16.4C7.5 16.4 5.2 16.1 3.8 15.4C3.5 15.2 3.6 14.8 4 14.7C6.8 14.3 10 13.5 12 12.3Z" />
+              <rect x="7.2" y="16.4" width="1.6" height="2.6" />
+              <rect x="15.2" y="16.4" width="1.6" height="2.6" />
+              <rect x="5.5" y="19" width="13" height="1.4" rx="0.2" />
+              <rect x="3.5" y="20.4" width="17" height="1.8" rx="0.4" />
+            </svg>
+          </div>
+          <span class="label">Detail</span>
+        </div>
+      </div>
+
+      <ul class="features">
+        <li>Bagi yang tetap ingin bentuk menara Meru (seperti di Danau Beratan / Besakih).</li>
+        <li>Bukan pohon: memiliki atap melengkung pagoda berundak, tiang bale berongga, dan fondasi bertingkat lebar.</li>
+      </ul>
+    </div>
+  </div>
+
+</body>
+</html>

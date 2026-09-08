@@ -149,10 +149,12 @@ export function MapSheet({ stage, onStageChange, children }: MapSheetProps) {
     return (
       <div
         ref={sheetRef}
+        data-lenis-prevent
         className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] rounded-xl border`}
       >
         <div
           ref={scrollRef}
+          data-lenis-prevent
           className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6"
         >
           {children}
@@ -167,6 +169,7 @@ export function MapSheet({ stage, onStageChange, children }: MapSheetProps) {
   return (
     <div
       ref={sheetRef}
+      data-lenis-prevent
       className={`${PANEL_CLASSES} absolute inset-x-0 bottom-0 rounded-t-xl border-t`}
       style={{
         maxHeight: `${FULL_MAX_SVH}svh`,
@@ -196,6 +199,7 @@ export function MapSheet({ stage, onStageChange, children }: MapSheetProps) {
 
       <div
         ref={scrollRef}
+        data-lenis-prevent
         className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-8 sm:px-6"
       >
         {children}

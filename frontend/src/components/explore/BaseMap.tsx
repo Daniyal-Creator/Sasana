@@ -9,28 +9,17 @@ import type { LatLng } from "@/lib/geo";
 import "leaflet/dist/leaflet.css";
 
 /**
- * CARTO Voyager: OpenStreetMap data, raster tiles, free without an API key and
- * without a billing account. Google Maps Platform requires a card even for its
- * free quota, and the project budget is Rp 0 (tech-spec §5).
- *
- * `{r}` is filled in by Leaflet itself with `@2x` on retina screens.
+ * OpenStreetMap Standard: OpenStreetMap data, raster tiles, free without an API key and
+ * without a billing account. Displays real places, POIs, roads, buildings, and landmarks
+ * with no watermarks.
  */
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-
-/**
- * If the Zone circles ever drown in Voyager's road colours, point TILE_URL here
- * instead. Positron is the same service in near-monochrome, so this is a
- * one-string change and not a rewrite.
- */
-const TILE_URL_QUIET = "https://{s}.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}{r}.png";
-void TILE_URL_QUIET;
+const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors ' +
-  '&copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-const MIN_ZOOM = 8;
-const MAX_ZOOM = 18;
+const MIN_ZOOM = 5;
+const MAX_ZOOM = 19;
 
 /** Four failures with no successful tile at all is a network problem. One
  *  failure at the edge of the viewport is not, and must not blank the screen. */
@@ -159,8 +148,8 @@ export function BaseMap({
       }
 
       const tiles = L.tileLayer(TILE_URL, {
-        subdomains: "abcd",
-        maxZoom: 20,
+        subdomains: "abc",
+        maxZoom: MAX_ZOOM,
         attribution: ATTRIBUTION,
       }).addTo(instance);
 

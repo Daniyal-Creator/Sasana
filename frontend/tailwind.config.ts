@@ -66,6 +66,10 @@ export default {
         msgIn: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
         dotPulse: { "0%,100%": { opacity: ".3" }, "50%": { opacity: "1" } },
         staggerIn: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
+        approachIn: {
+          "0%": { opacity: "0", transform: "translateY(-10px) scale(0.97)" },
+          "100%": { opacity: "1", transform: "none" },
+        },
       },
       animation: {
         fadeUp: "fadeUp .2s cubic-bezier(0.25,1,0.5,1)",
@@ -73,6 +77,7 @@ export default {
         msgIn: "msgIn .24s cubic-bezier(0.25,1,0.5,1)",
         dotPulse: "dotPulse 1.2s ease-in-out infinite",
         staggerIn: "staggerIn .3s cubic-bezier(0.25,1,0.5,1) both",
+        approachIn: "approachIn .28s cubic-bezier(0.25,1,0.5,1)",
       },
     },
   },

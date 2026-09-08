@@ -136,7 +136,7 @@ export function ApproachSheet({ site, notice = null, onBack }: ApproachSheetProp
   );
 
   const body = (
-    <div className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
+    <div data-lenis-prevent className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
       <ul className="divide-y divide-border">
         {visibleCustoms.map((custom) => (
           <li key={custom.id} className="flex items-start gap-3 py-3">
@@ -173,6 +173,7 @@ export function ApproachSheet({ site, notice = null, onBack }: ApproachSheetProp
       <div
         role="region"
         aria-label={label}
+        data-lenis-prevent
         className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] overflow-hidden rounded-xl border pt-5`}
       >
         {header}

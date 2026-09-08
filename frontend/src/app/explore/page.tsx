@@ -575,6 +575,8 @@ function ExploreInner() {
           setBannerSite(site);
           approachSiteRef.current = site;
           setApproachSite(site);
+          setSelectedSiteId(site.id);
+          setPanelSiteId(site.id);
           changeView("inside");
           setSheetStage("full");
         }
@@ -915,11 +917,23 @@ function ExploreInner() {
 
   if (view === "outside") {
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {mapSurface(panelSiteId, sheetInsetNow)}
 
         {bannerSite && (
-          <ApproachCard site={bannerSite} />
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSelectedSiteId(bannerSite.id);
+              setPanelSiteId(bannerSite.id);
+              setSheetStage("full");
+              setFocus({
+                center: { lat: bannerSite.lat, lng: bannerSite.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
@@ -1022,18 +1036,31 @@ function ExploreInner() {
   }
 
   if (view === "inside" && approachSiteLive) {
-    // ApproachSheet is already a two-stage sheet of its own, so it stands in
-    // for MapSheet here rather than being nested inside it.
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {mapSurface(approachSiteLive.id, Math.round(viewport.h * APPROACH_SHEET_PEEK_FRAC))}
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        {mapSurface(approachSiteLive.id, sheetInsetNow)}
 
-        {/* The card belongs here too, and only here in practice: the crossing
-            that raises it is the same crossing that switches to this view, so
-            leaving it out of this branch meant it was set and never rendered. */}
-        {bannerSite && <ApproachCard site={bannerSite} />}
+        {bannerSite && (
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSheetStage("full");
+              setFocus({
+                center: { lat: approachSiteLive.lat, lng: approachSiteLive.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
+        )}
 
-        <ApproachSheet site={approachSiteLive} notice={sheetNotice} onBack={restorePanel} />
+        <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          <SiteBrief
+            site={approachSiteLive}
+            distanceM={position ? haversineMeters(position, approachSiteLive) : null}
+            onBack={restorePanel}
+          />
+        </MapSheet>
       </div>
     );
   }
@@ -1041,13 +1068,25 @@ function ExploreInner() {
   if (view === "explore") {
     const selected = allSites.find((site) => site.id === selectedSiteId) ?? allSites[0];
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <h1 className="sr-only">{tExplore(lang, "explore.browse.title")}</h1>
 
         {mapSurface(selected.id, sheetInsetNow)}
 
         {bannerSite && (
-          <ApproachCard site={bannerSite} />
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSelectedSiteId(bannerSite.id);
+              setPanelSiteId(bannerSite.id);
+              setSheetStage("full");
+              setFocus({
+                center: { lat: bannerSite.lat, lng: bannerSite.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>

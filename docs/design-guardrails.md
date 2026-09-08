@@ -278,7 +278,7 @@ Amendments to this document follow the same path. Version it in the header table
 §5 (depth, including D3 backdrop-blur), §6 L2/L3/L4, and §7 durations.
 
 **Why.** Explore now runs a full-screen raster basemap served by a third party
-(CARTO Voyager, OpenStreetMap data). Its palette is baked into the tile images:
+(OpenStreetMap Standard tiles, OpenStreetMap data). Its palette is baked into the tile images:
 it cannot be tokenized, it cannot be themed, and at full screen it is most of
 what the visitor sees. C1 and C2 are therefore not merely broken here, they are
 unsatisfiable — there is no version of this screen that meets them. A rule that

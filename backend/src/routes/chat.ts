@@ -135,6 +135,24 @@ export async function POST(req: Request): Promise<Response> {
       },
     );
 
+    // A question the map was read for is never stored, whatever tier came
+    // back.
+    //
+    // The old rule looked at the ANSWER: `places` and `none` were skipped and
+    // everything else kept. That let the worst case through. Asked "bisakah
+    // anda berikan rekomendasi penginapan di ubud", the model sometimes reads
+    // the standing ban on recommending businesses, ignores the map list it was
+    // handed, and answers at the `rule` tier with "I cannot recommend
+    // accommodation" - which is storable, so it was stored, and from then on
+    // every visitor asking that question got the refusal without the map ever
+    // being consulted again. Measured: `x-cache: HIT` on a question whose whole
+    // point is that a lookup happens.
+    //
+    // The question is the thing that describes the world here, not just the
+    // answer, so the lookup is what decides. ADR-0015 arrived at the same rule
+    // from the other side.
+    const lookedUp = Boolean(category && anchor);
+
     // Two kinds are deliberately never stored.
     //
     // `places` describes the world, which changes on its own, so a guest house
@@ -145,7 +163,7 @@ export async function POST(req: Request): Promise<Response> {
     // `none` is a refusal. Storing failures would let one unlucky model call
     // become the permanent answer to a question the app can perfectly well
     // handle - which is the shape of the bug this whole effort started from.
-    const storable = answer.kind !== "places" && answer.kind !== "none";
+    const storable = answer.kind !== "places" && answer.kind !== "none" && !lookedUp;
     if (cacheable && storable) await answerCache.set(key, answer, totalTokens ?? 0, kbHash);
 
     logInfo({
@@ -158,6 +176,7 @@ export async function POST(req: Request): Promise<Response> {
       siteRules: siteRules.length,
       placeQuery: category ?? undefined,
       placeArea: anchor?.label,
+      lookedUp,
       places: places.length,
       rulesSent: sent.length,
       rulesTotal: rules.length,

@@ -431,6 +431,41 @@ describe("POST /api/chat — nearby places from the map", () => {
     expect(generateContent).toHaveBeenCalledTimes(2);
   });
 
+  // The bug this guards was measured, not imagined: asked for a "rekomendasi
+  // penginapan", the model sometimes reads the standing ban on recommending
+  // businesses, ignores the map list it was handed, and answers at the `rule`
+  // tier. That tier is storable, so the refusal was stored, and every later
+  // visitor asking the same question got it back with `x-cache: HIT` and no
+  // lookup at all.
+  it("never caches a question the map was read for, whatever tier came back", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({
+      answer: "Maaf, saya tidak dapat memberikan rekomendasi tempat akomodasi.",
+      kind: "rule",
+      ruleIds: ["licensed-accommodation"],
+    });
+
+    const first = await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT);
+    const second = await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("MISS");
+    // The map is consulted again rather than the refusal being replayed.
+    expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  // The fence still holds where no lookup happened: an ordinary custom question
+  // is answered once and served from the store after that.
+  it("still caches an ordinary question with no lookup behind it", async () => {
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    const first = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+    const second = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("HIT");
+  });
+
   // ADR-0020. The Site stopped being the only way to say where, and these are
   // the three ways that can now go: a named area resolves, a named area does
   // not, and nothing is named at all.

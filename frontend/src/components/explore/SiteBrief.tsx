@@ -55,8 +55,17 @@ function upcomingOdalan(site: Site, force: boolean): Odalan | undefined {
 interface SiteBriefProps {
   site: Site;
   distanceM: number | null;
-  /** Returns the panel to the list it was opened from. */
+  /** Returns the panel to wherever it was opened from. */
   onBack?: () => void;
+  /**
+   * What that back step is called, when it is not the list.
+   *
+   * Inside an Approach the panel can be one step deep - a temple the visitor
+   * tapped while standing at another - and Back returns to the Approach rather
+   * than leaving. A button that said "back to the list" there would name a
+   * place it does not go.
+   */
+  backLabel?: string;
 }
 
 /**
@@ -68,7 +77,7 @@ interface SiteBriefProps {
  * base and carries its own attribution, and a test fails if it ever drifts from
  * the source (`__tests__/site-rules.test.ts`).
  */
-export function SiteBrief({ site, distanceM, onBack }: SiteBriefProps) {
+export function SiteBrief({ site, distanceM, onBack, backLabel }: SiteBriefProps) {
   const { lang } = useLang();
   const searchParams = useSearchParams();
   const odalan = upcomingOdalan(site, searchParams.get("odalan") === "1");
@@ -83,7 +92,9 @@ export function SiteBrief({ site, distanceM, onBack }: SiteBriefProps) {
 
   return (
     <div>
-      {onBack && <PanelBack label={tExplore(lang, "explore.panel.back")} onClick={onBack} />}
+      {onBack && (
+        <PanelBack label={backLabel ?? tExplore(lang, "explore.panel.back")} onClick={onBack} />
+      )}
 
       {/* The mark carries the top of the panel so the name is not the only
           thing arriving. Same tile as the row this was opened from, one size

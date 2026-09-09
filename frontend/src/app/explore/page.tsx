@@ -354,6 +354,23 @@ function ExploreInner() {
   const [panelSiteId, setPanelSiteId] = useState<string | null>(null);
 
   /**
+   * A Site the visitor asked to read while standing inside another's Approach.
+   *
+   * Inside an Approach the sheet belongs to the Site whose line was crossed:
+   * that notice is what this app is for, and a marker tap must not be able to
+   * replace it by accident. But tapping a different temple is not an accident,
+   * and until now that view ignored it outright - `selectSite` updated the
+   * state and the branch never read it, so the only way to look at anything
+   * else was to leave the Approach first.
+   *
+   * Kept apart from `panelSiteId` on purpose. That one is saved and restored
+   * around an Approach by `panelBefore`, so reading it here would show whatever
+   * panel happened to be open before the visitor arrived, rather than something
+   * they asked for while they were there.
+   */
+  const [detourSiteId, setDetourSiteId] = useState<string | null>(null);
+
+  /**
    * "Lihat sekitar": the camera comes close enough for the basemap to name what
    * is around, and the Zones stand aside while it does (`lib/nearby.ts`).
    */
@@ -853,6 +870,10 @@ function ExploreInner() {
     siteChosenByHand.current = true;
     setSelectedSiteId(siteId);
     setPanelSiteId(siteId);
+    // Read by the Approach view, ignored everywhere else. Set unconditionally
+    // so the two paths into a Site - the marker and the list - stay one code
+    // path; a rule that only applies in one view belongs in that view.
+    setDetourSiteId(siteId);
     // Choosing a Site by hand is the visitor pointing at somewhere other than
     // themselves, so the camera stops chasing them and goes where they pointed.
     setFollow(false);
@@ -862,6 +883,18 @@ function ExploreInner() {
   }, [allSites]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
+
+  /**
+   * A new Approach ends any detour.
+   *
+   * Crossing into a Site's Approach is the notice this app exists to deliver,
+   * and it must arrive on a clean sheet. Without this, a visitor who wandered
+   * off to read about Besakih would cross into Tirta Empul's Approach and still
+   * be looking at Besakih.
+   */
+  useEffect(() => {
+    setDetourSiteId(null);
+  }, [approachSite]);
 
   /**
    * Arriving with a destination: show it, and look at it.
@@ -992,6 +1025,19 @@ function ExploreInner() {
   const approachSiteLive = approachSite
     ? (allSites.find((s) => s.id === approachSite.id) ?? approachSite)
     : null;
+
+  /**
+   * The Site being read inside an Approach: the one the visitor asked for, or
+   * the one whose line they crossed.
+   *
+   * Never the Approach's own Site dressed as a detour - selecting the Site you
+   * are already standing at leaves nothing to go back to, so it reads as no
+   * detour at all.
+   */
+  const detourSite =
+    detourSiteId && detourSiteId !== approachSiteLive?.id
+      ? (allSites.find((s) => s.id === detourSiteId) ?? null)
+      : null;
 
   // The two are mutually exclusive by construction: a simulated walk never
   // anchors dummies. Written as a chain anyway, so that the day one of them
@@ -1204,9 +1250,11 @@ function ExploreInner() {
   }
 
   if (view === "inside" && approachSiteLive) {
+    // The sheet belongs to the Approach until the visitor says otherwise.
+    const sheetSite = detourSite ?? approachSiteLive;
     return (
       <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {mapSurface(approachSiteLive.id, sheetInsetNow)}
+        {mapSurface(sheetSite.id, sheetInsetNow)}
 
         {bannerSite && (
           <ApproachCard
@@ -1224,9 +1272,20 @@ function ExploreInner() {
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
           <SiteBrief
-            site={approachSiteLive}
-            distanceM={position ? haversineMeters(position, approachSiteLive) : null}
-            onBack={restorePanel}
+            site={sheetSite}
+            distanceM={position ? haversineMeters(position, sheetSite) : null}
+            // Back unwinds one step at a time. From a detour it returns to the
+            // Approach the visitor is still standing in, which is the thing
+            // they need; only from there does it leave for the list. Sending
+            // them straight out would drop the notice on the way past.
+            onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
+            backLabel={
+              detourSite
+                ? tExplore(lang, "explore.panel.backToApproach", {
+                    site: approachSiteLive.name,
+                  })
+                : undefined
+            }
           />
         </MapSheet>
       </div>

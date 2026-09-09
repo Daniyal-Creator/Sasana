@@ -12,6 +12,12 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   href?: string;
+  /**
+   * The href leaves the app, so it opens in a new tab and is rendered as a
+   * plain anchor rather than a router link. Additive: without it nothing about
+   * an internal button changes.
+   */
+  external?: boolean;
   type?: "button" | "submit";
   onClick?: () => void;
   "aria-label"?: string;
@@ -42,6 +48,7 @@ export function Button({
   loading = false,
   disabled = false,
   href,
+  external = false,
   type = "button",
   onClick,
   className = "",
@@ -74,6 +81,20 @@ export function Button({
       )}
     </>
   );
+
+  if (href && !isDisabled && external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={classes}
+        aria-label={rest["aria-label"]}
+      >
+        {content}
+      </a>
+    );
+  }
 
   if (href && !isDisabled) {
     return (

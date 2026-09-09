@@ -159,6 +159,9 @@ describe("findRoute", () => {
     expect(url).toContain("115.0868,-8.6212;115.2551,-8.5202");
     expect(url).toContain("steps=true");
     expect(url).toContain("geometries=geojson");
+    // Simplified geometry drops the line to a point per kilometre, which draws
+    // a route that cuts across blocks rather than following the road.
+    expect(url).toContain("overview=full");
     // Only the car profile is deployed on the demo server, so asking for
     // anything else would be asking for a car route under another name.
     expect(url).toContain("/route/v1/driving/");

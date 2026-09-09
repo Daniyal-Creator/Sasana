@@ -74,6 +74,31 @@ export async function fetchRoute(from: LatLng, to: LatLng): Promise<RouteOutcome
 }
 
 /**
+ * The same journey, handed to Google Maps.
+ *
+ * SASANA draws its own line because a handoff ends the visit, and this app is
+ * not finished when somebody sets off (ADR-0021). But its router is a free
+ * demo server with no availability promise, and its route is a car route
+ * whatever the visitor is doing. Neither of those is a reason to leave a person
+ * standing at a temple gate with no way to get anywhere, so the door out is
+ * always on the panel: quietly beside the route when there is one, and the
+ * first thing offered when there is not.
+ *
+ * `origin` is omitted when there is no position, which makes Google start from
+ * wherever the visitor's own device says they are. That is the better failure:
+ * a route from an unknown start beats no route at all.
+ */
+export function mapsDirectionsUrl(to: LatLng, from?: LatLng | null): string {
+  const query = new URLSearchParams({
+    api: "1",
+    destination: `${to.lat},${to.lng}`,
+    travelmode: "driving",
+  });
+  if (from) query.set("origin", `${from.lat},${from.lng}`);
+  return `https://www.google.com/maps/dir/?${query}`;
+}
+
+/**
  * A duration a visitor reads at a glance, never to the second.
  *
  * The router's estimate is a model of a car on empty roads, so minutes are

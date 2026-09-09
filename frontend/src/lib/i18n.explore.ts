@@ -177,6 +177,14 @@ const dict = {
     id: "Periksa koneksi Anda. Adat di bawah tetap bisa dibaca, dan posisi Anda tetap diperiksa.",
   },
 
+  // "Lihat sekitar". The second line is not decoration: it is what carries the
+  // pressed state in words, so the button does not lean on colour alone (C6).
+  "explore.around.toggle": { en: "Look around", id: "Lihat sekitar" },
+  "explore.around.active": {
+    en: "Zones are hidden so place names can show. Tap again to bring them back.",
+    id: "Zona disembunyikan agar nama tempat terlihat. Ketuk lagi untuk memunculkannya.",
+  },
+
   // Explore Mode: the notice arrives without taking the screen
 
   // Screen D: approaching a site

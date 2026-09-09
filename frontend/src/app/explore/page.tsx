@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BaseMap } from "@/components/explore/BaseMap";
 import { MapLayers } from "@/components/explore/MapLayers";
+import { NearbyToggle } from "@/components/explore/NearbyToggle";
 import {
   MapSheet,
   PEEK_HEIGHT_PX,
@@ -34,6 +35,7 @@ import { ApproachSheet, APPROACH_SHEET_PEEK_FRAC } from "@/components/explore/Ap
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
+import { NEARBY_ZOOM } from "@/lib/nearby";
 import type { LatLng } from "@/lib/geo";
 import {
   haversineMeters,
@@ -341,6 +343,12 @@ function ExploreInner() {
   // the list. It replaces its own contents rather than navigating, so the map
   // underneath keeps its camera and the visitor never loses their place.
   const [panelSiteId, setPanelSiteId] = useState<string | null>(null);
+
+  /**
+   * "Lihat sekitar": the camera comes close enough for the basemap to name what
+   * is around, and the Zones stand aside while it does (`lib/nearby.ts`).
+   */
+  const [nearby, setNearby] = useState(false);
 
   // ApproachSheet sizes itself as a fraction of the viewport, and the desktop
   // panel as a fraction of the width, so how much of the map either one hides
@@ -812,6 +820,21 @@ function ExploreInner() {
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
 
   /**
+   * Opening a Site ends "Lihat sekitar".
+   *
+   * Asking about a Site is asking what is expected of you there, and the Zone
+   * and the Approach are that answer. Leaving them hidden would let the panel
+   * describe a boundary the map is no longer drawing.
+   *
+   * Written as one effect rather than a call in each of the three places a
+   * panel opens - the list, the marker, the Approach card - because it is one
+   * rule, and three copies of it is three places for it to drift.
+   */
+  useEffect(() => {
+    if (panelSiteId) setNearby(false);
+  }, [panelSiteId]);
+
+  /**
    * Re-anchoring reuses the same five ids at new coordinates, so the memory of
    * which of them have already spoken has to be cleared with them. Without
    * that, a dummy the visitor met at the old anchor would sit silent at the
@@ -883,6 +906,7 @@ function ExploreInner() {
         bottomInset={isDesktop ? 0 : sheetInset}
         leftInset={isDesktop ? panelInset : 0}
         focus={focus}
+        zoomAtLeast={nearby ? NEARBY_ZOOM : null}
         onUserPan={() => setFollow(false)}
         onRecenter={() => setFollow(true)}
         onTileError={() => setTilesFailed(true)}
@@ -893,6 +917,12 @@ function ExploreInner() {
           accuracyM={accuracyM}
           selectedSiteId={selected}
           onSelectSite={selectSite}
+          nearby={nearby}
+        />
+        <NearbyToggle
+          active={nearby}
+          onToggle={() => setNearby((on) => !on)}
+          bottomInset={isDesktop ? 0 : sheetInset}
         />
       </BaseMap>
     );

@@ -57,6 +57,20 @@ interface BaseMapProps {
   leftInset: number;
   /** Somewhere to look that is not the visitor. Set a new object to move. */
   focus: { center: LatLng; zoom: number } | null;
+  /**
+   * Come at least this close, keeping the centre where it is. Null gives the
+   * camera back the zoom it had before.
+   *
+   * A floor rather than an exact zoom, because a visitor already closer than
+   * this got there deliberately, and a control promising a closer look must
+   * never pull them back out.
+   *
+   * Separate from `focus` because it answers a different question: `focus` is
+   * "look over there", this is "look closer at whatever you are already looking
+   * at". Nothing here knows why - what counts as close enough is SASANA's
+   * business, and this file has none of that.
+   */
+  zoomAtLeast?: number | null;
   /** Off for a map that is being shown rather than used, as on the Guide. */
   interactive?: boolean;
   /** Off when there is no position to centre on and the button would only be a
@@ -85,6 +99,7 @@ export function BaseMap({
   bottomInset,
   leftInset,
   focus,
+  zoomAtLeast = null,
   interactive = true,
   showLocate = true,
   onUserPan,
@@ -107,6 +122,10 @@ export function BaseMap({
   // changes size without ever yanking it back from someone who has panned away.
   const framedOn = useRef<{ center: LatLng; zoom: number } | null>(null);
   const userMoved = useRef(false);
+
+  /** The zoom an override took the camera away from, so leaving it can put the
+   *  camera back rather than guess a number. */
+  const zoomBefore = useRef<number | null>(null);
 
   // Read once, at construction. Putting them in the effect's deps would tear
   // the map down and rebuild it every time the visitor moves.
@@ -225,6 +244,38 @@ export function BaseMap({
     [bottomInset, leftInset],
   );
 
+  /**
+   * Changes zoom without walking away from what the camera was pointed at.
+   *
+   * `setZoom` on its own holds the container centre, which is not the same
+   * point: the panel covers the left of the map and the sheet its foot, so the
+   * subject sits off in the visible strip, and zooming in drifts off it. On a
+   * coastal Site that drift is the difference between the temple and the sea.
+   *
+   * Skipped once the visitor has panned. At that point the centre is theirs,
+   * and a zoom control has no business moving it.
+   */
+  const zoomKeeping = useCallback(
+    (instance: LeafletMap, zoom: number) => {
+      const target = framedOn.current;
+      if (!target || userMoved.current) {
+        instance.setZoom(zoom, { animate: true });
+        return;
+      }
+      instance.setView(centreFor(instance, target.center, zoom), zoom, { animate: true });
+    },
+    [centreFor],
+  );
+
+  // Read through a ref, never through the dependency list. `zoomKeeping` is
+  // rebuilt whenever an inset changes, and on a phone the sheet changes them
+  // continuously: an effect that depended on its identity would re-fire mid
+  // animation and restart the zoom from where it began, over and over, leaving
+  // the camera exactly where it started. The desktop panel is a fixed width,
+  // which is the only reason this ever looked like it worked.
+  const zoomKeepingRef = useRef(zoomKeeping);
+  zoomKeepingRef.current = zoomKeeping;
+
   useEffect(() => {
     if (!map || !follow || !position) return;
     const zoom = map.getZoom();
@@ -243,6 +294,38 @@ export function BaseMap({
     programmatic.current = true;
     map.setView(centreFor(map, focus.center, focus.zoom), focus.zoom, { animate: true });
   }, [map, focus, centreFor]);
+
+  /**
+   * Holding a zoom on request, and giving it back afterwards.
+   *
+   * `framedOn` is patched alongside, not left behind: it is what the re-frame
+   * effect below restores to, so without this, dragging the sheet while an
+   * override is held would silently zoom back out and drop the visitor out of
+   * whatever mode they were in.
+   */
+  useEffect(() => {
+    if (!map) return;
+
+    if (zoomAtLeast !== null) {
+      if (zoomBefore.current === null) zoomBefore.current = map.getZoom();
+      // The floor, not the number itself: a visitor at z18 stays at z18.
+      const target = Math.max(map.getZoom(), zoomAtLeast);
+      if (framedOn.current) framedOn.current = { ...framedOn.current, zoom: target };
+      programmatic.current = true;
+      zoomKeepingRef.current(map, target);
+      return;
+    }
+
+    // Nothing was ever held, so there is nothing to give back. Guarded because
+    // this effect also runs on mount, where zooming to a remembered value would
+    // mean zooming to one that was never taken.
+    if (zoomBefore.current === null) return;
+    const restored = zoomBefore.current;
+    zoomBefore.current = null;
+    if (framedOn.current) framedOn.current = { ...framedOn.current, zoom: restored };
+    programmatic.current = true;
+    zoomKeepingRef.current(map, restored);
+  }, [map, zoomAtLeast]);
 
   /**
    * The panel changed size, so the strip of map the visitor can see did too.

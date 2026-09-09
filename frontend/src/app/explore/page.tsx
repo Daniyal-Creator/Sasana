@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BaseMap } from "@/components/explore/BaseMap";
 import { MapLayers } from "@/components/explore/MapLayers";
+import { DestinationPanel } from "@/components/explore/DestinationPanel";
 import {
   MapSheet,
   PEEK_HEIGHT_PX,
@@ -34,6 +35,9 @@ import { ApproachSheet, APPROACH_SHEET_PEEK_FRAC } from "@/components/explore/Ap
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
+import { readAmenityDestination, writeAmenityDestination } from "@/lib/amenity-destination";
+import { fetchRoute, type RouteView } from "@/lib/route";
+import type { Amenity } from "@shared/contract";
 import type { LatLng } from "@/lib/geo";
 import {
   haversineMeters,
@@ -121,6 +125,32 @@ const WALKING_ZOOM = 14;
 // there is no way to reach it: the map is true to scale now, and true to scale
 // means small until you go closer.
 const SITE_ZOOM = 14;
+
+// Close enough to see the street a guest house is on. SITE_ZOOM answers "which
+// temple is this", which a 400 m Zone is legible at; a destination is a single
+// point, and at 14 it is a dot in a field.
+const DESTINATION_ZOOM = 16;
+
+/**
+ * Where a route leads. An Amenity and a Site are both just a point to the
+ * router, but the panels need to know which of them owns the answer.
+ */
+interface RouteTarget {
+  kind: "amenity" | "site";
+  id: string;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * An Amenity has no id of its own: it is read off OpenStreetMap for one
+ * question and never stored, so nothing ever needed to name it twice. Its
+ * position does the job, and two guest houses at the same point are one guest
+ * house mapped twice.
+ */
+function amenityKey(amenity: Amenity): string {
+  return `${amenity.name}@${amenity.lat},${amenity.lng}`;
+}
 
 function metresNorthOf(site: Site, metres: number): LatLng {
   return {
@@ -345,6 +375,73 @@ function ExploreInner() {
   // the list. It replaces its own contents rather than navigating, so the map
   // underneath keeps its camera and the visitor never loses their place.
   const [panelSiteId, setPanelSiteId] = useState<string | null>(targetSite ? targetSite.id : null);
+
+  /**
+   * A Site the visitor asked to read while standing inside another's Approach.
+   *
+   * Inside an Approach the sheet belongs to the Site whose line was crossed:
+   * that notice is what this app is for, and a marker tap must not be able to
+   * replace it by accident. But tapping a different temple is not an accident,
+   * and until now that view ignored it outright - `selectSite` updated the
+   * state and the branch never read it, so the only way to look at anything
+   * else was to leave the Approach first.
+   *
+   * Kept apart from `panelSiteId` on purpose. That one is saved and restored
+   * around an Approach by `panelBefore`, so reading it here would show whatever
+   * panel happened to be open before the visitor arrived, rather than something
+   * they asked for while they were there.
+   */
+  const [detourSiteId, setDetourSiteId] = useState<string | null>(null);
+
+  /**
+   * The Amenity a visitor picked out of an assistant answer, if they did.
+   *
+   * Read once on mount rather than watched: it is written on the other screen,
+   * and arriving here is the only moment it can have changed.
+   */
+  const [destination, setDestination] = useState<Amenity | null>(null);
+
+  /** What the panel is saying about the way to wherever the route leads. */
+  const [routeView, setRouteView] = useState<RouteView>({ status: "idle" });
+
+  /**
+   * What the current route leads to: an Amenity, or a Site.
+   *
+   * One route at a time, and this is what enforces it. Each panel is handed
+   * the live `routeView` only when the target is its own and `idle` otherwise,
+   * so no panel has to know the others exist and two of them can never both be
+   * showing directions.
+   */
+  const [routeTarget, setRouteTarget] = useState<RouteTarget | null>(null);
+
+  /**
+   * Which request the answer is allowed to come from.
+   *
+   * Two routes asked for in quick succession finish in whatever order the
+   * network decides, and without this the slower first answer overwrites the
+   * faster second one, leaving the panel describing a journey nobody asked for.
+   */
+  const routeRequest = useRef(0);
+
+  /**
+   * Where the route was asked from, held rather than read live.
+   *
+   * A route is directions from a point, not a leash: OSRM answers about the
+   * position it was given, and redrawing the line every time the watch reports
+   * a new fix would rebuild the polyline every few seconds to say the same
+   * thing. The straight-line fallback is anchored the same way, for the same
+   * reason and so the two behave alike.
+   */
+  const [routeFrom, setRouteFrom] = useState<LatLng | null>(null);
+
+  /**
+   * Whether the camera is pointed at a destination the visitor chose.
+   *
+   * A ref rather than a read of the state below, because the effect this
+   * guards depends on `view` alone and would otherwise be looking at whatever
+   * `destination` held when that dependency last changed.
+   */
+  const cameraOnDestination = useRef(false);
 
   // ApproachSheet sizes itself as a fraction of the viewport, and the desktop
   // panel as a fraction of the width, so how much of the map either one hides
@@ -754,6 +851,10 @@ function ExploreInner() {
   // `selectSite`, so this deliberately does not depend on the selection.
   useEffect(() => {
     if (view !== "explore") return;
+    // A visitor who arrived here to be shown a place gets shown it. This effect
+    // exists so the camera does not settle on open sea with the sheet
+    // describing a temple, and a destination answers that just as well.
+    if (cameraOnDestination.current) return;
     const site = allSites.find((s) => s.id === selectedSiteId);
     if (site) setFocus({ center: { lat: site.lat, lng: site.lng }, zoom: SITE_ZOOM });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -819,6 +920,10 @@ function ExploreInner() {
     siteChosenByHand.current = true;
     setSelectedSiteId(siteId);
     setPanelSiteId(siteId);
+    // Read by the Approach view, ignored everywhere else. Set unconditionally
+    // so the two paths into a Site - the marker and the list - stay one code
+    // path; a rule that only applies in one view belongs in that view.
+    setDetourSiteId(siteId);
     // Choosing a Site by hand is the visitor pointing at somewhere other than
     // themselves, so the camera stops chasing them and goes where they pointed.
     setFollow(false);
@@ -828,6 +933,134 @@ function ExploreInner() {
   }, [allSites]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
+
+  /**
+   * A new Approach ends any detour.
+   *
+   * Crossing into a Site's Approach is the notice this app exists to deliver,
+   * and it must arrive on a clean sheet. Without this, a visitor who wandered
+   * off to read about Besakih would cross into Tirta Empul's Approach and still
+   * be looking at Besakih.
+   */
+  useEffect(() => {
+    setDetourSiteId(null);
+  }, [approachSite]);
+
+  /**
+   * Arriving with a destination: show it, and look at it.
+   *
+   * "Lihat sekitar" goes off with it. That mode is for reading what the
+   * basemap names around you; a destination is one named thing the visitor
+   * already chose, and leaving both on would have the map answering a question
+   * nobody asked any more.
+   */
+  useEffect(() => {
+    const chosen = readAmenityDestination();
+    if (!chosen) return;
+    cameraOnDestination.current = true;
+    setDestination(chosen);
+    setFollow(false);
+    setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
+  }, []);
+
+  const hideRoute = useCallback(() => {
+    routeRequest.current += 1;
+    setRouteView({ status: "idle" });
+    setRouteFrom(null);
+    setRouteTarget(null);
+  }, []);
+
+  const clearDestination = useCallback(() => {
+    writeAmenityDestination(null);
+    setDestination(null);
+    cameraOnDestination.current = false;
+    // Only if the route was going there. A visitor routing to a temple should
+    // not lose it because they tidied an Amenity off the panel.
+    if (routeTarget?.kind === "amenity") hideRoute();
+  }, [hideRoute, routeTarget]);
+
+  /**
+   * Ask for directions, and take whatever comes back.
+   *
+   * There is no failure branch because there is no failure: `fetchRoute` turns
+   * every way this can go wrong into "no route", and no route is answered with
+   * the straight line and a sentence saying that is what it is.
+   */
+  const requestRoute = useCallback(
+    async (target: RouteTarget) => {
+      if (!position) return;
+      const from = position;
+      const request = (routeRequest.current += 1);
+
+      setRouteFrom(from);
+      setRouteTarget(target);
+      setRouteView({ status: "loading" });
+
+      const { route, straightM } = await fetchRoute(from, { lat: target.lat, lng: target.lng });
+      // A later request, or a hidden route, has already moved on.
+      if (routeRequest.current !== request) return;
+      setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
+    },
+    [position],
+  );
+
+  /** The route state a panel is allowed to show: its own, or nothing. */
+  const routeFor = useCallback(
+    (kind: RouteTarget["kind"], id: string): RouteView =>
+      routeTarget?.kind === kind && routeTarget.id === id ? routeView : { status: "idle" },
+    [routeTarget, routeView],
+  );
+
+  /**
+   * The chosen destination, shown at the top of the panel in every view.
+   *
+   * One slot, three views. Built once here rather than written out in each
+   * branch, because a task that follows the visitor around the app should not
+   * be three copies that can drift apart.
+   */
+  const destinationPanel = destination ? (
+    <DestinationPanel
+      amenity={destination}
+      onClear={clearDestination}
+      route={routeFor("amenity", amenityKey(destination))}
+      onRoute={() =>
+        requestRoute({
+          kind: "amenity",
+          id: amenityKey(destination),
+          lat: destination.lat,
+          lng: destination.lng,
+        })
+      }
+      onHideRoute={hideRoute}
+      from={position}
+    />
+  ) : null;
+
+  /** The route props a Site panel needs, wired to that Site. */
+  const routePropsFor = (target: Site) => ({
+    route: routeFor("site", target.id),
+    onRoute: () =>
+      requestRoute({ kind: "site", id: target.id, lat: target.lat, lng: target.lng }),
+    onHideRoute: hideRoute,
+    from: position,
+  });
+
+  /** The line to draw, or nothing. Stable across position updates. */
+  const routeLine = useMemo(() => {
+    if (routeView.status === "ready") {
+      return { points: routeView.route.points, straight: false };
+    }
+    if (routeView.status === "straight" && routeFrom && routeTarget) {
+      return {
+        points: [
+          [routeFrom.lat, routeFrom.lng],
+          [routeTarget.lat, routeTarget.lng],
+        ] as [number, number][],
+        straight: true,
+      };
+    }
+    return null;
+  }, [routeView, routeFrom, routeTarget]);
 
   /**
    * Re-anchoring reuses the same five ids at new coordinates, so the memory of
@@ -867,6 +1100,19 @@ function ExploreInner() {
   const approachSiteLive = approachSite
     ? (allSites.find((s) => s.id === approachSite.id) ?? approachSite)
     : null;
+
+  /**
+   * The Site being read inside an Approach: the one the visitor asked for, or
+   * the one whose line they crossed.
+   *
+   * Never the Approach's own Site dressed as a detour - selecting the Site you
+   * are already standing at leaves nothing to go back to, so it reads as no
+   * detour at all.
+   */
+  const detourSite =
+    detourSiteId && detourSiteId !== approachSiteLive?.id
+      ? (allSites.find((s) => s.id === detourSiteId) ?? null)
+      : null;
 
   // The two are mutually exclusive by construction: a simulated walk never
   // anchors dummies. Written as a chain anyway, so that the day one of them
@@ -911,6 +1157,8 @@ function ExploreInner() {
           accuracyM={accuracyM}
           selectedSiteId={selected}
           onSelectSite={selectSite}
+          destination={destination}
+          route={routeLine}
         />
       </BaseMap>
     );
@@ -955,11 +1203,13 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           {panelSite ? (
             <SiteBrief
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              {...routePropsFor(panelSite)}
             />
           ) : (
             <>
@@ -1054,9 +1304,11 @@ function ExploreInner() {
   }
 
   if (view === "inside" && approachSiteLive) {
+    // The sheet belongs to the Approach until the visitor says otherwise.
+    const sheetSite = detourSite ?? approachSiteLive;
     return (
       <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {mapSurface(approachSiteLive.id, sheetInsetNow)}
+        {mapSurface(sheetSite.id, sheetInsetNow)}
 
         {bannerSite && (
           <ApproachCard
@@ -1073,10 +1325,23 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           <SiteBrief
-            site={approachSiteLive}
-            distanceM={position ? haversineMeters(position, approachSiteLive) : null}
-            onBack={restorePanel}
+            site={sheetSite}
+            distanceM={position ? haversineMeters(position, sheetSite) : null}
+            // Back unwinds one step at a time. From a detour it returns to the
+            // Approach the visitor is still standing in, which is the thing
+            // they need; only from there does it leave for the list. Sending
+            // them straight out would drop the notice on the way past.
+            onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
+            {...routePropsFor(sheetSite)}
+            backLabel={
+              detourSite
+                ? tExplore(lang, "explore.panel.backToApproach", {
+                    site: approachSiteLive.name,
+                  })
+                : undefined
+            }
           />
         </MapSheet>
       </div>
@@ -1108,11 +1373,13 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           {panelSite ? (
             <SiteBrief
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              {...routePropsFor(panelSite)}
             />
           ) : (
             <>

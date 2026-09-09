@@ -7,6 +7,8 @@ import { tExplore } from "@/lib/i18n.explore";
 import { approachRadiusM, formatDistance, type LatLng } from "@/lib/geo";
 import type { Site } from "@/data/sites";
 import { meruMarkup } from "./meru";
+import { amenityPinMarkup } from "./amenityPin";
+import type { Amenity } from "@shared/contract";
 import { useLeafletMap } from "./BaseMap";
 
 // Leaflet takes colours as strings, so these cannot be Tailwind classes. The
@@ -16,6 +18,11 @@ import { useLeafletMap } from "./BaseMap";
 const ZONE_COLOR = "#1D4E89";
 const ACCURACY_COLOR = "#3B6FB0";
 const DOT_STROKE = "#FBFCFE";
+
+// The route, in the same ink as the Amenity pin it leads to. Deliberately not
+// ZONE_COLOR: a blue line crossing a blue circle is two different meanings in
+// one hue, and the Zone is the one that must never be misread.
+const ROUTE_COLOR = "#8A6416";
 
 /**
  * The visitor's dot is sized in pixels, not metres, so it stays thumb-sized at
@@ -38,6 +45,28 @@ interface MapLayersProps {
   accuracyM: number | null;
   selectedSiteId: string | null;
   onSelectSite?: (siteId: string) => void;
+  /**
+   * The one Amenity a visitor is headed for, drawn as a single pin.
+   *
+   * No Zone and no Approach, and that is the whole distinction rather than an
+   * omission: those two circles say what is expected of somebody who crosses
+   * them, and nothing is expected of anybody at a guest house.
+   *
+   * One at a time. Five pins competing with the basemap's own labels is the
+   * crowding the "Lihat sekitar" mode exists to avoid, and putting it back
+   * through another door would be the same mistake.
+   */
+  destination?: Amenity | null;
+  /**
+   * The line to the destination, if one has been asked for.
+   *
+   * `straight` is not a styling flag. It says the router had nothing to give
+   * and this is the direct line between two points, which across Bali can be
+   * less than half the distance of the road. It is drawn dashed for the same
+   * reason the Approach is: the difference from a real route has to survive
+   * somebody who cannot separate the colours (C6).
+   */
+  route?: { points: [number, number][]; straight: boolean } | null;
 }
 
 /**
@@ -56,6 +85,8 @@ export function MapLayers({
   accuracyM,
   selectedSiteId,
   onSelectSite,
+  destination = null,
+  route = null,
 }: MapLayersProps) {
   const map = useLeafletMap();
   const { lang } = useLang();
@@ -77,6 +108,8 @@ export function MapLayers({
   const meGroupRef = useRef<LayerGroup | null>(null);
   const zonesRef = useRef<Map<string, Circle>>(new Map());
   const markersRef = useRef<Map<string, Marker>>(new Map());
+  const destGroupRef = useRef<LayerGroup | null>(null);
+  const routeGroupRef = useRef<LayerGroup | null>(null);
   const accuracyRef = useRef<Circle | null>(null);
   const dotRef = useRef<CircleMarker | null>(null);
   const selectHandler = useRef(onSelectSite);
@@ -170,6 +203,91 @@ export function MapLayers({
       markersRef.current.clear();
     };
   }, [map, sites, lang]);
+
+  /**
+   * The route line, under everything else it might cross.
+   *
+   * Its own group, and rebuilt whole whenever the line changes: a polyline has
+   * no useful in-place update, and there is only ever one.
+   */
+  useEffect(() => {
+    if (!map) return;
+    let cancelled = false;
+
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !route) return;
+
+      const group = L.layerGroup().addTo(map);
+      routeGroupRef.current = group;
+
+      L.polyline(route.points, {
+        color: ROUTE_COLOR,
+        weight: route.straight ? 3 : 5,
+        opacity: 0.9,
+        dashArray: route.straight ? "8 8" : undefined,
+        interactive: false,
+      }).addTo(group);
+
+      dotRef.current?.bringToFront();
+    })();
+
+    return () => {
+      cancelled = true;
+      routeGroupRef.current?.remove();
+      routeGroupRef.current = null;
+    };
+  }, [map, route]);
+
+  /**
+   * The destination pin, in a group of its own.
+   *
+   * Not in `siteGroup`: that one is rebuilt whenever the Site list changes, and
+   * a destination has nothing to do with the Sites. Not in `meGroup` either,
+   * which belongs to the visitor and outlives everything.
+   */
+  useEffect(() => {
+    if (!map) return;
+    let cancelled = false;
+
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !destination) return;
+
+      const group = L.layerGroup().addTo(map);
+      destGroupRef.current = group;
+
+      L.marker([destination.lat, destination.lng], {
+        icon: L.divIcon({
+          className: "sasana-amenity-wrap",
+          html: `<span class="sasana-amenity">${amenityPinMarkup(16)}</span>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 26],
+        }),
+        keyboard: true,
+        title: destination.name,
+        alt: destination.name,
+        // Above the Sites, below the visitor: it is what the visitor asked to
+        // be shown, and the one thing that must never be covered is them.
+        zIndexOffset: 200,
+      })
+        .bindTooltip(destination.name, {
+          permanent: true,
+          direction: "top",
+          offset: [0, -28],
+          className: "sasana-amenity-label",
+        })
+        .addTo(group);
+
+      dotRef.current?.bringToFront();
+    })();
+
+    return () => {
+      cancelled = true;
+      destGroupRef.current?.remove();
+      destGroupRef.current = null;
+    };
+  }, [map, destination]);
 
   /**
    * The visitor's own group, created once per map and removed only with it.

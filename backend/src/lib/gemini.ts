@@ -176,6 +176,13 @@ export interface ChatRequestContext {
   siteRules?: Rule[];
   /** Read from OpenStreetMap for this request, empty when none was needed. */
   places?: Place[];
+  /** The area those places were read around, as the map names it. */
+  placesArea?: string;
+  /**
+   * The question asked what is nearby, and nothing said near where: no area
+   * named in it that resolved, and no Site attached to the request.
+   */
+  unanchoredPlaceQuery?: boolean;
   /**
    * The full knowledge base, when `rules` is the narrowed selection actually
    * sent. Only a refusal uses it, to name topics beyond this question's slice.
@@ -195,7 +202,14 @@ export async function askQuestion(
   history: ChatMessage[],
   lang: Lang,
   rules: Rule[],
-  { site, siteRules = [], places = [], allRules = rules }: ChatRequestContext = {},
+  {
+    site,
+    siteRules = [],
+    places = [],
+    placesArea,
+    unanchoredPlaceQuery = false,
+    allRules = rules,
+  }: ChatRequestContext = {},
 ): Promise<AnsweredQuestion> {
   const started = Date.now();
   const contents: ModelTurn[] = [
@@ -209,7 +223,12 @@ export async function askQuestion(
   const call = () =>
     callModel("chat", {
       schemaName: "sasana_chat",
-      systemInstruction: buildChatSystemPrompt(rules, lang, { site, siteRules, places }),
+      systemInstruction: buildChatSystemPrompt(rules, lang, {
+        site,
+        siteRules,
+        places,
+        placesArea,
+      }),
       turns: contents,
       temperature: 0.3,
       maxOutputTokens: 800,
@@ -225,7 +244,8 @@ export async function askQuestion(
     );
     const result = safeParseChat(res.text, lang, rules, {
       message,
-      hasPlaces: places.length > 0,
+      places,
+      unanchoredPlaceQuery,
       allRules,
     });
     logInfo({
@@ -277,8 +297,22 @@ export async function askQuestion(
 export interface ChatParseContext {
   /** The question, so a refusal can offer what the knowledge base does hold. */
   message: string;
-  /** Whether the server actually put a map lookup in front of the model. */
-  hasPlaces?: boolean;
+  /**
+   * The map lookup the server put in front of the model, empty when it made
+   * none.
+   *
+   * Two jobs, and they are the same fact read twice: whether a lookup happened
+   * at all, which is what makes the `places` tier checkable, and what it found,
+   * which the answer carries back so a visitor can go to one of them. Keeping
+   * them as one field is what stops an answer ever claiming the tier while
+   * shipping a list from somewhere else.
+   */
+  places?: Place[];
+  /**
+   * The question asked what is nearby and the server had nowhere to search.
+   * Changes which refusal is read, never whether one happens.
+   */
+  unanchoredPlaceQuery?: boolean;
   /**
    * The whole knowledge base, when the prompt carried only part of it.
    *
@@ -290,11 +324,26 @@ export interface ChatParseContext {
   allRules?: Rule[];
 }
 
+/**
+ * Which refusal a visitor reads when nothing more specific decided it.
+ *
+ * Volatility comes first even for a question about places. "berapa harga hotel
+ * dekat sini" names no area and asks a price, and answering "which area?" would
+ * take the visitor round a loop that ends in the price refusal anyway. The
+ * class of fact is settled; where they are is not the reason they cannot be
+ * helped.
+ */
+function defaultRefusalReason(message: string, unanchoredPlaceQuery: boolean): RefusalReason {
+  if (asksForVolatileFact(message)) return "volatile";
+  if (unanchoredPlaceQuery) return "noArea";
+  return "uncovered";
+}
+
 export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
-  { message, hasPlaces = false, allRules = rules }: ChatParseContext,
+  { message, places = [], unanchoredPlaceQuery = false, allRules = rules }: ChatParseContext,
 ): ChatResponse {
   let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
@@ -317,7 +366,7 @@ export function safeParseChat(
       message,
       lang,
       allRules,
-      reason ?? (asksForVolatileFact(message) ? "volatile" : "uncovered"),
+      reason ?? defaultRefusalReason(message, unanchoredPlaceQuery),
     ),
     kind: "none",
     ruleIds: [],
@@ -358,8 +407,23 @@ export function safeParseChat(
   // one in front of it is naming hotels out of memory, which is the exact
   // failure this tier was built to end.
   if (claimedKind === "places") {
-    if (!hasPlaces) return refused;
-    return { answer, kind: "places", ruleIds: [], source: PLACES_SOURCE };
+    if (places.length === 0) return refused;
+    return {
+      answer,
+      kind: "places",
+      ruleIds: [],
+      source: PLACES_SOURCE,
+      // The same places the sentence was written from, in a shape a map can
+      // draw. Taken from the server's own lookup rather than from anything the
+      // model returned, so a name it invented cannot become a pin.
+      amenities: places.map(({ name, kind, distanceM, lat, lng }) => ({
+        name,
+        kind,
+        distanceM,
+        lat,
+        lng,
+      })),
+    };
   }
 
   if (claimedKind === "context" || claimedKind === "general") {

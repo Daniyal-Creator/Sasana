@@ -119,6 +119,87 @@ export interface VisionResult {
 export type ChatKind = "rule" | "context" | "general" | "places" | "none";
 
 /** `POST /api/chat` response body. */
+/**
+ * A place near a visitor that they might need rather than revere: somewhere to
+ * stay, somewhere to eat. Read from OpenStreetMap at request time, never held
+ * in the app's own data.
+ *
+ * An Amenity carries no Custom, and it has no Zone and no Approach, because
+ * nothing is expected of anybody at a guest house. That is the whole reason it
+ * is a separate word from Site rather than a flag on one: the two are drawn
+ * differently, they behave differently on the map, and only one of them is
+ * what this app is for. See CONTEXT.md.
+ */
+export interface Amenity {
+  name: string;
+  /** The OSM tag value, e.g. `guest_house`, so "hotel" is never implied. */
+  kind: string;
+  /** Metres from the point the search was anchored on. */
+  distanceM: number;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * One instruction in a route, reduced to a vocabulary the UI can name.
+ *
+ * OSRM does not return sentences. It returns a maneuver type and a modifier -
+ * "end of road" plus "left", "roundabout" plus "straight" - and leaves the
+ * wording to whoever displays it. Its full vocabulary is larger than anything
+ * this app needs and is not bilingual, so the server narrows it to this list
+ * and the client writes the sentence in the visitor's language.
+ */
+export type RouteManeuver =
+  | "depart"
+  | "arrive"
+  | "straight"
+  | "left"
+  | "right"
+  | "slight-left"
+  | "slight-right"
+  | "sharp-left"
+  | "sharp-right"
+  | "uturn"
+  | "roundabout"
+  | "merge"
+  | "fork"
+  | "exit";
+
+/** One written step: what to do, on which road, for how far. */
+export interface RouteStep {
+  maneuver: RouteManeuver;
+  /** The road this step follows. Empty when OpenStreetMap has not named it. */
+  road: string;
+  distanceM: number;
+}
+
+/**
+ * A driving route from the visitor to an Amenity.
+ *
+ * `profile` is on the wire and not implied, because the wording depends on it
+ * and getting that wrong is the failure this whole tier guards against. The
+ * OSRM demo server answers every profile with a car route - measured: `driving`
+ * and `foot` return the same distance to the decimal - so a route labelled for
+ * walking would be a car route wearing the wrong word.
+ */
+export interface Route {
+  /** Metres along the road, not as the crow flies. */
+  distanceM: number;
+  /** Seconds, the router's own estimate for a car. */
+  durationS: number;
+  /** The line to draw, in order, as [lat, lng] the way Leaflet wants it. */
+  points: [number, number][];
+  steps: RouteStep[];
+  profile: "driving";
+}
+
+/** `GET /api/route` response body. `route` is null when none could be found. */
+export interface RouteResponse {
+  route: Route | null;
+  /** Attribution for the road data. Required by the ODbL, never optional. */
+  source: string;
+}
+
 export interface ChatResponse {
   answer: string;
   kind: ChatKind;
@@ -133,6 +214,19 @@ export interface ChatResponse {
    * `rule`, the map's for `places`, and null for everything else.
    */
   source: string | null;
+  /**
+   * The places the answer was written from, when there were any.
+   *
+   * Rides alongside the prose rather than replacing it. The sentence is still
+   * the answer; this is the same facts in a shape a map can draw, so a visitor
+   * can go to one of them instead of only reading its name.
+   *
+   * Only ever present when `kind` is `"places"`, for the same reason `ruleIds`
+   * is empty outside `"rule"`: the server sends what an answer actually stands
+   * on, and a list attached to a refusal would be a list of somewhere nobody
+   * was told about.
+   */
+  amenities?: Amenity[];
 }
 
 /** One turn of assistant conversation, as sent in the `POST /api/chat` history. */
@@ -142,5 +236,6 @@ export interface ChatMessage {
   kind?: ChatKind;
   ruleIds?: string[];
   source?: string | null;
+  amenities?: Amenity[];
   error?: boolean;
 }

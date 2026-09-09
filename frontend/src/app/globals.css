@@ -200,6 +200,61 @@
   display: none;
 }
 
+/* The Amenity destination: a guest house or a warung the visitor chose out of
+   an assistant answer.
+
+   It must not be mistaken for a Site, and colour alone is not allowed to carry
+   that (C6, which survives the carve-out). Three differences, only one of them
+   hue: a square badge against the Site's round one, a plain pin against the
+   meru, and the accent against the primary. Values are the accent and
+   border-strong tokens, copied because Leaflet builds this from a string of
+   markup that no Tailwind class can reach. */
+.explore-map .sasana-amenity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1.5px solid #8a6416;
+  background: #b8862b;
+  color: #fffdf9;
+  box-shadow: 0 4px 12px rgb(42 37 32 / 0.22);
+}
+
+.explore-map .sasana-amenity svg {
+  fill: currentColor;
+}
+
+.explore-map .sasana-amenity-wrap:focus-visible .sasana-amenity {
+  outline: 2px solid #3b6fb0;
+  outline-offset: 2px;
+}
+
+/* Named at every zoom, unlike the Sites. There is only ever one of these, so
+   it cannot stack into the clutter that hiding the Site names prevents, and it
+   is the thing the visitor came to the map to find. */
+.explore-map .leaflet-tooltip.sasana-amenity-label {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: #2a2520;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow:
+    0 1px 2px #fffdf9,
+    0 -1px 2px #fffdf9,
+    1px 0 2px #fffdf9,
+    -1px 0 2px #fffdf9;
+  white-space: nowrap;
+}
+
+.explore-map .leaflet-tooltip.sasana-amenity-label::before {
+  display: none;
+}
+
 /* Scroll surfaces inside the Explore panel and sheets.
  *
  * The platform scrollbar on Windows is an opaque grey channel with a stepper

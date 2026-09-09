@@ -4,10 +4,11 @@ import { useState } from "react";
 import Image from "next/image";
 import { Maximize2 } from "lucide-react";
 import { SourceReference } from "@/components/assistant/SourceReference";
+import { AmenityList } from "@/components/assistant/AmenityList";
 import { ImagePreviewModal } from "@/components/assistant/ImagePreviewModal";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
-import type { ChatKind } from "@shared/contract";
+import type { Amenity, ChatKind } from "@shared/contract";
 
 interface ChatBubbleProps {
   role: "user" | "assistant";
@@ -15,6 +16,8 @@ interface ChatBubbleProps {
   imageUrl?: string | null;
   source?: string | null;
   kind?: ChatKind;
+  /** Present only on a map answer, and only when the lookup found something. */
+  amenities?: Amenity[];
   isFirstOfTurn?: boolean;
 }
 
@@ -48,6 +51,7 @@ export function ChatBubble({
   imageUrl,
   source,
   kind,
+  amenities,
   isFirstOfTurn = true,
 }: ChatBubbleProps) {
   const { lang } = useLang();
@@ -94,6 +98,9 @@ export function ChatBubble({
           </div>
         )}
         <p className="whitespace-pre-wrap text-base">{content}</p>
+        {/* Above the attribution, not below it: the credit line closes the
+            answer, and the places are part of what is being credited. */}
+        {!isUser && amenities && amenities.length > 0 && <AmenityList amenities={amenities} />}
         {!isUser && kind !== undefined && <SourceReference source={source ?? null} kind={kind} />}
       </div>
     </li>

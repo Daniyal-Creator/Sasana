@@ -25,6 +25,15 @@ what the place expects of them. It is not the Zone: the Zone is an area, the
 Site marker is a point inside it.
 _Avoid_: Pin, POI, icon, spot
 
+**Amenity**:
+A place near a visitor that they might need rather than revere: somewhere to
+stay, somewhere to eat. Read from OpenStreetMap when a question asks for one,
+never held in the app's own data. An Amenity carries no Custom and has no Zone
+and no Approach, because nothing is expected of anybody at a guest house. It is
+the one kind of place here that is not sacred, and the word exists to keep that
+line visible in the code as well as on the screen.
+_Avoid_: POI, destination, Site, tempat wisata, attraction
+
 **Odalan**:
 A Site's own anniversary ceremony. While it is happening the Site is busier and more restricted than usual. A recorded Odalan date always travels with the calendar anchor it came from and a source; a date without one does not exist.
 

@@ -139,6 +139,15 @@ export interface ChatPromptContext {
   siteRules?: Rule[];
   /** Read from OpenStreetMap for this request, when the question asked for it. */
   places?: Place[];
+  /**
+   * The area those places were read around, as the map itself names it.
+   *
+   * It reaches the answer on purpose. A geocoder that lands on the wrong place
+   * is not rare enough to leave silent, and the visitor is the only one in the
+   * loop who knows which town they meant - so the search says where it looked
+   * and lets them see it was somewhere else.
+   */
+  placesArea?: string;
 }
 
 // Context stuffing: the whole KB goes into the system prompt (PRD §12,
@@ -151,7 +160,7 @@ export interface ChatPromptContext {
 export function buildChatSystemPrompt(
   rules: Rule[],
   lang: Lang,
-  { site, siteRules = [], places = [] }: ChatPromptContext = {},
+  { site, siteRules = [], places = [], placesArea }: ChatPromptContext = {},
 ): string {
   // RULES carries the selection `selectRules` made for this question, not the
   // whole knowledge base. It used to carry everything, on the reasoning that
@@ -174,14 +183,20 @@ When the question is about where they are, answer from these first. The full RUL
   // returned some. The model is given the answer and asked to write it out;
   // it is not being asked what it knows about the area, because it does not
   // know, and the whole point of this block is that it no longer has to guess.
+  const searchedAround = placesArea ?? site?.name;
   const nearby =
     places.length > 0
       ? `
 
-NEARBY PLACES, read from OpenStreetMap just now${site ? ` around ${site.name}` : ""}:
+NEARBY PLACES, read from OpenStreetMap just now${searchedAround ? ` around ${searchedAround}` : ""}:
 ${formatPlacesForPrompt(places)}
 
-Answer the question using ONLY this list, and set "kind" to "places". Name the places and their distances as given; do not add one that is not listed, do not rank them by quality, and do not say anything about prices, opening times, or whether they are any good - the map records what is there, nothing more. If the list does not answer what was asked, say so plainly and set "kind" to "none".`
+Answer the question using ONLY this list, and set "kind" to "places". Name the places and their distances as given; do not add one that is not listed, do not rank them by quality, and do not say anything about prices, opening times, or whether they are any good - the map records what is there, nothing more. If the list does not answer what was asked, say so plainly and set "kind" to "none".${
+          searchedAround
+            ? `
+Say which area you searched, naming it as "${searchedAround}". The visitor is the only one who knows which place they meant, so they have to be able to see where the map was read.`
+            : ""
+        }`
       : "";
 
   return `You are SASANA, a knowledgeable and friendly guide to Bali - its customs, its sacred places, its history, and the official code of conduct for visitors.
@@ -223,7 +238,7 @@ ${formatRulesForPrompt(rules, lang, { withIds: true })}`;
 // W4 - lead with the fix, not the fault - applies to refusals too.
 
 /** Why an answer was refused. Decides which refusal the visitor reads. */
-export type RefusalReason = "uncovered" | "volatile";
+export type RefusalReason = "uncovered" | "volatile" | "noArea";
 
 const REFUSAL_LEAD: Record<RefusalReason, Record<Lang, string>> = {
   uncovered: {
@@ -241,6 +256,17 @@ const REFUSAL_LEAD: Record<RefusalReason, Record<Lang, string>> = {
   volatile: {
     en: "I don't give opening times, prices, or ceremony dates. Those change, and I have no source I can stand behind. Ask at the place itself.",
     id: "Saya tidak menyebutkan jam buka, harga, atau tanggal upacara. Hal seperti itu berubah dan saya tidak punya sumber yang bisa saya pertanggungjawabkan. Tanyakan langsung di tempatnya.",
+  },
+  // The visitor asked what is nearby without saying near where, and nothing on
+  // the request said where they are. Asking back is the only honest move: the
+  // alternative is picking an area on their behalf and answering about it with
+  // full confidence, which is exactly how a map search becomes a lie.
+  //
+  // It names an example rather than describing the shape of the input, because
+  // "name the area" is advice and "penginapan dekat Ubud" is something to type.
+  noArea: {
+    en: "Tell me which area to look in and I will read the map for it. For example: hotels near Ubud.",
+    id: "Sebutkan daerahnya dan saya akan membacakan petanya. Misalnya: penginapan dekat Ubud.",
   },
 };
 
@@ -288,6 +314,11 @@ export function buildRefusal(
   reason: RefusalReason = "uncovered",
 ): string {
   const lead = REFUSAL_LEAD[reason][lang];
+
+  // The one refusal that ends there. It already asks a question, and following
+  // a question with "what I can help with: attire, photography" reads as the
+  // assistant changing the subject rather than waiting for the answer.
+  if (reason === "noArea") return lead;
 
   // A volatile refusal never offers a rule. The question was about a price or
   // an hour, and answering it with "would you like to hear about the inner

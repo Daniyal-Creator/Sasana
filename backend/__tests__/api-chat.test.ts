@@ -331,17 +331,52 @@ describe("POST /api/chat — nearby places from the map", () => {
     expect(systemInstruction).toContain("Guest House Melati");
     expect(systemInstruction).toContain("around Pura Tanah Lot");
 
+    // The prose is still the answer. The list rides alongside it, carrying the
+    // one thing a sentence cannot: where to go.
     expect(await readBody(res)).toEqual({
       answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
       kind: "places",
       ruleIds: [],
       source: "OpenStreetMap contributors",
+      amenities: [
+        { name: "Guest House Melati", kind: "guest_house", distanceM: 111, lat: -8.6202, lng: 115.0868 },
+        { name: "Puri Bagus", kind: "guest_house", distanceM: 222, lat: -8.6192, lng: 115.0868 },
+      ],
     });
+  });
+
+  // `ruleIds` is empty outside the rule tier for the same reason: what the
+  // server sends is what the answer actually stands on. A list hung off a
+  // refusal would name places nobody was told about.
+  it("never attaches amenities to an answer that is not from the map", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    const res = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(await readBody(res)).not.toHaveProperty("amenities");
+  });
+
+  // The pins come from the server's own lookup, so a sixth name the model
+  // invented cannot become somewhere a visitor is sent.
+  it("draws the amenities from the lookup rather than from the reply", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({
+      answer: "Ada Guest House Melati, dan juga Hotel Karangan.",
+      kind: "places",
+      ruleIds: [],
+    });
+
+    const res = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    const json = await readBody(res);
+    const amenities = json.amenities as Array<{ name: string }>;
+    expect(amenities.map((a) => a.name)).toEqual(["Guest House Melati"]);
   });
 
   // Without somewhere to search from there is nothing to look up, and guessing
   // the location as well as the answer is exactly what this tier exists to stop.
-  it("does not call the map when no Site is attached", async () => {
+  it("does not call the map when nothing says where to look", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch");
     mockAnswer({ answer: "Saya tidak tahu di mana Anda.", kind: "none", ruleIds: [] });
 
@@ -394,6 +429,115 @@ describe("POST /api/chat — nearby places from the map", () => {
     expect(first.headers.get("x-cache")).toBe("MISS");
     expect(second.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  // ADR-0020. The Site stopped being the only way to say where, and these are
+  // the three ways that can now go: a named area resolves, a named area does
+  // not, and nothing is named at all.
+  describe("anchored on an area the question names", () => {
+    const UBUD = {
+      addresstype: "town",
+      display_name: "Ubud, Gianyar, Bali, Indonesia",
+      lat: "-8.5170195",
+      lon: "115.2550507",
+    };
+
+    // Two services on the path now, so the mock answers by URL rather than by
+    // call order. A single mockResolvedValue would also hand the same Response
+    // to both, and a body can only be read once.
+    const mapStack = (area: Record<string, string> | null, names: string[]) =>
+      vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+        if (String(input).includes("nominatim")) {
+          return new Response(JSON.stringify(area ? [area] : []), { status: 200 });
+        }
+        return new Response(
+          JSON.stringify({
+            elements: names.map((name, i) => ({
+              lat: -8.517 + (i + 1) * 0.001,
+              lon: 115.255,
+              tags: { name, tourism: "guest_house" },
+            })),
+          }),
+          { status: 200 },
+        );
+      });
+
+    it("searches an area the question names, with no Site attached", async () => {
+      const fetchMock = mapStack(UBUD, ["Guest House Melati"]);
+      mockAnswer({ answer: "Di sekitar Ubud ada Guest House Melati.", kind: "places", ruleIds: [] });
+
+      const res = await ask("adakah penginapan di Ubud?");
+
+      const prompt = generateContent.mock.calls[0][0].config.systemInstruction as string;
+      expect(prompt).toContain("NEARBY PLACES");
+      expect(prompt).toContain("Guest House Melati");
+      // The resolved name reaches the prompt so the answer can say where it
+      // looked, which is the visitor's only way to catch a wrong resolution.
+      expect(prompt).toContain("Ubud, Gianyar, Bali, Indonesia");
+
+      const overpassCall = fetchMock.mock.calls.find((c) => !String(c[0]).includes("nominatim"));
+      expect(String((overpassCall?.[1] as RequestInit).body)).toContain("115.255");
+      expect((await readBody(res)).kind).toBe("places");
+    });
+
+    // Naming somewhere is the more deliberate act: a visitor at Tanah Lot who
+    // asks about Ubud is asking about Ubud.
+    it("prefers the named area over the Site it was asked from", async () => {
+      const fetchMock = mapStack(UBUD, ["Guest House Melati"]);
+      mockAnswer({ answer: "Di sekitar Ubud ada Guest House Melati.", kind: "places", ruleIds: [] });
+
+      await ask("adakah penginapan di Ubud?", TANAH_LOT);
+
+      const prompt = generateContent.mock.calls[0][0].config.systemInstruction as string;
+      expect(prompt).toContain("Ubud, Gianyar, Bali, Indonesia");
+      expect(prompt).not.toContain("around Pura Tanah Lot");
+      const overpassCall = fetchMock.mock.calls.find((c) => !String(c[0]).includes("nominatim"));
+      expect(String((overpassCall?.[1] as RequestInit).body)).toContain("115.255");
+    });
+
+    // Naming the Site the request already carries is the common phrasing, and
+    // geocoding it would spend a round trip to be told what is already known.
+    it("does not geocode when the question names the Site it was asked from", async () => {
+      const fetchMock = mapStack(null, ["Guest House Melati"]);
+      mockAnswer({ answer: "Ada Guest House Melati.", kind: "places", ruleIds: [] });
+
+      await ask("adakah penginapan di sekitar Pura Tanah Lot?", TANAH_LOT);
+
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes("nominatim"))).toBe(false);
+    });
+
+    // The whole knowledge base is Bali. Bounded to it, Nominatim answers
+    // "Bogor" with a road in Bali rather than with nothing, so the area
+    // allow-list is what stops the app naming hotels around a lane in Denpasar.
+    it("refuses a place outside Bali rather than landing on a road inside it", async () => {
+      const road = {
+        addresstype: "road",
+        display_name: "Jalan Bogor, Denpasar, Bali, Indonesia",
+        lat: "-8.8010579",
+        lon: "115.1498771",
+      };
+      const fetchMock = mapStack(road, ["Should Not Appear"]);
+      mockAnswer({ answer: "Saya tidak tahu.", kind: "none", ruleIds: [] });
+
+      const res = await ask("adakah penginapan di Bogor?");
+
+      expect(fetchMock.mock.calls.some((c) => !String(c[0]).includes("nominatim"))).toBe(false);
+      const json = await readBody(res);
+      expect(json.kind).toBe("none");
+      expect(json.answer).toContain("Sebutkan daerahnya");
+    });
+
+    it("asks which area to look in when nothing says where", async () => {
+      mockAnswer({ answer: "Saya tidak tahu di mana Anda.", kind: "none", ruleIds: [] });
+
+      const res = await ask("adakah penginapan terdekat?");
+
+      const json = await readBody(res);
+      expect(json.kind).toBe("none");
+      expect(json.answer).toContain("Sebutkan daerahnya");
+      // It asks a question, so it does not also change the subject to a menu.
+      expect(json.answer).not.toContain(ID_REFUSED);
+    });
   });
 });
 

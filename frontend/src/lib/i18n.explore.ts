@@ -179,6 +179,14 @@ const dict = {
 
   // "Lihat sekitar". The second line is not decoration: it is what carries the
   // pressed state in words, so the button does not lean on colour alone (C6).
+  // The Amenity a visitor picked out of an assistant answer.
+  "explore.amenity.eyebrow": { en: "Destination", id: "Tujuan" },
+  "explore.amenity.clear": { en: "Clear destination", id: "Hapus tujuan" },
+  "explore.amenity.source": {
+    en: "Recorded by OpenStreetMap contributors",
+    id: "Dicatat oleh kontributor OpenStreetMap",
+  },
+
   "explore.around.toggle": { en: "Look around", id: "Lihat sekitar" },
   "explore.around.active": {
     en: "Zones are hidden so place names can show. Tap again to bring them back.",

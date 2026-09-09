@@ -469,6 +469,14 @@ const dict = {
     en: "No official rule found for this",
     id: "Tidak ada aturan resmi yang ditemukan untuk ini",
   },
+  // The map results, listed under the answer they were written from. The
+  // heading says where they came from rather than what they are: "hotels"
+  // would be a claim about them, and the map only records that they exist.
+  "assistant.amenities.title": { en: "Found on the map", id: "Ditemukan di peta" },
+  "assistant.amenities.open": {
+    en: "Show {name} on the map",
+    id: "Tampilkan {name} di peta",
+  },
   "assistant.photo.preview": { en: "Photo preview", id: "Pratinjau foto" },
   "assistant.photo.view": { en: "View photo", id: "Lihat foto" },
   "assistant.photo.close": { en: "Close photo preview", id: "Tutup pratinjau foto" },

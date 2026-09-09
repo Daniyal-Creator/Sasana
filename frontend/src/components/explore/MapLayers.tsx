@@ -7,6 +7,8 @@ import { tExplore } from "@/lib/i18n.explore";
 import { approachRadiusM, formatDistance, type LatLng } from "@/lib/geo";
 import type { Site } from "@/data/sites";
 import { meruMarkup } from "./meru";
+import { amenityPinMarkup } from "./amenityPin";
+import type { Amenity } from "@shared/contract";
 import { useLeafletMap } from "./BaseMap";
 
 // Leaflet takes colours as strings, so these cannot be Tailwind classes. The
@@ -50,6 +52,18 @@ interface MapLayersProps {
    * reason to be open.
    */
   nearby?: boolean;
+  /**
+   * The one Amenity a visitor is headed for, drawn as a single pin.
+   *
+   * No Zone and no Approach, and that is the whole distinction rather than an
+   * omission: those two circles say what is expected of somebody who crosses
+   * them, and nothing is expected of anybody at a guest house.
+   *
+   * One at a time. Five pins competing with the basemap's own labels is the
+   * crowding the "Lihat sekitar" mode exists to avoid, and putting it back
+   * through another door would be the same mistake.
+   */
+  destination?: Amenity | null;
 }
 
 /**
@@ -69,6 +83,7 @@ export function MapLayers({
   selectedSiteId,
   onSelectSite,
   nearby = false,
+  destination = null,
 }: MapLayersProps) {
   const map = useLeafletMap();
   const { lang } = useLang();
@@ -90,6 +105,7 @@ export function MapLayers({
   const meGroupRef = useRef<LayerGroup | null>(null);
   const zonesRef = useRef<Map<string, Circle>>(new Map());
   const markersRef = useRef<Map<string, Marker>>(new Map());
+  const destGroupRef = useRef<LayerGroup | null>(null);
   const accuracyRef = useRef<Circle | null>(null);
   const dotRef = useRef<CircleMarker | null>(null);
   const selectHandler = useRef(onSelectSite);
@@ -185,6 +201,56 @@ export function MapLayers({
       markersRef.current.clear();
     };
   }, [map, sites, lang]);
+
+  /**
+   * The destination pin, in a group of its own.
+   *
+   * Not in `siteGroup`: that one is rebuilt whenever the Site list changes, and
+   * a destination has nothing to do with the Sites. Not in `meGroup` either,
+   * which belongs to the visitor and outlives everything.
+   */
+  useEffect(() => {
+    if (!map) return;
+    let cancelled = false;
+
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !destination) return;
+
+      const group = L.layerGroup().addTo(map);
+      destGroupRef.current = group;
+
+      L.marker([destination.lat, destination.lng], {
+        icon: L.divIcon({
+          className: "sasana-amenity-wrap",
+          html: `<span class="sasana-amenity">${amenityPinMarkup(16)}</span>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 26],
+        }),
+        keyboard: true,
+        title: destination.name,
+        alt: destination.name,
+        // Above the Sites, below the visitor: it is what the visitor asked to
+        // be shown, and the one thing that must never be covered is them.
+        zIndexOffset: 200,
+      })
+        .bindTooltip(destination.name, {
+          permanent: true,
+          direction: "top",
+          offset: [0, -28],
+          className: "sasana-amenity-label",
+        })
+        .addTo(group);
+
+      dotRef.current?.bringToFront();
+    })();
+
+    return () => {
+      cancelled = true;
+      destGroupRef.current?.remove();
+      destGroupRef.current = null;
+    };
+  }, [map, destination]);
 
   /**
    * The visitor's own group, created once per map and removed only with it.

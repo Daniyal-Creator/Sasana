@@ -35,6 +35,17 @@ export interface Place {
   /** The OSM tag value, e.g. `guest_house` - shown so "hotel" is not implied. */
   kind: string;
   distanceM: number;
+  /**
+   * Where it is.
+   *
+   * These used to be read to compute `distanceM` and then dropped, on the
+   * reasoning that a sentence in a chat bubble has no use for a coordinate.
+   * That was true while the answer was only ever prose. A visitor who is told
+   * a guest house is 400 m away and then has to go and find it needs the
+   * point, not the number, so it survives the trip now.
+   */
+  lat: number;
+  lng: number;
 }
 
 // OSM tags per category. Kept narrow on purpose: `tourism=attraction` and
@@ -127,6 +138,8 @@ export function parseOverpass(
         name,
         kind: el.tags?.[TAGS[category].key] ?? category,
         distanceM: distanceM(lat, lng, pointLat, pointLng),
+        lat: pointLat,
+        lng: pointLng,
       };
     })
     .filter((place): place is Place => place !== null)

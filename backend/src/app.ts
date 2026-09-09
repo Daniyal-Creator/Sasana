@@ -18,6 +18,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { logError } from "@/lib/logger";
 import { POST as chat } from "@/routes/chat";
 import { GET as route } from "@/routes/route";
 import { GET as stats } from "@/routes/stats";
@@ -30,12 +31,40 @@ export const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+/**
+ * Whether a browser origin may call this API — and a log line when it may not.
+ *
+ * A list would have decided this on its own. The reason to write the function
+ * out is the log: a refused origin is invisible from the server side otherwise.
+ * The preflight still answers 204, the response simply carries no
+ * `access-control-allow-origin`, and the only place the failure appears is the
+ * visitor's console. A deployment can therefore be misconfigured for days while
+ * `/health` says `{"ok":true}` and every log line looks normal — which is what
+ * happened here, and what cost the time this function is meant to save.
+ *
+ * An empty origin is not a refusal. Hono passes `""` when the request carries no
+ * `Origin` header at all, which is curl, a health check, or anything that is not
+ * a browser. Nothing is being denied, so nothing is reported.
+ */
+export function resolveOrigin(origin: string): string | null {
+  if (!origin) return null;
+  if (ALLOWED_ORIGINS.includes(origin)) return origin;
+
+  logError({
+    route: "cors",
+    event: "origin_rejected",
+    origin,
+    allowed: ALLOWED_ORIGINS,
+  });
+  return null;
+}
+
 const app = new Hono();
 
 app.use(
   "/api/*",
   cors({
-    origin: ALLOWED_ORIGINS,
+    origin: resolveOrigin,
     allowMethods: ["GET", "POST", "OPTIONS"],
     allowHeaders: ["Content-Type"],
   }),

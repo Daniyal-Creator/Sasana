@@ -574,60 +574,286 @@ const dict = {
   "sr.assistant": { en: "Sasana said", id: "Sasana berkata" },
 
   "about.eyebrow": {
-    en: "OFFICIAL ETHOS & GUIDANCE",
-    id: "PEDOMAN RESMI & ETIKA",
+    en: "ABOUT SASANA",
+    id: "TENTANG SASANA",
   },
-  "about.title": { en: "About SASANA", id: "Tentang SASANA" },
+  "about.title": {
+    en: "Understanding Bali\nwith respect.",
+    id: "Memahami Bali\ndengan rasa hormat.",
+  },
   "about.tagline": {
-    en: "Preserving sanctity, guiding visitors with cultural respect.",
-    id: "Menjaga kesucian, memandu wisatawan dengan rasa hormat.",
+    en: "SASANA is a digital guide that helps visitors understand the customs, etiquette, and sacred spaces of Bali with clear, contextual, and accessible information.",
+    id: "SASANA adalah panduan digital yang membantu wisatawan memahami adat, etika, dan ruang sakral Bali dengan informasi yang jelas, kontekstual, dan mudah dipahami.",
   },
-  "about.mission.title": { en: "Our Mission", id: "Misi Kami" },
-  "about.mission.body": {
-    en: "SASANA helps visitors understand and respect Bali's customs in real time and in their own language, so that violations are prevented with dignity before they happen.",
-    id: "SASANA membantu wisatawan memahami dan menghormati adat Bali secara langsung dan dalam bahasa mereka sendiri, agar pelanggaran dapat dicegah dengan santun sebelum terjadi.",
+  "about.meta": { en: "SASANA \u00b7 Cultural Guide", id: "SASANA \u00b7 Cultural Guide" },
+  "about.nav.about": { en: "About", id: "Tentang" },
+  "about.nav.story": { en: "Story", id: "Cerita" },
+  "about.nav.principles": { en: "Principles", id: "Prinsip" },
+  "about.nav.source": { en: "Charter", id: "Piagam" },
+  "about.nav.team": { en: "Team", id: "Tim" },
+
+  // Hero & Impact Ribbon
+  "about.hero.badge": {
+    en: "Cultural Initiative & Ethics",
+    id: "Inisiatif Budaya & Etika",
   },
-  "about.etymology.title": { en: "The Meaning of Sasana", id: "Makna Sasana" },
-  "about.etymology.body": {
-    en: "Derived from Sanskrit and Old Javanese, 'Sasana' signifies a noble code of conduct, moral instruction, and sacred guidance. SASANA exists to uphold the harmony of Tri Hita Karana by bridging visitors with authentic Balinese customs.",
-    id: "Berasal dari bahasa Sanskerta dan Jawa Kuno, 'Sasana' bermakna tuntunan laku luhur, tata krama, dan pedoman suci. SASANA hadir untuk menjaga keharmonisan Tri Hita Karana dengan menjembatani wisatawan dan adat Bali yang sakral.",
+  "about.hero.image_caption": {
+    en: "Pura Besakih \u00b7 Mother Temple of Bali",
+    id: "Pura Besakih \u00b7 Ibu dari Seluruh Pura di Bali",
   },
-  "about.principles.title": { en: "Guiding Principles", id: "Prinsip Utama" },
+  "about.hero.image_sub": {
+    en: "Preserving sacred spaces through awareness",
+    id: "Menjaga ruang sakral melalui kesadaran",
+  },
+  "about.impact.sites_count": { en: "10+", id: "10+" },
+  "about.impact.sites_label": {
+    en: "Sacred Sites Mapped",
+    id: "Ruang Sakral Terpetakan",
+  },
+  "about.impact.sites_sub": {
+    en: "Verified cultural zones",
+    id: "Zonasi adat terverifikasi",
+  },
+  "about.impact.rules_count": { en: "SE No. 7", id: "SE No. 7" },
+  "about.impact.rules_label": {
+    en: "Official Governance",
+    id: "Regulasi Resmi 2025",
+  },
+  "about.impact.rules_sub": {
+    en: "Bali Governor Circular",
+    id: "Edaran Gubernur Bali",
+  },
+  "about.impact.privacy_count": { en: "100%", id: "100%" },
+  "about.impact.privacy_label": {
+    en: "On-Device Privacy",
+    id: "Privasi Tanpa Jejak",
+  },
+  "about.impact.privacy_sub": {
+    en: "Zero image persistence",
+    id: "Foto langsung dihapus",
+  },
+
+  // Story & Timeline
+  "about.story.eyebrow": { en: "01 \u00b7 FOUNDATION", id: "01 \u00b7 LATAR BELAKANG" },
+  "about.story.title": {
+    en: "Why SASANA exists",
+    id: "Mengapa SASANA hadir",
+  },
+  "about.story.lead": {
+    en: "Bridging visitors with Balinese living culture.",
+    id: "Menjembatani wisatawan dengan tradisi hidup Bali.",
+  },
+  "about.story.body1": {
+    en: "SASANA was born from a simple need: making information about Balinese customs easier for visitors to understand before they interact with sacred spaces and local communities.",
+    id: "SASANA hadir untuk membantu wisatawan memahami tata krama dan nilai budaya Bali sebelum berinteraksi dengan ruang dan masyarakat setempat.",
+  },
+  "about.story.body2": {
+    en: "Rather than simply telling visitors what they can and cannot do, SASANA provides context so that every visit can be made with greater awareness and respect.",
+    id: "Pendekatannya bukan sekadar memberi tahu apa yang boleh dan tidak boleh dilakukan, tetapi menjelaskan konteks di baliknya agar setiap kunjungan dapat dilakukan dengan lebih sadar dan penuh penghormatan.",
+  },
+  "about.story.body_compact": {
+    en: "SASANA was born to bridge visitors with Balinese customs through contextual, preventive education — empowering every visit to sacred spaces with deep awareness and mutual respect.",
+    id: "SASANA hadir untuk menjembatani wisatawan dengan tradisi hidup Bali melalui pemahaman konteks sebelum kunjungan, memastikan setiap interaksi di ruang sakral dilandasi kesadaran dan rasa hormat.",
+  },
+  "about.story.quote": {
+    en: "Education before violation.",
+    id: "Edukasi sebelum pelanggaran.",
+  },
+  "about.story.quote_author": {
+    en: "Core tenet of the SASANA Cultural Initiative",
+    id: "Prinsip utama Inisiatif Budaya SASANA",
+  },
+  "about.story.card_caption": {
+    en: "Canang Sari \u00b7 Living daily offerings embodying gratitude, harmony, and cosmic balance across Bali.",
+    id: "Canang Sari \u00b7 Persembahan harian lambang rasa syukur, harmoni, dan keseimbangan semesta di Bali.",
+  },
+
+  // Timeline
+  "about.timeline.eyebrow": { en: "CHRONOLOGY", id: "KRONOLOGI" },
+  "about.timeline.title": { en: "The Journey of Sasana", id: "Linimasa Filosofis Berdirinya Sasana" },
+  "about.timeline.tap_hint": {
+    en: "Tap cards to change chapter",
+    id: "Ketuk kartu untuk mengganti babak",
+  },
+  "about.timeline.next_phase": {
+    en: "Next Chapter →",
+    id: "Lanjut ke Babak Berikutnya →",
+  },
+  "about.timeline.prev_phase": {
+    en: "← Previous Chapter",
+    id: "← Babak Sebelumnya",
+  },
+
+  "about.timeline.phase1.period": { en: "Phase 01 · 2023–2024", id: "Babak 01 · 2023–2024" },
+  "about.timeline.phase1.title": { en: "Tourism Surge & Context Gaps", id: "Dinamika Wisata & Kesenjangan Konteks" },
+  "about.timeline.phase1.desc": {
+    en: "As international tourism flourished, unintentional violations of sacred spaces occurred primarily due to scattered, hard-to-find etiquette information.",
+    id: "Lonjakan wisatawan global membawa keindahan sekaligus ketidaksengajaan pelanggaran tata krama di pura, yang dipicu minimnya informasi kontekstual yang mudah diakses.",
+  },
+  "about.timeline.phase1.h1": {
+    en: "Post-pandemic surge in international tourist arrivals",
+    id: "Peningkatan pesat kunjungan wisatawan internasional pasca-pandemi",
+  },
+  "about.timeline.phase1.h2": {
+    en: "Frequent unintentional missteps due to scattered etiquette context",
+    id: "Kesenjangan pemahaman tata krama dan batas kesucian pura",
+  },
+  "about.timeline.phase1.h3": {
+    en: "Urgent need for accessible, respectful cultural guidance",
+    id: "Kebutuhan mendesak panduan budaya kontekstual yang ramah dan mudah diakses",
+  },
+
+  "about.timeline.phase2.period": { en: "Phase 02 · Early 2025", id: "Babak 02 · Awal 2025" },
+  "about.timeline.phase2.title": { en: "Official Governance: Circular No. 7/2025", id: "Momentum Regulasi: SE Gubernur No. 7/2025" },
+  "about.timeline.phase2.desc": {
+    en: "The Provincial Government of Bali enacted Circular No. 7 of 2025, establishing clear legal guidelines for sacred site boundaries and respectful tourist conduct.",
+    id: "Pemerintah Provinsi Bali menerbitkan Surat Edaran No. 7 Tahun 2025 untuk menegaskan aturan tata perilaku wisatawan, batas zonasi pura, dan tata busana sakral.",
+  },
+  "about.timeline.phase2.h1": {
+    en: "Enactment of Bali Governor Circular No. 7 of 2025",
+    id: "Penerbitan resmi Surat Edaran Gubernur Bali No. 7 Tahun 2025",
+  },
+  "about.timeline.phase2.h2": {
+    en: "Formalization of traditional kamen and sash dress requirements",
+    id: "Kewajiban tata busana adat sopan kamen dan selendang",
+  },
+  "about.timeline.phase2.h3": {
+    en: "Clear demarcation of Utama, Madya, and Nista Mandala zones",
+    id: "Penegasan batas zonasi Utama, Madya, dan Nista Mandala di pura",
+  },
+
+  "about.timeline.phase3.period": { en: "Phase 03 · 2025–Present", id: "Babak 03 · 2025–Sekarang" },
+  "about.timeline.phase3.title": { en: "The Birth of Sasana: Thoughtful Technology", id: "Kelahiran Sasana: Teknologi yang Beradab" },
+  "about.timeline.phase3.desc": {
+    en: "Sasana was crafted to bridge visitors with Balinese heritage via respectful on-device AI and accurate cultural zoning—empowering mindful exploration without friction.",
+    id: "Sasana hadir sebagai jembatan santun antara wisatawan dan kearifan Bali melalui AI kamera privat dan panduan zona suci—mewujudkan kunjungan berkesadaran tanpa friksi.",
+  },
+  "about.timeline.phase3.h1": {
+    en: "Launch of Sasana: ethical on-device AI for sacred spaces",
+    id: "Kelahiran Sasana berbasis teknologi santun dan AI on-device privat",
+  },
+  "about.timeline.phase3.h2": {
+    en: "Zero-trace camera checks protecting visitor and local privacy",
+    id: "Pemeriksaan kamera tanpa jejak menjamin privasi warga dan pengunjung",
+  },
+  "about.timeline.phase3.h3": {
+    en: "Preventive awareness empowering visitors before missteps occur",
+    id: "Edukasi preventif aktif membimbing sebelum pelanggaran terjadi",
+  },
+
+  // Principles
+  "about.principles.eyebrow": { en: "02 \u00b7 CORE VALUES", id: "02 \u00b7 NILAI UTAMA" },
+  "about.principles.title": { en: "What we stand for", id: "Prinsip utama" },
+  "about.principles.swipe_hint": {
+    en: "\u2190 Swipe to explore principles",
+    id: "\u2190 Geser untuk prinsip berikutnya",
+  },
   "about.p1.title": { en: "Respect for Sacred Space", id: "Penghormatan Ruang Suci" },
+  "about.p1.tag": { en: "Tri Mandala Zonation", id: "Zonasi Tri Mandala" },
   "about.p1.desc": {
-    en: "Every site in Bali is living heritage. We help visitors understand sacred boundaries and traditional etiquette before stepping onto temple grounds.",
-    id: "Setiap tempat suci di Bali adalah warisan hidup. Kami membantu wisatawan memahami batasan kesucian dan etika adat sebelum memasuki area pura.",
+    en: "Every sacred space has its own rules and spatial sanctity. SASANA helps visitors understand and honor them before entering.",
+    id: "Setiap ruang sakral memiliki aturan dan kesucian zonanya sendiri. SASANA membantu wisatawan memahaminya sebelum berkunjung.",
   },
+  "about.p1.footer": { en: "Rooted in Balinese spatial philosophy", id: "Berakar pada filosofi tata ruang suci" },
+
   "about.p2.title": { en: "Guidance Before Violation", id: "Edukasi Sebelum Pelanggaran" },
+  "about.p2.tag": { en: "Preventive Care", id: "Pendekatan Preventif" },
   "about.p2.desc": {
-    en: "We provide clear, actionable suggestions rather than blame, empowering visitors to dress and behave appropriately with confidence.",
-    id: "Kami memberikan arahan yang jelas dan solutif alih-alih teguran, sehingga wisatawan dapat berbusana dan bersikap pantas dengan percaya diri.",
+    en: "Information is provided as gentle, contextual prevention rather than reprimands after unintentional missteps occur.",
+    id: "Informasi diberikan sebagai panduan preventif yang bersahabat, bukan sebagai teguran setelah pelanggaran terjadi.",
   },
-  "about.p3.title": { en: "Grounded in Official Authority", id: "Berakar pada Sumber Resmi" },
+  "about.p2.footer": { en: "Cultivating mindful awareness", id: "Menumbuhkan kesadaran yang santun" },
+
+  "about.p3.title": { en: "Trustworthy Sources", id: "Sumber yang Dapat Dipercaya" },
+  "about.p3.tag": { en: "Verified Knowledge", id: "Kebenaran Terverifikasi" },
   "about.p3.desc": {
-    en: "Every guideline is sourced directly from Governor Circular No. 7/2025 and validated site data, never from assumptions or opinions.",
-    id: "Setiap panduan bersumber langsung dari Surat Edaran Gubernur No. 7/2025 dan data situs terverifikasi, bukan asumsi atau opini.",
+    en: "Guidelines trace directly to official regulations and verified Balinese customs so insights are never based on guesswork.",
+    id: "Panduan mengutamakan regulasi resmi dan sumber terverifikasi agar informasi tidak pernah sekadar berdasar asumsi.",
   },
-  "about.rules.title": { en: "The Rules We Reference", id: "Dasar Hukum & Aturan Resmi" },
-  "about.rules.badge": { en: "PROVINCIAL REGULATION", id: "PERATURAN PROVINSI" },
+  "about.p3.footer": { en: "Strictly aligned with official decrees", id: "Bebas asumsi, berpijak pada hukum" },
+
+  // Cultural Charter & Official Foundation
+  "about.charter.eyebrow": { en: "03 \u00b7 COMMITMENT & LEGALITY", id: "03 \u00b7 KOMITMEN & LEGALITAS" },
+  "about.charter.title": { en: "Cultural Charter & Legal Integrity", id: "Piagam Integritas Budaya & Hukum" },
+  "about.charter.subtitle": {
+    en: "A unified pact of verified cultural authority and unwavering privacy.",
+    id: "Kesatuan landasan otoritas budaya resmi dan perlindungan privasi mutlak.",
+  },
+  "about.rules.eyebrow": { en: "OFFICIAL REGULATION", id: "REGULASI RESMI" },
+  "about.rules.title": { en: "Legal basis and official regulations", id: "Dasar hukum dan aturan resmi" },
+  "about.rules.subtitle": {
+    en: "Bali Governor Circular No. 7 of 2025",
+    id: "Surat Edaran Gubernur Bali No. 7 Tahun 2025",
+  },
   "about.rules.body": {
-    en: "Bali Governor Circular (SE) No. 7 of 2025 on the code of conduct for foreign tourists visiting Bali.",
-    id: "Surat Edaran Gubernur Bali (SE) No. 7 Tahun 2025 tentang tata krama dan pedoman perilaku bagi wisatawan asing di Bali.",
+    en: "Code of conduct and behavioral guidelines for foreign tourists in Bali, establishing sacred area protections and attire etiquette.",
+    id: "Tata krama dan pedoman perilaku bagi wisatawan di Bali, menegaskan pelindungan kawasan pura dan etika busana adat.",
   },
-  "about.rules.link": { en: "Read the official source", id: "Baca sumber resmi" },
-  "about.privacy.title": { en: "Privacy by Design", id: "Jaminan Privasi Foto" },
+  "about.rules.link": { en: "Bali Provincial Government Portal", id: "Portal Resmi Pemprov Bali" },
+
+  "about.privacy.eyebrow": { en: "DATA INTEGRITY", id: "INTEGRITAS DATA" },
+  "about.privacy.title": { en: "100% On-Device Photo Privacy", id: "Privasi Foto 100% On-Device" },
   "about.privacy.body": {
-    en: "Your uploaded photos are analyzed in memory and immediately discarded. Photos are never stored, logged, or used for model training.",
-    id: "Foto yang Anda unggah dianalisis secara instan dalam memori dan langsung dihapus. Foto tidak pernah disimpan, dicatat, atau digunakan untuk pelatihan model.",
+    en: "Photos analyzed for attire or context checks are evaluated in volatile memory and immediately discarded. Never stored, logged, or used for model training.",
+    id: "Foto yang Anda periksa diproses dalam memori sementara dan langsung dihapus. Tidak pernah disimpan di server, dicatat, atau digunakan untuk pelatihan model.",
   },
-  "about.team.title": { en: "The Engineering Team", id: "Tim Pengembang" },
+  "about.privacy.badge": { en: "Ephemeral Analysis Only", id: "Pemrosesan Instan Tanpa Log" },
+
+  // Team
+  "about.team.eyebrow": { en: "04 \u00b7 ARCHITECTS", id: "04 \u00b7 PENGEMBANG & KURATOR" },
+  "about.team.title": {
+    en: "The people behind SASANA",
+    id: "Para pengembang di balik SASANA",
+  },
   "about.team.subtitle": {
-    en: "Built with dedication by the SASANA team at SMK Wikrama Bogor.",
-    id: "Dikembangkan dengan dedikasi oleh tim pengembang SASANA di SMK Wikrama Bogor.",
+    en: "An interdisciplinary team combining ethical AI, responsive Balinese interface craft, and verified cultural scholarship.",
+    id: "Kolaborasi antardisiplin yang menyatukan etika AI, estetika antarmuka khas Bali, dan verifikasi adat istiadat.",
+  },
+  "about.team.member1.role": { en: "Lead & AI Architecture", id: "Lead & Arsitektur AI" },
+  "about.team.member1.focus": { en: "Gemini Vision \u00b7 System Core", id: "Gemini Vision \u00b7 System Core" },
+  "about.team.member1.desc": {
+    en: "Spearheading multimodal intelligence, strict ethical guardrails, and seamless architectural flow.",
+    id: "Memimpin integrasi multimodal, sistem guardrail etis, dan fondasi arsitektur sistem Sasana.",
+  },
+  "about.team.member2.role": { en: "Frontend & Interface Craft", id: "Frontend & UI/UX Craft" },
+  "about.team.member2.focus": { en: "Design System \u00b7 Balinese Aesthetics", id: "Design System \u00b7 Estetika Bali" },
+  "about.team.member2.desc": {
+    en: "Shaping an authentic, warm, and highly accessible digital experience honoring Balinese design roots.",
+    id: "Merancang pengalaman antarmuka yang hangat, presisi, dan sarat identitas estetika tradisional Bali.",
+  },
+  "about.team.member3.role": { en: "Knowledge Base & Cultural QA", id: "Basis Budaya & QA" },
+  "about.team.member3.focus": { en: "Customs KB \u00b7 Verification", id: "KB Adat Bali \u00b7 Verifikasi" },
+  "about.team.member3.desc": {
+    en: "Auditing customs against regional decrees and sacred tradition to prevent unsubstantiated claims.",
+    id: "Memverifikasi setiap adat dan panduan agar selalu berpijak pada regulasi resmi serta tradisi murni.",
   },
   "about.team.org": {
-    en: "SMK Wikrama Bogor · SASANA Group",
-    id: "SMK Wikrama Bogor · SASANA Group",
+    en: "SMK Wikrama Bogor \u00b7 SASANA Initiative",
+    id: "SMK Wikrama Bogor \u00b7 SASANA Initiative",
+  },
+
+  // Closing & Call to Action
+  "about.closing.eyebrow": { en: "SUKSEMA & COMMUNION", id: "SUKSMA & HARMONI" },
+  "about.closing.title": { en: "Matur Suksma", id: "Matur Suksma" },
+  "about.closing.line1": {
+    en: "Arrive with curiosity.",
+    id: "Datang dengan rasa ingin tahu.",
+  },
+  "about.closing.line2": {
+    en: "Leave with respect.",
+    id: "Tinggalkan tempat dengan rasa hormat.",
+  },
+  "about.closing.body": {
+    en: "By understanding the customs of Bali, you become a guardian of its living culture. Explore the sacred sites or ask our cultural assistant whenever in doubt.",
+    id: "Dengan memahami adat Bali, Anda menjadi bagian dari penjaga tradisi luhur ini. Jelajahi ruang sakral atau hubungi asisten budaya kami setiap saat.",
+  },
+  "about.closing.cta_explore": {
+    en: "Explore Sacred Sites",
+    id: "Jelajahi Ruang Sakral",
+  },
+  "about.closing.cta_check": {
+    en: "Check Situation (Camera)",
+    id: "Cek Situasi (Kamera)",
   },
   "about.version": { en: "SASANA v1.0 (MVP)", id: "SASANA v1.0 (MVP)" },
 } satisfies Record<string, Entry>;

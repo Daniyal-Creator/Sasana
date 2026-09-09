@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Camera, MessageCircle, ShieldCheck, Compass } from "lucide-react";
+import { MapPin, Camera, MessageCircle, FileText, Compass } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomIcon } from "@/components/explore/CustomIcon";
 import { PanelBack } from "@/components/explore/PanelBack";
+import { SiteThumb } from "@/components/explore/SiteThumb";
 import { useIsDesktop, PANEL_CLASSES } from "@/components/explore/MapSheet";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
+import { formatDistance, approachRadiusM } from "@/lib/geo";
 import type { Site } from "@/data/sites";
 
 // Bottom sheet with two snap points (geofencing-ui-prompt §9.5). Rises with a
@@ -29,6 +31,8 @@ const DRAG_THRESHOLD_PX = 8;
 
 interface ApproachSheetProps {
   site: Site;
+  /** Distance in meters to the site if location is active */
+  distanceM?: number | null;
   /**
    * A line of small print under the heading, saying why this notice is not
    * quite what it looks like: a simulated position, or a Site that is not a
@@ -47,7 +51,7 @@ interface ApproachSheetProps {
   onBack?: () => void;
 }
 
-export function ApproachSheet({ site, notice = null, onBack }: ApproachSheetProps) {
+export function ApproachSheet({ site, distanceM = null, notice = null, onBack }: ApproachSheetProps) {
   const { lang } = useLang();
   const isDesktop = useIsDesktop();
   const [snap, setSnap] = useState<"peek" | "full">("peek");
@@ -96,36 +100,42 @@ export function ApproachSheet({ site, notice = null, onBack }: ApproachSheetProp
     setDragY(null);
   }
 
-  // The sentence above the list states a count, so the list must show that many.
-  // Truncating to three while claiming five made the sheet contradict itself.
   const visibleCustoms = site.customs;
   const count = site.customs.length;
-  const countText =
-    count === 1
-      ? tExplore(lang, "explore.sheet.count.one")
-      : tExplore(lang, "explore.sheet.count.many", { count: String(count) });
+  const progress =
+    distanceM !== null
+      ? Math.max(0.1, Math.min(1, 1 - distanceM / approachRadiusM(site)))
+      : 0.5;
 
   const header = (
     <div className="shrink-0 px-5">
       {onBack && <PanelBack label={tExplore(lang, "explore.panel.backOut")} onClick={onBack} />}
 
-      <div className="flex items-start gap-3 rounded-md bg-primary-tint p-4">
-        <MapPin size={20} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-primary" />
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-primary">
-            {tExplore(lang, "explore.sheet.approaching")}
-          </p>
-          <p className="font-display text-h3 font-semibold leading-tight text-text">{site.name}</p>
+      <div className="relative overflow-hidden rounded-xl border border-border/60 bg-primary-tint/50 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            <SiteThumb size={48} className="rounded-lg shadow-xs" />
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9E4D2E]">
+                {tExplore(lang, "explore.sheet.approaching")}
+              </p>
+              <h2 className="font-display text-lg font-bold leading-tight text-[#162A45] sm:text-xl">
+                {site.name}
+              </h2>
+            </div>
+          </div>
+
+          {distanceM !== null && (
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#9E4D2E] px-3 py-1 shadow-sm">
+              <MapPin size={12} strokeWidth={2.5} className="fill-white/20 text-white shrink-0" />
+              <span className="text-xs font-bold tracking-wide text-white">
+                {formatDistance(distanceM, lang)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      <p className="pt-4 text-base text-text">
-        {tExplore(lang, "explore.sheet.sacredArea")} {countText}
-      </p>
-
-      {/* In the header rather than beside the source line at the foot: this
-          sheet rests at 45% of the viewport, and at that height the foot has
-          not been scrolled to. A marking nobody scrolls to is not a marking. */}
       {notice && (
         <p className="flex items-center gap-2 pt-3 text-xs text-text-muted">
           <Compass size={16} strokeWidth={1.75} aria-hidden className="shrink-0" />
@@ -137,21 +147,52 @@ export function ApproachSheet({ site, notice = null, onBack }: ApproachSheetProp
 
   const body = (
     <div data-lenis-prevent className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
-      <ul className="divide-y divide-border">
-        {visibleCustoms.map((custom) => (
-          <li key={custom.id} className="flex items-start gap-3 py-3">
-            <CustomIcon icon={custom.icon} size={20} className="mt-0.5 shrink-0 text-primary" />
-            <p className="text-sm text-text">{custom.summary[lang]}</p>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-3 overflow-hidden rounded-xl border border-border/60 bg-surface shadow-xs">
+        <ul className="divide-y divide-border/60">
+          {visibleCustoms.map((custom) => (
+            <li key={custom.id} className="flex items-center gap-3.5 px-4 py-3">
+              <span
+                aria-hidden
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#ECCFC0] bg-[#F8EDE3] text-[#8E4B28] shadow-xs"
+              >
+                <CustomIcon icon={custom.icon} size={20} />
+              </span>
+              <p className="text-xs font-medium leading-relaxed text-[#232B38] sm:text-[13px]">
+                {custom.summary[lang]}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-      <p className="flex items-start gap-2 pt-3 text-sm text-text-muted">
-        <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0" />
-        {site.source}
-      </p>
+      {/* Footer info & provenance with proximity progress bar */}
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3 text-xs text-text-muted">
+        <div className="flex min-w-0 items-center gap-1.5 text-text-secondary">
+          <FileText size={15} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+          <span className="truncate text-xs font-medium">{site.source}</span>
+        </div>
 
-      <div className="flex flex-col gap-3 pt-4 sm:flex-row">
+        <div className="flex shrink-0 items-center gap-3">
+          <div
+            className="h-1.5 w-16 overflow-hidden rounded-full bg-border sm:w-20"
+            role="progressbar"
+            aria-valuenow={Math.round(progress * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div
+              className="h-full rounded-full bg-[#9E4D2E]"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+
+          <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E4D2E]">
+            {count} {lang === "id" ? "ADAT" : "CUSTOMS"}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2.5 pt-4 sm:flex-row">
         <Button variant="primary" icon={Camera} href="/check" className="flex-1">
           {tExplore(lang, "explore.sheet.checkPhoto")}
         </Button>

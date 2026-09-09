@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Bell, ShieldCheck, EyeOff } from "lucide-react";
+import Image from "next/image";
+import { MapPin, Bell, ShieldCheck, EyeOff, FileText } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomIcon } from "@/components/explore/CustomIcon";
@@ -203,65 +204,176 @@ function LazyMiniMap() {
  * five would teach the visitor to expect a shorter notice than they will get.
  */
 /**
- * The notice itself, at rest, built from a real Site.
+ * Authentic 3-tier Balinese Meru Pagoda tower vector icon.
+ */
+function MeruPagodaIcon({ size = 32, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={size}
+      height={size}
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Spire apex */}
+      <path d="M16 2.5V5" />
+      <circle cx="16" cy="3" r="0.75" fill="currentColor" />
+      {/* Tier 3 roof (top) */}
+      <path d="M13.5 7L16 4.8L18.5 7" />
+      <path d="M11.5 9.5H20.5L19 7H13L11.5 9.5Z" />
+      {/* Tier 2 roof (middle) */}
+      <path d="M9.5 13.5H22.5L21 10.5H11L9.5 13.5Z" />
+      {/* Tier 1 roof (bottom) */}
+      <path d="M7.5 18H24.5L22.5 14.5H9.5L7.5 18Z" />
+      {/* Pura entrance / stone plinth base */}
+      <path d="M10.5 18V25H21.5V18" />
+      <path d="M13.5 25V20.5H18.5V25" />
+      <path d="M6 25H26" strokeWidth="2" />
+      <path d="M8 27H24" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+/**
+ * Faint silhouette watermark illustration of Pura Tanah Lot crag and ocean ripples.
+ */
+function TanahLotSilhouette({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 160 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* Gentle sea wave ripple lines */}
+      <path
+        d="M20 72C40 69 60 74 80 71C100 68 120 73 140 70C150 68.5 155 70 160 70"
+        stroke="#1D4E89"
+        strokeWidth="1"
+        strokeOpacity="0.16"
+      />
+      <path
+        d="M35 76C55 74 75 78 95 75C115 72 135 77 155 74"
+        stroke="#1D4E89"
+        strokeWidth="0.8"
+        strokeOpacity="0.12"
+      />
+      {/* Rock cliff crag outline */}
+      <path
+        d="M60 72C70 65 75 58 85 56C92 54 95 48 105 46C115 44 125 48 135 52C145 56 150 64 160 68V80H60V72Z"
+        fill="#1D4E89"
+        fillOpacity="0.07"
+      />
+      {/* Tall Meru tower */}
+      <path
+        d="M100 46V41M98 42L100 40L102 42M96 44H104L102 42H98L96 44ZM94 47H106L104 44H96L94 47Z"
+        fill="#1D4E89"
+        fillOpacity="0.15"
+      />
+      {/* Secondary Meru tower */}
+      <path
+        d="M116 48V44M114 45L116 43L118 45M113 47H119L117 45H115L113 47ZM111 49H121L119 47H113L111 49Z"
+        fill="#1D4E89"
+        fillOpacity="0.12"
+      />
+      {/* Temple tree silhouettes */}
+      <circle cx="92" cy="50" r="5" fill="#1D4E89" fillOpacity="0.08" />
+      <circle cx="124" cy="52" r="4.5" fill="#1D4E89" fillOpacity="0.08" />
+    </svg>
+  );
+}
+
+/**
+ * The notice preview card, built from Pura Tanah Lot.
  *
- * Displays an authentic preview of the approach sheet that visitors will
- * receive on mobile when entering the site's approach zone.
+ * Displays an authentic preview of the mobile approach sheet matching
+ * the SASANA visual design specification.
  */
 function NoticePreview() {
   const { lang } = useLang();
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-border bg-surface shadow-md">
-      {/* The handle */}
-      <div className="flex h-6 items-center justify-center bg-surface">
-        <span aria-hidden className="h-1 w-10 rounded-full bg-border-strong" />
-      </div>
+    <div className="flex h-full w-full flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-surface shadow-md">
+      {/* Approaching Header Banner */}
+      <div className="relative shrink-0 overflow-hidden border-b border-border/60 bg-primary-tint/50 px-5 py-4">
+        {/* Faint landscape watermark on the right */}
+        <TanahLotSilhouette className="pointer-events-none absolute -bottom-1 right-0 h-24 w-48 select-none" />
 
-      <div className="px-4 pb-4">
-        {/* Approaching Header Banner */}
-        <div className="flex items-start justify-between rounded-lg bg-primary-tint p-3.5">
-          <div className="flex items-start gap-2.5">
-            <MapPin size={18} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0 text-primary" />
+        <div className="relative z-10 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3.5">
+            {/* Balinese Meru Pagoda Icon */}
+            <div className="grid h-12 w-12 shrink-0 place-items-center text-primary">
+              <MeruPagodaIcon size={34} />
+            </div>
+
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+              <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9E4D2E]">
                 {tExplore(lang, "explore.sheet.approaching")}
               </p>
-              <p className="font-display text-lg font-bold leading-tight text-text">
+              <h3 className="font-display text-xl font-bold leading-tight text-[#162A45] sm:text-[22px]">
                 {EXAMPLE_SITE.name}
-              </p>
+              </h3>
             </div>
           </div>
-          <span className="shrink-0 rounded bg-surface px-2 py-0.5 text-xs font-semibold text-primary shadow-sm border border-border/50">
-            400 m
-          </span>
+
+          {/* Distance Pill Badge */}
+          <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#9E4D2E] px-3.5 py-1.5 shadow-sm">
+            <MapPin size={13} strokeWidth={2.5} className="fill-white/20 text-white shrink-0" />
+            <span className="text-xs font-bold tracking-wide text-white">400 m</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Customs list in soft framed container */}
+      <div className="flex flex-1 flex-col justify-between p-4 sm:p-5">
+        <div className="overflow-hidden rounded-xl border border-border/60 bg-surface shadow-xs">
+          <ul className="divide-y divide-border/60">
+            {EXAMPLE_SITE.customs.map((custom) => (
+              <li key={custom.id} className="flex items-center gap-3.5 px-4 py-3.5">
+                <span
+                  aria-hidden
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-[#ECCFC0] bg-[#F8EDE3] text-[#8E4B28] shadow-xs"
+                >
+                  <CustomIcon icon={custom.icon} size={22} />
+                </span>
+                <p className="text-xs font-medium leading-relaxed text-[#232B38] sm:text-[13px]">
+                  {custom.summary[lang]}
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Customs list with styled icon tiles */}
-        <ul className="mt-2.5 divide-y divide-border">
-          {EXAMPLE_SITE.customs.map((custom) => (
-            <li key={custom.id} className="flex items-start gap-3 py-2.5">
-              <span
-                aria-hidden
-                className="grid h-7 w-7 shrink-0 place-items-center rounded-md border border-border bg-surface-sunken text-primary shadow-sm"
-              >
-                <CustomIcon icon={custom.icon} size={15} />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium leading-snug text-text">{custom.summary[lang]}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {/* Footer info & provenance with proximity bar */}
+        <div className="mt-4 flex items-center justify-between gap-3 pt-1 text-xs text-text-muted">
+          {/* Legal lineage */}
+          <div className="flex min-w-0 items-center gap-1.5 text-text-secondary">
+            <FileText size={15} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
+            <span className="truncate text-xs font-medium">{EXAMPLE_SITE.source}</span>
+          </div>
 
-        {/* Footer info & provenance */}
-        <div className="mt-3 flex items-center justify-between border-t border-border pt-2.5 text-xs text-text-muted">
-          <p className="flex items-center gap-1.5 truncate">
-            <ShieldCheck size={14} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
-            <span className="truncate">{EXAMPLE_SITE.source}</span>
-          </p>
-          <span className="shrink-0 font-medium text-accent-strong text-[11px] uppercase tracking-wider">
-            {lang === "id" ? "5 Adat Berlaku" : "5 Customs"}
-          </span>
+          {/* Progress bar + customs count */}
+          <div className="flex shrink-0 items-center gap-3">
+            {/* Proximity progress bar */}
+            <div
+              className="h-1.5 w-16 overflow-hidden rounded-full bg-border sm:w-20"
+              role="progressbar"
+              aria-valuenow={50}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div className="h-full w-1/2 rounded-full bg-[#9E4D2E]" />
+            </div>
+
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#9E4D2E]">
+              {lang === "id" ? "5 Adat Berlaku" : "5 Customs"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -483,10 +595,10 @@ export function Guide({ onStart }: GuideProps) {
 
         {/* The payoff: Proportional, rich bento section with cultural pillars and live mobile notice preview */}
         <section className="rounded-xl border border-border bg-surface-sunken p-6 md:col-span-6 md:p-8 shadow-sm">
-          <div className="grid items-start gap-8 lg:grid-cols-12 lg:gap-10">
+          <div className="grid items-stretch gap-8 lg:grid-cols-12 lg:gap-10">
             {/* Left Column: Context, Circular Authority Seal, and 3 Cultural Object Pillars */}
-            <div className="space-y-5 lg:col-span-7">
-              <div>
+            <div className="flex h-full flex-col space-y-5 lg:col-span-7">
+              <div className="shrink-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-strong">
                   {lang === "id" ? "PANDUAN RESMI & TERVERIFIKASI" : "VERIFIED OFFICIAL GUIDELINES"}
                 </p>
@@ -499,7 +611,7 @@ export function Guide({ onStart }: GuideProps) {
               </div>
 
               {/* Official Provincial Circular Seal */}
-              <div className="flex items-center gap-3.5 rounded-lg border border-border bg-surface p-3.5 shadow-sm">
+              <div className="flex shrink-0 items-center gap-3.5 rounded-lg border border-border bg-surface p-3.5 shadow-sm">
                 <span className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-primary-tint text-primary">
                   <ShieldCheck size={22} strokeWidth={1.75} />
                 </span>
@@ -513,10 +625,10 @@ export function Guide({ onStart }: GuideProps) {
                 </div>
               </div>
 
-              {/* 3 Cultural Object Pillars Grid */}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm">
-                  <div>
+              {/* 3 Cultural Object Pillars Grid filling container height */}
+              <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+                  <div className="shrink-0">
                     <span className="inline-block rounded bg-primary-tint px-2 py-0.5 text-[11px] font-semibold text-primary">
                       {lang === "id" ? "Tata Busana" : "Attire"}
                     </span>
@@ -527,18 +639,19 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Menutup bahu & lutut" : "Shoulders & knees"}
                     </p>
                   </div>
-                  <div className="mt-2.5 overflow-hidden rounded border border-border/60 bg-surface-sunken">
-                    <svg viewBox="0 0 100 42" className="w-full h-auto block select-none" aria-hidden="true">
-                      <rect width="100" height="42" fill="#F6F1E9" />
-                      <rect x="20" y="8" width="60" height="26" rx="3" fill="#EFE8DC" stroke="#CBBFA8" strokeWidth="1" />
-                      <rect x="15" y="14" width="70" height="8" rx="2" fill="#B8862B" stroke="#8A6416" strokeWidth="1" />
-                      <circle cx="65" cy="18" r="4" fill="#8A6416" />
-                    </svg>
+                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                    <Image
+                      src="/customs/kamen-selendang.png"
+                      alt={lang === "id" ? "Kamen dan Selendang Adat Bali" : "Balinese Kamen and Sash Attire"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm">
-                  <div>
+                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+                  <div className="shrink-0">
                     <span className="inline-block rounded bg-status-ok-bg px-2 py-0.5 text-[11px] font-semibold text-status-ok-fg">
                       {lang === "id" ? "Sesaji" : "Offerings"}
                     </span>
@@ -549,19 +662,19 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Berjalan memutarinya" : "Walk around gently"}
                     </p>
                   </div>
-                  <div className="mt-2.5 overflow-hidden rounded border border-border/60 bg-surface-sunken">
-                    <svg viewBox="0 0 100 42" className="w-full h-auto block select-none" aria-hidden="true">
-                      <rect width="100" height="42" fill="#F6F1E9" />
-                      <polygon points="50,6 74,21 50,36 26,21" fill="#7E9F5F" stroke="#4A6B34" strokeWidth="1" />
-                      <circle cx="50" cy="21" r="5" fill="#B23A2E" />
-                      <circle cx="43" cy="21" r="3" fill="#B8862B" />
-                      <circle cx="57" cy="21" r="3" fill="#FFFDF9" />
-                    </svg>
+                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                    <Image
+                      src="/customs/canang-sari.jpg"
+                      alt="Canang Sari Sesaji Bali"
+                      fill
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                      className="object-contain p-1.5 transition-transform duration-300 group-hover:scale-105"
+                    />
                   </div>
                 </div>
 
-                <div className="flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm">
-                  <div>
+                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+                  <div className="shrink-0">
                     <span className="inline-block rounded bg-status-warn-bg px-2 py-0.5 text-[11px] font-semibold text-status-warn-fg">
                       {lang === "id" ? "Kekhidmatan" : "Sacredness"}
                     </span>
@@ -572,20 +685,21 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Jaga kesakralan" : "Reverent conduct"}
                     </p>
                   </div>
-                  <div className="mt-2.5 overflow-hidden rounded border border-border/60 bg-surface-sunken">
-                    <svg viewBox="0 0 100 42" className="w-full h-auto block select-none" aria-hidden="true">
-                      <rect width="100" height="42" fill="#F6F1E9" />
-                      <circle cx="50" cy="21" r="16" stroke="#E4DACB" strokeWidth="1" strokeDasharray="2 2" />
-                      <path d="M42 28C42 16 46 10 50 10C54 10 58 16 58 28H42Z" fill="#B8862B" stroke="#8A6416" strokeWidth="1" />
-                      <circle cx="50" cy="8" r="2.5" fill="#8A6416" />
-                    </svg>
+                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                    <Image
+                      src="/customs/pura-kesakralan.jpg"
+                      alt={lang === "id" ? "Kompleks Pura dan Candi Bentar Bali" : "Balinese Sacred Temple Complex"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 25vw"
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right Column: Mobile Approach Notice Preview */}
-            <div className="lg:col-span-5">
+            <div className="h-full lg:col-span-5">
               <NoticePreview />
             </div>
           </div>

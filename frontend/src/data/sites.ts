@@ -74,6 +74,7 @@ export const SITES: Site[] = [
     lat: -8.6212,
     lng: 115.0868,
     radiusM: 400,
+    image: "/sites/pura-tanah-lot.jpg",
     source: "Bali Governor Circular No. 7/2025",
     odalan: [
       {
@@ -172,6 +173,7 @@ export const SITES: Site[] = [
     lat: -8.8291,
     lng: 115.0849,
     radiusM: 400,
+    image: "/sites/pura-luhur-uluwatu.jpg",
     source: "Bali Governor Circular No. 7/2025",
     odalan: [
       {
@@ -256,6 +258,7 @@ export const SITES: Site[] = [
     lat: -8.3739,
     lng: 115.4515,
     radiusM: 500,
+    image: "/sites/pura-besakih.jpg",
     source: "Bali Governor Circular No. 7/2025",
     // Ida Bhatara Turun Kabeh, on Purnama Sasih Kadasa each year. The 2026
     // ceremony ran 2 to 23 April (dpma.baliprov.go.id). No 2027 date has been
@@ -346,6 +349,7 @@ export const SITES: Site[] = [
     lat: -8.6547,
     lng: 115.1225,
     radiusM: 250,
+    image: "/sites/pura-batu-bolong.jpg",
     source: "Bali Governor Circular No. 7/2025",
     // No odalan date found from a source worth citing. Leave empty until one is.
     odalan: [],
@@ -406,6 +410,7 @@ export const SITES: Site[] = [
     lat: -8.4156,
     lng: 115.3153,
     radiusM: 300,
+    image: "/sites/pura-tirta-empul.jpg",
     source: "Bali Governor Circular No. 7/2025",
     odalan: [
       {
@@ -488,6 +493,7 @@ export const SITES: Site[] = [
     lat: -8.275,
     lng: 115.1668,
     radiusM: 350,
+    image: "/sites/Pura_Ulun_Batu_Beratan.jpg",
     source: "Bali Governor Circular No. 7/2025",
     // No odalan date found from a source worth citing. Leave empty until one is.
     odalan: [],

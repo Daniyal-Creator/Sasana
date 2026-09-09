@@ -38,6 +38,18 @@ interface MapLayersProps {
   accuracyM: number | null;
   selectedSiteId: string | null;
   onSelectSite?: (siteId: string) => void;
+  /**
+   * "Lihat sekitar" is on, so the Zone and the Approach step aside.
+   *
+   * At the zoom where the basemap names what is around a Site, both circles are
+   * wider than the screen (see `lib/nearby.ts`). Leaving them on would not show
+   * a visitor more, it would wash the map in blue.
+   *
+   * The Site marker deliberately stays. Looking at what is around a sacred
+   * place, with no mark saying where the sacred place is, is a map with no
+   * reason to be open.
+   */
+  nearby?: boolean;
 }
 
 /**
@@ -56,6 +68,7 @@ export function MapLayers({
   accuracyM,
   selectedSiteId,
   onSelectSite,
+  nearby = false,
 }: MapLayersProps) {
   const map = useLeafletMap();
   const { lang } = useLang();
@@ -107,6 +120,7 @@ export function MapLayers({
           dashArray: "6 6",
           fill: false,
           interactive: false,
+          className: "sasana-zone",
         })
           .bindTooltip(tExplore(lang, "explore.map.approach"))
           .addTo(group);
@@ -121,6 +135,7 @@ export function MapLayers({
           fillColor: ZONE_COLOR,
           fillOpacity: 0.12,
           interactive: Boolean(selectHandler.current),
+          className: "sasana-zone",
         })
           .bindTooltip(`${site.name} — ${tExplore(lang, "explore.map.zone")}`)
           .addTo(group);
@@ -200,6 +215,18 @@ export function MapLayers({
       map.off("zoomend", apply);
     };
   }, [map]);
+
+  // Zones and Approaches hide by the same means as the names above, and for the
+  // same reason: a class on the container, so nothing has to be torn down and
+  // rebuilt to make a circle disappear for a moment.
+  useEffect(() => {
+    if (!map) return;
+    const container = map.getContainer();
+    container.classList.toggle("sasana-zones-off", nearby);
+    return () => {
+      container.classList.remove("sasana-zones-off");
+    };
+  }, [map, nearby]);
 
   // Selection is carried by stroke weight on the Zone and by a filled marker,
   // never by hue alone: a visitor who cannot separate the two colours still has

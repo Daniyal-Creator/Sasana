@@ -5,6 +5,7 @@ import { handleApiError, parseJsonBody } from "@/lib/http";
 import { loadRules, normalizeQuestion, rulesByIds, rulesHash, selectRules } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
 import { extractAreaName, geocodeArea, type Anchor } from "@/lib/geocode";
+import { detectLang } from "@/lib/language";
 import { detectPlaceQuery, findNearbyPlaces } from "@/lib/places";
 import { validateChatRequest } from "@/lib/validation";
 import type { Lang, SiteContext } from "@shared/contract";
@@ -72,7 +73,10 @@ export async function POST(req: Request): Promise<Response> {
   try {
     const body = await parseJsonBody(req);
     const parsed = validateChatRequest(body);
-    lang = parsed.lang;
+    // The reply follows what the visitor typed, not the site's language
+    // toggle: `parsed.lang` only breaks the tie when the question itself
+    // carries no signal either way (a bare place name, a one-word answer).
+    lang = detectLang(parsed.message, parsed.lang);
 
     // Only first-turn questions are cached. A follow-up depends on its own
     // history, so a cached answer keyed on the question alone could land in the

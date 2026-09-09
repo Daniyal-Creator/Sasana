@@ -171,7 +171,7 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
 
   it("falls back when the model returns something that is not JSON", async () => {
     mockAnswer("I'm sorry, I can't do that.");
-    const res = await POST(post({ message: "Can I wear shorts?", lang: "id", history: [] }));
+    const res = await POST(post({ message: "Boleh pakai celana pendek?", lang: "id", history: [] }));
 
     expect(res.status).toBe(200);
     const json = await readBody(res);
@@ -763,10 +763,13 @@ describe("POST /api/chat — first-turn answer cache", () => {
     expect(generateContent).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps languages apart", async () => {
+  // A question worded in one language decides the reply's language now, so
+  // this only holds for a question with no language signal in it at all - a
+  // bare place name, say - where the toggle is the sole tiebreaker left.
+  it("keeps languages apart when the question itself gives no signal", async () => {
     mockAnswer(GROUNDED);
-    await ask("Can I wear shorts?", "en");
-    const res = await ask("Can I wear shorts?", "id");
+    await ask("Tanah Lot?", "en");
+    const res = await ask("Tanah Lot?", "id");
 
     expect(res.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);
@@ -821,7 +824,9 @@ describe("POST /api/chat — first-turn answer cache", () => {
 describe("POST /api/chat — upstream failures", () => {
   it("maps a repeated 429 to a friendly localized rate_limited error", async () => {
     generateContent.mockRejectedValue(Object.assign(new Error("Resource exhausted"), { status: 429 }));
-    const res = await POST(post({ message: "Can I wear shorts?", lang: "id", history: [] }));
+    // Worded in Indonesian, not just flagged "id": the error's language now
+    // follows the question the same way the answer does.
+    const res = await POST(post({ message: "Boleh pakai celana pendek?", lang: "id", history: [] }));
 
     expect(res.status).toBe(429);
     const json = await readBody(res);

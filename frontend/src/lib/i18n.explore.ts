@@ -272,6 +272,10 @@ const dict = {
   // button is not the way home and the screen has to offer one.
   "explore.panel.back": { en: "Back to the list", id: "Kembali ke daftar" },
 
+  // Back out of a temple the visitor tapped while standing inside another's
+  // Approach. It names where it goes, because it does not go to the list.
+  "explore.panel.backToApproach": { en: "Back to {site}", id: "Kembali ke {site}" },
+
   // The way back out of Screen C, which until now had none: entering Browse
   // was a one-way door and only a page reload led home.
   // Deliberately not "back to the list": the panel now returns to whatever it

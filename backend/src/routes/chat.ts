@@ -4,9 +4,10 @@ import { askQuestion } from "@/lib/gemini";
 import { handleApiError, parseJsonBody } from "@/lib/http";
 import { loadRules, normalizeQuestion, rulesByIds, rulesHash, selectRules } from "@/lib/knowledge";
 import { logInfo } from "@/lib/logger";
+import { extractAreaName, geocodeArea, type Anchor } from "@/lib/geocode";
 import { detectPlaceQuery, findNearbyPlaces } from "@/lib/places";
 import { validateChatRequest } from "@/lib/validation";
-import type { Lang } from "@shared/contract";
+import type { Lang, SiteContext } from "@shared/contract";
 
 // F2 Custom Assistant (backend-spec §2.2). The Gemini key is read only here,
 // server-side; the browser never sees it.
@@ -16,6 +17,54 @@ import type { Lang } from "@shared/contract";
 // what fits in a chat bubble without becoming a directory listing.
 const PLACES_RADIUS_M = 3000;
 const PLACES_LIMIT = 5;
+
+/** How much of a name has to line up before it counts as naming the same place. */
+const NAME_MATCH_MIN = 3;
+
+/**
+ * Whether the area a question names is the Site the request already carries.
+ *
+ * "Adakah penginapan di sekitar Pura Tanah Lot", asked from Pura Tanah Lot,
+ * names the place the request already said the visitor is at. Geocoding it
+ * would spend a round trip to be told what is already known, and would then be
+ * turned down by the area allow-list anyway, because a temple is not an area.
+ *
+ * Containment either way, because the two names rarely match exactly: a visitor
+ * types "Tanah Lot" for a Site called "Pura Tanah Lot".
+ */
+function namesTheSite(named: string, site?: SiteContext): boolean {
+  if (!site) return false;
+  const asked = named.toLowerCase().trim();
+  const here = site.name.toLowerCase().trim();
+  if (asked.length < NAME_MATCH_MIN) return false;
+  return here.includes(asked) || asked.includes(here);
+}
+
+/**
+ * Where to search from, strongest claim first.
+ *
+ * The area the visitor named wins over the Site they are standing at, because
+ * naming one is the more deliberate act: somebody at Tanah Lot asking about
+ * Ubud is asking about Ubud. The Site is the fallback for the far commoner
+ * "penginapan di dekat sini", which names nowhere and does not need to.
+ *
+ * Null is a real answer, not a failure. ADR-0020 keeps ADR-0015's rule that a
+ * search with nowhere to search is refused rather than pointed at a guess; what
+ * changed is only that a Site is no longer the sole way to avoid that.
+ */
+async function resolveAnchor(message: string, site?: SiteContext): Promise<Anchor | null> {
+  const named = extractAreaName(message);
+  if (named && !namesTheSite(named, site)) {
+    const found = await geocodeArea(named);
+    if (found) return found;
+  }
+
+  if (site && typeof site.lat === "number" && typeof site.lng === "number") {
+    return { label: site.name, lat: site.lat, lng: site.lng };
+  }
+
+  return null;
+}
 
 export async function POST(req: Request): Promise<Response> {
   const started = Date.now();
@@ -53,14 +102,13 @@ export async function POST(req: Request): Promise<Response> {
 
     // Asking the map is decided before Gemini is called, not by Gemini: a regex
     // over the question is cheaper than a round trip spent letting the model
-    // request a tool. It needs somewhere to search from, so a question about
-    // what is nearby with no Site attached simply gets no list, and the
-    // assistant says it cannot answer rather than guessing a location too.
+    // request a tool. It still needs somewhere to search from, and when nothing
+    // in the request says where, the assistant asks rather than guesses.
     const category = detectPlaceQuery(parsed.message);
-    const origin = parsed.site;
+    const anchor = category ? await resolveAnchor(parsed.message, parsed.site) : null;
     const places =
-      category && typeof origin?.lat === "number" && typeof origin?.lng === "number"
-        ? await findNearbyPlaces(origin.lat, origin.lng, category, {
+      category && anchor
+        ? await findNearbyPlaces(anchor.lat, anchor.lng, category, {
             radiusM: PLACES_RADIUS_M,
             limit: PLACES_LIMIT,
           })
@@ -77,7 +125,14 @@ export async function POST(req: Request): Promise<Response> {
       parsed.history,
       lang,
       sent,
-      { site: parsed.site, siteRules, places, allRules: rules },
+      {
+        site: parsed.site,
+        siteRules,
+        places,
+        placesArea: anchor?.label,
+        unanchoredPlaceQuery: Boolean(category) && anchor === null,
+        allRules: rules,
+      },
     );
 
     // Two kinds are deliberately never stored.
@@ -102,6 +157,7 @@ export async function POST(req: Request): Promise<Response> {
       siteId: parsed.site?.id,
       siteRules: siteRules.length,
       placeQuery: category ?? undefined,
+      placeArea: anchor?.label,
       places: places.length,
       rulesSent: sent.length,
       rulesTotal: rules.length,

@@ -8,10 +8,12 @@ import { CustomVisual } from "@/components/explore/CustomVisual";
 import { PanelBack } from "@/components/explore/PanelBack";
 import { SiteThumb } from "@/components/explore/SiteThumb";
 import { ZoneDiagram } from "@/components/explore/ZoneDiagram";
+import { RouteActions } from "@/components/explore/RouteActions";
 import { useSearchParams } from "next/navigation";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
-import { formatDistance } from "@/lib/geo";
+import { formatDistance, type LatLng } from "@/lib/geo";
+import type { RouteView } from "@/lib/route";
 import type { Lang } from "@/lib/i18n";
 import type { Site, Odalan } from "@/data/sites";
 import { isDummySite } from "@/data/dummy-sites";
@@ -66,6 +68,15 @@ interface SiteBriefProps {
    * place it does not go.
    */
   backLabel?: string;
+  /**
+   * Getting to this Site. Omitted where the panel has no map behind it to draw
+   * a line on, so the block simply does not appear.
+   */
+  route?: RouteView;
+  onRoute?: () => void;
+  onHideRoute?: () => void;
+  /** Where the visitor is. Null when there is no fix to start from. */
+  from?: LatLng | null;
 }
 
 /**
@@ -77,9 +88,23 @@ interface SiteBriefProps {
  * base and carries its own attribution, and a test fails if it ever drifts from
  * the source (`__tests__/site-rules.test.ts`).
  */
-export function SiteBrief({ site, distanceM, onBack, backLabel }: SiteBriefProps) {
+export function SiteBrief({
+  site,
+  distanceM,
+  onBack,
+  backLabel,
+  route,
+  onRoute,
+  onHideRoute,
+  from = null,
+}: SiteBriefProps) {
   const { lang } = useLang();
   const searchParams = useSearchParams();
+
+  // Inside the Zone the visitor has arrived, and a route to where somebody is
+  // already standing is not a direction. The panel says so and drops the
+  // button rather than offering a journey of nought metres.
+  const insideZone = distanceM !== null && distanceM <= site.radiusM;
   const odalan = upcomingOdalan(site, searchParams.get("odalan") === "1");
   const [expandedCustoms, setExpandedCustoms] = useState<Record<string, boolean>>({});
 
@@ -268,6 +293,27 @@ export function SiteBrief({ site, distanceM, onBack, backLabel }: SiteBriefProps
           a desktop however wide the window is, and "Lihat seolah-olah saya di
           sini" does not survive being given half of that. */}
       <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5">
+        {/* Getting there comes before what to do once you have. A visitor
+            reading a temple they are not at wants the way to it first; the
+            photo check and the demo walk both assume arrival. */}
+        {route && onRoute && onHideRoute && (
+          <div className="mb-2">
+            {insideZone ? (
+              <p className="text-sm text-text-secondary">
+                {tExplore(lang, "explore.route.alreadyHere")}
+              </p>
+            ) : (
+              <RouteActions
+                to={{ lat: site.lat, lng: site.lng }}
+                from={from}
+                route={route}
+                onRoute={onRoute}
+                onHideRoute={onHideRoute}
+              />
+            )}
+          </div>
+        )}
+
         <Button icon={Camera} href="/check" className="w-full">
           {tExplore(lang, "explore.detail.checkPhoto")}
         </Button>

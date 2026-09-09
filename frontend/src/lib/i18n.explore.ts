@@ -213,6 +213,12 @@ const dict = {
     id: "Aktifkan lokasi untuk mendapatkan arah dari posisi Anda.",
   },
   "explore.route.steps": { en: "Directions", id: "Petunjuk arah" },
+  // Standing inside the Zone, a route to where you already are is nonsense.
+  // The panel says so once and drops the button rather than offering it.
+  "explore.route.alreadyHere": {
+    en: "You are already inside this zone.",
+    id: "Anda sudah berada di dalam zona ini.",
+  },
 
   // The door out. Google is named rather than described as "a map app",
   // because a visitor about to leave the site is owed the name of where they

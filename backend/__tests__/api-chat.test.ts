@@ -299,18 +299,22 @@ describe("POST /api/chat — nearby places from the map", () => {
     lng: 115.0868,
   };
 
+  // A fresh Response per call, not one shared object: a body can only be read
+  // once, so a single mockResolvedValue silently hands the second request an
+  // empty payload and the test measures something nobody wrote.
   const overpass = (names: string[]) =>
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          elements: names.map((name, i) => ({
-            lat: -8.6212 + (i + 1) * 0.001,
-            lon: 115.0868,
-            tags: { name, tourism: "guest_house" },
-          })),
-        }),
-        { status: 200 },
-      ),
+    vi.spyOn(globalThis, "fetch").mockImplementation(
+      async () =>
+        new Response(
+          JSON.stringify({
+            elements: names.map((name, i) => ({
+              lat: -8.6212 + (i + 1) * 0.001,
+              lon: 115.0868,
+              tags: { name, tourism: "guest_house" },
+            })),
+          }),
+          { status: 200 },
+        ),
     );
 
   const ask = (message: string, site?: unknown) =>
@@ -429,6 +433,99 @@ describe("POST /api/chat — nearby places from the map", () => {
     expect(first.headers.get("x-cache")).toBe("MISS");
     expect(second.headers.get("x-cache")).toBe("MISS");
     expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
+  // The server knows it handed over a list of real places, so an answer on any
+  // other tier did not use them. Asking again is cheap and usually lands where
+  // the facts deserve; nothing about either reply is rewritten.
+  it("asks again when the model ignored the map it was handed", async () => {
+    overpass(["Guest House Melati"]);
+    generateContent
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          answer: "Maaf, saya tidak dapat memberikan rekomendasi akomodasi.",
+          kind: "rule",
+          ruleIds: ["licensed-accommodation"],
+        }),
+        usageMetadata: { totalTokenCount: 10 },
+      })
+      .mockResolvedValueOnce({
+        text: JSON.stringify({
+          answer: "Ada Guest House Melati sekitar 110 m.",
+          kind: "places",
+          ruleIds: [],
+        }),
+        usageMetadata: { totalTokenCount: 10 },
+      });
+
+    const json = await readBody(await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT));
+
+    expect(generateContent).toHaveBeenCalledTimes(2);
+    expect(json.kind).toBe("places");
+    expect(json.answer).toContain("Guest House Melati");
+  });
+
+  // Once, not until it agrees. A model that declines twice has given its
+  // answer, and badgering it would be the server writing the reply.
+  it("takes the second refusal rather than asking a third time", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({
+      answer: "Maaf, saya tidak dapat memberikan rekomendasi akomodasi.",
+      kind: "rule",
+      ruleIds: ["licensed-accommodation"],
+    });
+
+    const json = await readBody(await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT));
+
+    expect(generateContent).toHaveBeenCalledTimes(2);
+    expect(json.kind).toBe("rule");
+  });
+
+  // No lookup, no second chance: there is no list the answer could have failed
+  // to use, so a refusal is just a refusal.
+  it("does not ask again when no lookup was made", async () => {
+    mockAnswer({ answer: "Saya belum punya aturan resmi soal itu.", kind: "none", ruleIds: [] });
+
+    await ask("apa itu canang?", TANAH_LOT);
+
+    expect(generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  // The bug this guards was measured, not imagined: asked for a "rekomendasi
+  // penginapan", the model sometimes reads the standing ban on recommending
+  // businesses, ignores the map list it was handed, and answers at the `rule`
+  // tier. That tier is storable, so the refusal was stored, and every later
+  // visitor asking the same question got it back with `x-cache: HIT` and no
+  // lookup at all.
+  it("never caches a question the map was read for, whatever tier came back", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({
+      answer: "Maaf, saya tidak dapat memberikan rekomendasi tempat akomodasi.",
+      kind: "rule",
+      ruleIds: ["licensed-accommodation"],
+    });
+
+    const first = await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT);
+    const second = await ask("ada rekomendasi penginapan dekat sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("MISS");
+    // The map is consulted again rather than the refusal being replayed. Two
+    // calls per request, not one: a refusal to a question the map answered
+    // gets asked a second time before it is accepted.
+    expect(generateContent).toHaveBeenCalledTimes(4);
+  });
+
+  // The fence still holds where no lookup happened: an ordinary custom question
+  // is answered once and served from the store after that.
+  it("still caches an ordinary question with no lookup behind it", async () => {
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    const first = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+    const second = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("HIT");
   });
 
   // ADR-0020. The Site stopped being the only way to say where, and these are

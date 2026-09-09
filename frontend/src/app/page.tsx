@@ -104,7 +104,7 @@ export default function LandingPage() {
         </section>
 
         {/* Floating 3-segment action bar overlapping the hero bottom edge (ADR-0006) */}
-        <section className="relative z-20 mx-auto -mt-9 max-w-5xl px-3 sm:-mt-10 sm:px-6 lg:-mt-12 lg:px-8">
+        <section className="relative z-20 mx-auto -mt-16 max-w-5xl px-3 sm:-mt-10 sm:px-6 lg:-mt-12 lg:px-8">
           <div className="rounded-2xl border border-border bg-surface shadow-xl transition-all duration-200 lg:rounded-full">
             <div
               ref={heroActionBarRef}

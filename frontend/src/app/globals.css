@@ -37,7 +37,7 @@
   /* Landing hero fills the full viewport; the header overlays it on the
      landing page (ADR-0001). */
   .hero-viewport {
-    min-height: 58svh;
+    min-height: 65svh;
   }
   @media (min-width: 640px) {
     .hero-viewport {

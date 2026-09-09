@@ -34,6 +34,7 @@ export default {
         h3: ["1.563rem", { lineHeight: "1.2" }],
         h2: ["1.953rem", { lineHeight: "1.15" }],
         h1: ["2.488rem", { lineHeight: "1.1" }],
+        hero: ["4.5rem", { lineHeight: "1.05" }],
         display: ["2.986rem", { lineHeight: "1.05" }],
       },
       borderRadius: { sm: "8px", md: "12px", lg: "16px", xl: "24px" },

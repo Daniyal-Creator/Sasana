@@ -200,17 +200,6 @@
   display: none;
 }
 
-/* "Lihat sekitar": the Zone and the Approach step aside so the basemap's own
-   place names have the screen.
-
-   Not a style choice. At the zoom where those names appear, a 400 m Zone is
-   678 px across and its Approach 1355 px, against a 375 px reference screen —
-   they stop reading as circles and become a blue wash over the labels the mode
-   exists to show. The reasoning, with the measurements, is in lib/nearby.ts. */
-.explore-map .sasana-zones-off .sasana-zone {
-  display: none;
-}
-
 /* The Amenity destination: a guest house or a warung the visitor chose out of
    an assistant answer.
 

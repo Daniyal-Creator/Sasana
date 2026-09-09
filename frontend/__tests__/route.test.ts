@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchRoute, formatDuration } from "@/lib/route";
+import { fetchRoute, formatDuration, mapsDirectionsUrl } from "@/lib/route";
 import { tExplore, type ExploreKey } from "@/lib/i18n.explore";
 import type { Route, RouteManeuver } from "@shared/contract";
 
@@ -135,6 +135,33 @@ describe("every maneuver has words", () => {
     const key = `explore.route.m.${maneuver}` as ExploreKey;
     expect(tExplore("en", key)?.length).toBeGreaterThan(0);
     expect(tExplore("id", key)?.length).toBeGreaterThan(0);
+  });
+});
+
+describe("the way out to Google Maps", () => {
+  it("names the destination and asks for driving", () => {
+    const url = mapsDirectionsUrl(UBUD, TANAH_LOT);
+    expect(url).toContain("destination=-8.5202%2C115.2551");
+    expect(url).toContain("origin=-8.6212%2C115.0868");
+    // The same honesty as SASANA's own route: this is a car route either way.
+    expect(url).toContain("travelmode=driving");
+    expect(url.startsWith("https://www.google.com/maps/dir/")).toBe(true);
+  });
+
+  // A route from an unknown start beats no route at all: without an origin,
+  // Google begins from wherever the visitor's own device says they are.
+  it.each([[null], [undefined]])("leaves the origin out when there is none (%s)", (from) => {
+    const url = mapsDirectionsUrl(UBUD, from);
+    expect(url).not.toContain("origin=");
+    expect(url).toContain("destination=-8.5202%2C115.2551");
+  });
+
+  it.each(["en", "id"] as const)("says where the button leads, in %s", (lang) => {
+    // Named rather than described as "a map app": a visitor about to leave the
+    // site is owed the name of where they are going.
+    expect(tExplore(lang, "explore.route.external")).toContain("Google Maps");
+    expect(tExplore(lang, "explore.route.externalHint").length).toBeGreaterThan(0);
+    expect(tExplore(lang, "explore.route.externalHint")).not.toContain("—");
   });
 });
 

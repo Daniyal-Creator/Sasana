@@ -17,8 +17,7 @@ import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BaseMap } from "@/components/explore/BaseMap";
 import { MapLayers } from "@/components/explore/MapLayers";
-import { NearbyToggle } from "@/components/explore/NearbyToggle";
-import { DestinationCard } from "@/components/explore/DestinationCard";
+import { DestinationPanel } from "@/components/explore/DestinationPanel";
 import {
   MapSheet,
   PEEK_HEIGHT_PX,
@@ -36,7 +35,6 @@ import { ApproachSheet, APPROACH_SHEET_PEEK_FRAC } from "@/components/explore/Ap
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
-import { NEARBY_ZOOM } from "@/lib/nearby";
 import { readAmenityDestination, writeAmenityDestination } from "@/lib/amenity-destination";
 import { fetchRoute, type RouteView } from "@/lib/route";
 import type { Amenity } from "@shared/contract";
@@ -369,12 +367,6 @@ function ExploreInner() {
    * they asked for while they were there.
    */
   const [detourSiteId, setDetourSiteId] = useState<string | null>(null);
-
-  /**
-   * "Lihat sekitar": the camera comes close enough for the basemap to name what
-   * is around, and the Zones stand aside while it does (`lib/nearby.ts`).
-   */
-  const [nearby, setNearby] = useState(false);
 
   /**
    * The Amenity a visitor picked out of an assistant answer, if they did.
@@ -909,7 +901,6 @@ function ExploreInner() {
     if (!chosen) return;
     cameraOnDestination.current = true;
     setDestination(chosen);
-    setNearby(false);
     setFollow(false);
     setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
   }, []);
@@ -938,9 +929,6 @@ function ExploreInner() {
     const from = position;
     setRouteFrom(from);
     setRouteView({ status: "loading" });
-    // A route and a look around the neighbourhood are two different questions,
-    // and the map can only answer one at a time.
-    setNearby(false);
 
     const { route, straightM } = await fetchRoute(from, {
       lat: destination.lat,
@@ -949,11 +937,23 @@ function ExploreInner() {
     setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
   }, [position, destination]);
 
-  /** Looking around ends the route: same screen, different question. */
-  const toggleNearby = useCallback(() => {
-    if (!nearby) hideRoute();
-    setNearby(!nearby);
-  }, [nearby, hideRoute]);
+  /**
+   * The chosen destination, shown at the top of the panel in every view.
+   *
+   * One slot, three views. Built once here rather than written out in each
+   * branch, because a task that follows the visitor around the app should not
+   * be three copies that can drift apart.
+   */
+  const destinationPanel = destination ? (
+    <DestinationPanel
+      amenity={destination}
+      onClear={clearDestination}
+      route={routeView}
+      onRoute={requestRoute}
+      onHideRoute={hideRoute}
+      from={position}
+    />
+  ) : null;
 
   /** The line to draw, or nothing. Stable across position updates. */
   const routeLine = useMemo(() => {
@@ -971,21 +971,6 @@ function ExploreInner() {
     }
     return null;
   }, [routeView, routeFrom, destination]);
-
-  /**
-   * Opening a Site ends "Lihat sekitar".
-   *
-   * Asking about a Site is asking what is expected of you there, and the Zone
-   * and the Approach are that answer. Leaving them hidden would let the panel
-   * describe a boundary the map is no longer drawing.
-   *
-   * Written as one effect rather than a call in each of the three places a
-   * panel opens - the list, the marker, the Approach card - because it is one
-   * rule, and three copies of it is three places for it to drift.
-   */
-  useEffect(() => {
-    if (panelSiteId) setNearby(false);
-  }, [panelSiteId]);
 
   /**
    * Re-anchoring reuses the same five ids at new coordinates, so the memory of
@@ -1072,7 +1057,6 @@ function ExploreInner() {
         bottomInset={isDesktop ? 0 : sheetInset}
         leftInset={isDesktop ? panelInset : 0}
         focus={focus}
-        zoomAtLeast={nearby ? NEARBY_ZOOM : null}
         onUserPan={() => setFollow(false)}
         onRecenter={() => setFollow(true)}
         onTileError={() => setTilesFailed(true)}
@@ -1083,31 +1067,9 @@ function ExploreInner() {
           accuracyM={accuracyM}
           selectedSiteId={selected}
           onSelectSite={selectSite}
-          nearby={nearby}
           destination={destination}
           route={routeLine}
         />
-        <NearbyToggle
-          active={nearby}
-          onToggle={toggleNearby}
-          bottomInset={isDesktop ? 0 : sheetInset}
-        />
-        {/* On a phone this shares the top strip with the Approach card, and
-            loses it for the six seconds that card is up. That is the right way
-            round: crossing into an Approach is the notice this whole app
-            exists to deliver, and a destination the visitor chose themselves
-            can wait. On a wide screen the Approach card docks to the right rail
-            and the two never meet. */}
-        {destination && (
-          <DestinationCard
-            amenity={destination}
-            onClear={clearDestination}
-            route={routeView}
-            onRoute={requestRoute}
-            onHideRoute={hideRoute}
-            canRoute={position !== null}
-          />
-        )}
       </BaseMap>
     );
 
@@ -1151,6 +1113,7 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           {panelSite ? (
             <SiteBrief
               site={panelSite}
@@ -1271,6 +1234,7 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           <SiteBrief
             site={sheetSite}
             distanceM={position ? haversineMeters(position, sheetSite) : null}
@@ -1317,6 +1281,7 @@ function ExploreInner() {
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          {destinationPanel}
           {panelSite ? (
             <SiteBrief
               site={panelSite}

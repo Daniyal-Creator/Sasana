@@ -181,8 +181,6 @@ const dict = {
     id: "Periksa koneksi Anda. Adat di bawah tetap bisa dibaca, dan posisi Anda tetap diperiksa.",
   },
 
-  // "Lihat sekitar". The second line is not decoration: it is what carries the
-  // pressed state in words, so the button does not lean on colour alone (C6).
   // The Amenity a visitor picked out of an assistant answer.
   "explore.amenity.eyebrow": { en: "Destination", id: "Tujuan" },
   "explore.amenity.clear": { en: "Clear destination", id: "Hapus tujuan" },
@@ -215,6 +213,15 @@ const dict = {
     id: "Aktifkan lokasi untuk mendapatkan arah dari posisi Anda.",
   },
   "explore.route.steps": { en: "Directions", id: "Petunjuk arah" },
+
+  // The door out. Google is named rather than described as "a map app",
+  // because a visitor about to leave the site is owed the name of where they
+  // are going.
+  "explore.route.external": { en: "Open in Google Maps", id: "Buka di Google Maps" },
+  "explore.route.externalHint": {
+    en: "Opens outside SASANA, with live traffic and turn-by-turn.",
+    id: "Membuka di luar SASANA, dengan lalu lintas terkini dan panduan belok per belok.",
+  },
   "explore.route.on": { en: "on {road}", id: "di {road}" },
 
   // One line per maneuver the server narrowed OSRM's vocabulary down to.
@@ -233,11 +240,7 @@ const dict = {
   "explore.route.m.fork": { en: "At the fork", id: "Di percabangan" },
   "explore.route.m.exit": { en: "Take the exit", id: "Ambil jalan keluar" },
 
-  "explore.around.toggle": { en: "Look around", id: "Lihat sekitar" },
-  "explore.around.active": {
-    en: "Zones are hidden so place names can show. Tap again to bring them back.",
-    id: "Zona disembunyikan agar nama tempat terlihat. Ketuk lagi untuk memunculkannya.",
-  },
+
 
   // Explore Mode: the notice arrives without taking the screen
 

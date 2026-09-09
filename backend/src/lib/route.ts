@@ -157,7 +157,12 @@ export async function findRoute(from: RoutePoint, to: RoutePoint): Promise<Route
   const started = Date.now();
   const path = `${from.lng},${from.lat};${to.lng},${to.lat}`;
   const query = new URLSearchParams({
-    overview: "simplified",
+    // Full, not simplified. Measured on the same 34 km route: `simplified`
+    // returns 31 points, one every 1.1 km, and a line drawn through them cuts
+    // corners across blocks instead of following the road. `full` returns 1571
+    // and costs about 35 KB, which is a fair price for a line that goes where
+    // the road goes.
+    overview: "full",
     geometries: "geojson",
     steps: "true",
   });

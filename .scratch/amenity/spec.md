@@ -129,6 +129,34 @@ Approach jadi lebih lebar dari layar dan berhenti terbaca sebagai lingkaran.
 
 ---
 
+---
+
+## Revisi setelah dipakai (2026-09-09)
+
+Tiga hal berubah setelah fiturnya dijalankan dengan lokasi sungguhan di Bali.
+
+- **Geometri rute jadi `overview=full`.** `simplified` mengembalikan 31 titik
+  untuk rute 34 km, satu titik per 1,1 km, dan garis yang ditarik lewat titik
+  sejarang itu memotong blok bangunan alih-alih mengikuti jalan. `full`
+  mengembalikan 1571 titik dan menambah sekitar 35 KB per permintaan. Diukur ke
+  server sungguhan pada rute yang sama.
+- **Kartu tujuan pindah dari peta ke panel.** Melayang, ia menutupi hal yang ia
+  jelaskan, harus memotong daftar langkahnya jadi kotak gulir sendiri di dalam
+  sheet yang sudah bisa digulir, dan terbaca seperti dialog yang harus ditutup.
+  Di panel ia jadi apa adanya: tugas yang sedang dijalani visitor, duduk di atas
+  segala yang mungkin ia lakukan berikutnya.
+- **Mode "Lihat sekitar" dihapus** atas permintaan pemilik. Konsekuensinya
+  dicatat di sini supaya tidak hilang: nama tempat pada tile hanya muncul di
+  z17, sementara `SITE_ZOOM` tetap 14, jadi POI tidak lagi berjarak satu ketukan.
+  Visitor masih bisa mencubit peta sampai z17 dan melihatnya; yang hilang adalah
+  jalan pintasnya, bukan datanya. Kebutuhan yang melahirkan mode itu sekarang
+  dijawab dengan cara lain, yaitu Amenity sungguhan yang bisa dituju.
+
+Pintu keluar ke Google Maps ditambahkan berdampingan dengan rute sendiri,
+bukan menggantikannya. Alasannya di [ADR-0022](../../docs/adr/0022-a-door-out-to-google-maps.md).
+
+---
+
 ## Yang diterima sadar
 
 - **OSRM demo tidak menjanjikan apa pun.** Server sukarela untuk demo dan

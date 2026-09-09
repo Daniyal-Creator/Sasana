@@ -38,6 +38,7 @@ import { tExplore } from "@/lib/i18n.explore";
 import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
 import { NEARBY_ZOOM } from "@/lib/nearby";
 import { readAmenityDestination, writeAmenityDestination } from "@/lib/amenity-destination";
+import { fetchRoute, type RouteView } from "@/lib/route";
 import type { Amenity } from "@shared/contract";
 import type { LatLng } from "@/lib/geo";
 import {
@@ -365,6 +366,20 @@ function ExploreInner() {
    * and arriving here is the only moment it can have changed.
    */
   const [destination, setDestination] = useState<Amenity | null>(null);
+
+  /** What the destination card is saying about the way there. */
+  const [routeView, setRouteView] = useState<RouteView>({ status: "idle" });
+
+  /**
+   * Where the route was asked from, held rather than read live.
+   *
+   * A route is directions from a point, not a leash: OSRM answers about the
+   * position it was given, and redrawing the line every time the watch reports
+   * a new fix would rebuild the polyline every few seconds to say the same
+   * thing. The straight-line fallback is anchored the same way, for the same
+   * reason and so the two behave alike.
+   */
+  const [routeFrom, setRouteFrom] = useState<LatLng | null>(null);
 
   /**
    * Whether the camera is pointed at a destination the visitor chose.
@@ -866,11 +881,63 @@ function ExploreInner() {
     setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
   }, []);
 
+  const hideRoute = useCallback(() => {
+    setRouteView({ status: "idle" });
+    setRouteFrom(null);
+  }, []);
+
   const clearDestination = useCallback(() => {
     writeAmenityDestination(null);
     setDestination(null);
     cameraOnDestination.current = false;
-  }, []);
+    hideRoute();
+  }, [hideRoute]);
+
+  /**
+   * Ask for directions, and take whatever comes back.
+   *
+   * There is no failure branch because there is no failure: `fetchRoute` turns
+   * every way this can go wrong into "no route", and no route is answered with
+   * the straight line and a sentence saying that is what it is.
+   */
+  const requestRoute = useCallback(async () => {
+    if (!position || !destination) return;
+    const from = position;
+    setRouteFrom(from);
+    setRouteView({ status: "loading" });
+    // A route and a look around the neighbourhood are two different questions,
+    // and the map can only answer one at a time.
+    setNearby(false);
+
+    const { route, straightM } = await fetchRoute(from, {
+      lat: destination.lat,
+      lng: destination.lng,
+    });
+    setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
+  }, [position, destination]);
+
+  /** Looking around ends the route: same screen, different question. */
+  const toggleNearby = useCallback(() => {
+    if (!nearby) hideRoute();
+    setNearby(!nearby);
+  }, [nearby, hideRoute]);
+
+  /** The line to draw, or nothing. Stable across position updates. */
+  const routeLine = useMemo(() => {
+    if (routeView.status === "ready") {
+      return { points: routeView.route.points, straight: false };
+    }
+    if (routeView.status === "straight" && routeFrom && destination) {
+      return {
+        points: [
+          [routeFrom.lat, routeFrom.lng],
+          [destination.lat, destination.lng],
+        ] as [number, number][],
+        straight: true,
+      };
+    }
+    return null;
+  }, [routeView, routeFrom, destination]);
 
   /**
    * Opening a Site ends "Lihat sekitar".
@@ -972,10 +1039,11 @@ function ExploreInner() {
           onSelectSite={selectSite}
           nearby={nearby}
           destination={destination}
+          route={routeLine}
         />
         <NearbyToggle
           active={nearby}
-          onToggle={() => setNearby((on) => !on)}
+          onToggle={toggleNearby}
           bottomInset={isDesktop ? 0 : sheetInset}
         />
         {/* On a phone this shares the top strip with the Approach card, and
@@ -984,7 +1052,16 @@ function ExploreInner() {
             exists to deliver, and a destination the visitor chose themselves
             can wait. On a wide screen the Approach card docks to the right rail
             and the two never meet. */}
-        {destination && <DestinationCard amenity={destination} onClear={clearDestination} />}
+        {destination && (
+          <DestinationCard
+            amenity={destination}
+            onClear={clearDestination}
+            route={routeView}
+            onRoute={requestRoute}
+            onHideRoute={hideRoute}
+            canRoute={position !== null}
+          />
+        )}
       </BaseMap>
     );
 

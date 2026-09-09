@@ -19,6 +19,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import { POST as chat } from "@/routes/chat";
+import { GET as route } from "@/routes/route";
 import { GET as stats } from "@/routes/stats";
 import { POST as vision } from "@/routes/vision";
 
@@ -49,5 +50,8 @@ app.post("/api/vision", (c) => vision(c.req.raw));
 // Read-only aggregates over the answer cache. Spends no quota, so it is safe to
 // poll while demonstrating the saving.
 app.get("/api/stats", () => stats());
+// Directions to a chosen Amenity. Spends no Gemini quota; it reads a public
+// routing service and hands back the line and the written steps.
+app.get("/api/route", (c) => route(c.req.raw));
 
 export default app;

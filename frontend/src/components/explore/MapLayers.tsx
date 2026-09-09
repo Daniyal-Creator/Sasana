@@ -19,6 +19,11 @@ const ZONE_COLOR = "#1D4E89";
 const ACCURACY_COLOR = "#3B6FB0";
 const DOT_STROKE = "#FBFCFE";
 
+// The route, in the same ink as the Amenity pin it leads to. Deliberately not
+// ZONE_COLOR: a blue line crossing a blue circle is two different meanings in
+// one hue, and the Zone is the one that must never be misread.
+const ROUTE_COLOR = "#8A6416";
+
 /**
  * The visitor's dot is sized in pixels, not metres, so it stays thumb-sized at
  * every zoom. The three circles around it are sized in metres and scale with
@@ -64,6 +69,16 @@ interface MapLayersProps {
    * through another door would be the same mistake.
    */
   destination?: Amenity | null;
+  /**
+   * The line to the destination, if one has been asked for.
+   *
+   * `straight` is not a styling flag. It says the router had nothing to give
+   * and this is the direct line between two points, which across Bali can be
+   * less than half the distance of the road. It is drawn dashed for the same
+   * reason the Approach is: the difference from a real route has to survive
+   * somebody who cannot separate the colours (C6).
+   */
+  route?: { points: [number, number][]; straight: boolean } | null;
 }
 
 /**
@@ -84,6 +99,7 @@ export function MapLayers({
   onSelectSite,
   nearby = false,
   destination = null,
+  route = null,
 }: MapLayersProps) {
   const map = useLeafletMap();
   const { lang } = useLang();
@@ -106,6 +122,7 @@ export function MapLayers({
   const zonesRef = useRef<Map<string, Circle>>(new Map());
   const markersRef = useRef<Map<string, Marker>>(new Map());
   const destGroupRef = useRef<LayerGroup | null>(null);
+  const routeGroupRef = useRef<LayerGroup | null>(null);
   const accuracyRef = useRef<Circle | null>(null);
   const dotRef = useRef<CircleMarker | null>(null);
   const selectHandler = useRef(onSelectSite);
@@ -201,6 +218,41 @@ export function MapLayers({
       markersRef.current.clear();
     };
   }, [map, sites, lang]);
+
+  /**
+   * The route line, under everything else it might cross.
+   *
+   * Its own group, and rebuilt whole whenever the line changes: a polyline has
+   * no useful in-place update, and there is only ever one.
+   */
+  useEffect(() => {
+    if (!map) return;
+    let cancelled = false;
+
+    (async () => {
+      const L = (await import("leaflet")).default;
+      if (cancelled || !route) return;
+
+      const group = L.layerGroup().addTo(map);
+      routeGroupRef.current = group;
+
+      L.polyline(route.points, {
+        color: ROUTE_COLOR,
+        weight: route.straight ? 3 : 5,
+        opacity: 0.9,
+        dashArray: route.straight ? "8 8" : undefined,
+        interactive: false,
+      }).addTo(group);
+
+      dotRef.current?.bringToFront();
+    })();
+
+    return () => {
+      cancelled = true;
+      routeGroupRef.current?.remove();
+      routeGroupRef.current = null;
+    };
+  }, [map, route]);
 
   /**
    * The destination pin, in a group of its own.

@@ -20,13 +20,39 @@ import { withTimeout } from "@/lib/timeout";
 /** Attribution required by the ODbL. Shown to the visitor, never optional. */
 export const PLACES_SOURCE = "OpenStreetMap contributors";
 
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+/**
+ * Overpass, and a mirror to fall back to.
+ *
+ * The main instance is free, volunteer-run and heavily used, and it fails often
+ * enough to be the difference between a working feature and a broken one.
+ * Measured on the same Ubud lodging query, three calls each:
+ *
+ *   overpass-api.de       9.5 s (empty), 1.6 s, 2.0 s
+ *   overpass.kumi.systems 4.1 s, 13.3 s, 2.5 s
+ *
+ * A timeout there returns an empty list, and an empty list means the assistant
+ * answers a question about guest houses with a rule about licensed
+ * accommodation - which is what a visitor reads as the feature not working.
+ * Logged from the live container: `"places":0,"durationMs":14140`.
+ *
+ * The mirror is tried only after the first one fails, which keeps the load
+ * where the project intends it and still gives the visitor an answer.
+ */
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+] as const;
 
 // Overpass is a shared free service and asks callers to identify themselves so
 // a misbehaving client can be contacted rather than simply blocked.
 const USER_AGENT = "SASANA/1.0 (Bali customs assistant; school project)";
 
-const OVERPASS_TIMEOUT_MS = 12_000;
+/**
+ * Per endpoint, not for the whole lookup. Two of these back to back is the
+ * worst case, and a successful call has been seen at 13.3 s, so cutting much
+ * below this throws away answers that were on their way.
+ */
+const OVERPASS_TIMEOUT_MS = 15_000;
 
 export type PlaceCategory = "lodging" | "food";
 
@@ -171,41 +197,50 @@ export async function findNearbyPlaces(
   { radiusM = 3000, limit = 5 }: NearbyOptions = {},
 ): Promise<Place[]> {
   const started = Date.now();
-  try {
-    const res = await withTimeout(
-      fetch(OVERPASS_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "User-Agent": USER_AGENT,
-        },
-        body: new URLSearchParams({ data: buildQuery(lat, lng, category, radiusM) }),
-      }),
-      OVERPASS_TIMEOUT_MS,
-      "places",
-    );
-    if (!res.ok) throw new Error(`overpass ${res.status}`);
+  const body = new URLSearchParams({ data: buildQuery(lat, lng, category, radiusM) });
 
-    const places = parseOverpass(await res.json(), lat, lng, limit, category);
-    logInfo({
-      route: "places",
-      event: "overpass_ok",
-      durationMs: Date.now() - started,
-      category,
-      radiusM,
-      found: places.length,
-    });
-    return places;
-  } catch (err) {
-    logError({
-      route: "places",
-      event: "overpass_fail",
-      durationMs: Date.now() - started,
-      category,
-      err: err instanceof Error ? err.message : String(err),
-    });
-    return [];
+  for (const url of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await withTimeout(
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "User-Agent": USER_AGENT,
+          },
+          body,
+        }),
+        OVERPASS_TIMEOUT_MS,
+        "places",
+      );
+      if (!res.ok) throw new Error(`overpass ${res.status}`);
+
+      const places = parseOverpass(await res.json(), lat, lng, limit, category);
+      logInfo({
+        route: "places",
+        event: "overpass_ok",
+        durationMs: Date.now() - started,
+        endpoint: url,
+        category,
+        radiusM,
+        found: places.length,
+      });
+      return places;
+    } catch (err) {
+      logError({
+        route: "places",
+        event: "overpass_fail",
+        durationMs: Date.now() - started,
+        endpoint: url,
+        category,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
+
+  // Every endpoint declined. The assistant says it cannot answer, which is what
+  // it would have said before this tier existed.
+  return [];
 }
 
 /** The list as the model sees it. Names are never translated. */

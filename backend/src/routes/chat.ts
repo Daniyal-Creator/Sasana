@@ -120,20 +120,41 @@ export async function POST(req: Request): Promise<Response> {
     // selectRules.
     const sent = selectRules(rules, parsed.message, siteRules);
 
-    const { response: answer, totalTokens } = await askQuestion(
-      parsed.message,
-      parsed.history,
-      lang,
-      sent,
-      {
-        site: parsed.site,
-        siteRules,
-        places,
-        placesArea: anchor?.label,
-        unanchoredPlaceQuery: Boolean(category) && anchor === null,
-        allRules: rules,
-      },
-    );
+    const context = {
+      site: parsed.site,
+      siteRules,
+      places,
+      placesArea: anchor?.label,
+      unanchoredPlaceQuery: Boolean(category) && anchor === null,
+      allRules: rules,
+    };
+
+    const first = await askQuestion(parsed.message, parsed.history, lang, sent, context);
+
+    /**
+     * One second chance, and only where the server can tell the answer went
+     * wrong without reading it.
+     *
+     * The server knows it put a list of real places in front of the model. An
+     * answer that came back on any other tier did not use them, which in
+     * practice means the model obeyed the standing ban on recommending
+     * businesses over the exception written for exactly this question. Measured
+     * after the prompt was rewritten: four runs in five landed on `places`, the
+     * fifth still opened with "Maaf, saya tidak dapat memberikan rekomendasi".
+     *
+     * Asking again is the honest repair. The question does not change, the
+     * facts do not change, and nothing about the reply is rewritten - the
+     * second answer stands or falls on its own. If it declines too, that
+     * refusal is the answer.
+     */
+    const retry =
+      places.length > 0 && first.response.kind !== "places"
+        ? await askQuestion(parsed.message, parsed.history, lang, sent, context)
+        : null;
+
+    const useRetry = retry !== null && retry.response.kind === "places";
+    const answer = useRetry ? retry.response : first.response;
+    const totalTokens = (first.totalTokens ?? 0) + (retry?.totalTokens ?? 0);
 
     // A question the map was read for is never stored, whatever tier came
     // back.
@@ -177,6 +198,10 @@ export async function POST(req: Request): Promise<Response> {
       placeQuery: category ?? undefined,
       placeArea: anchor?.label,
       lookedUp,
+      // Worth seeing in the logs: how often the model has to be asked twice
+      // before it uses the map it was handed.
+      retried: retry !== null,
+      retryUsed: useRetry,
       places: places.length,
       rulesSent: sent.length,
       rulesTotal: rules.length,

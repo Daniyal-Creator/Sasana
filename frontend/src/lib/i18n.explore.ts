@@ -42,14 +42,18 @@ const dict = {
     en: "Only the map picture is fetched. The zones are already on your device, so the check still works if the map does not load.",
     id: "Hanya gambar petanya yang diambil. Zonanya sudah ada di perangkat Anda, jadi pemeriksaan tetap berjalan meski peta gagal dimuat.",
   },
-  // Two claims, kept apart on purpose. The first is about the visitor's
-  // position and is unqualified: it is read and tested on the device, and it is
-  // never sent anywhere. The second is about the map picture, which does come
-  // over the network from a map provider. Folding them into one sentence would
-  // make the first one read as hedged, and it is not.
+  // Three claims, kept apart on purpose, and the middle one used to be
+  // stronger. It said the position is never sent anywhere, which was true until
+  // ADR-0021 put a route button on the map: asking for directions sends the
+  // point the visitor is standing at to a routing service, because that is what
+  // directions from here means.
+  //
+  // The promise is narrowed rather than dropped, and it names the one thing
+  // that sends it. A claim that quietly stopped being true would be worse than
+  // never having made it, and this screen exists to earn a permission.
   "explore.permission.privacy": {
-    en: "Your position is read and checked on your device. It is never sent anywhere and never stored. The map picture itself is loaded from a map provider.",
-    id: "Posisi Anda dibaca dan diperiksa di perangkat Anda. Posisi itu tidak pernah dikirim ke mana pun dan tidak pernah disimpan. Gambar petanya sendiri dimuat dari penyedia peta.",
+    en: "Your position is read and checked on your device, and is never stored. It leaves your device only if you ask for directions, which sends it to a routing service. The map picture is loaded from a map provider.",
+    id: "Posisi Anda dibaca dan diperiksa di perangkat Anda, dan tidak pernah disimpan. Posisi itu keluar dari perangkat hanya bila Anda meminta rute, yang mengirimkannya ke layanan perutean. Gambar petanya dimuat dari penyedia peta.",
   },
   "explore.permission.cta": { en: "Turn on location", id: "Aktifkan lokasi" },
   "explore.permission.notnow": { en: "Not now", id: "Nanti saja" },
@@ -112,8 +116,8 @@ const dict = {
 
   "explore.guide.privacy.title": { en: "Your position stays here", id: "Posisi Anda tetap di sini" },
   "explore.guide.privacy.body": {
-    en: "It is read and checked on your device, never sent, never stored. Only the map picture comes over the network.",
-    id: "Dibaca dan diperiksa di perangkat Anda, tidak dikirim, tidak disimpan. Hanya gambar petanya yang datang lewat jaringan.",
+    en: "It is read and checked on your device and never stored. It is sent only when you ask for directions.",
+    id: "Dibaca dan diperiksa di perangkat Anda dan tidak pernah disimpan. Dikirim hanya saat Anda meminta rute.",
   },
 
   "explore.guide.limit.title": { en: "Only while this is open", id: "Hanya selagi ini terbuka" },
@@ -186,6 +190,48 @@ const dict = {
     en: "Recorded by OpenStreetMap contributors",
     id: "Dicatat oleh kontributor OpenStreetMap",
   },
+
+  // Directions to a chosen Amenity.
+  //
+  // "Driving route", never "route" on its own. The router deployed on the free
+  // demo server carries the car profile and answers every profile with it, so
+  // an unqualified word here would quietly offer a car route to somebody on
+  // foot. The straight-line label is the same principle: it must always say
+  // what it is, because a straight line across Bali is not a distance anybody
+  // travels.
+  "explore.route.go": { en: "Driving route", id: "Rute berkendara" },
+  "explore.route.loading": { en: "Finding a route", id: "Mencari rute" },
+  "explore.route.hide": { en: "Hide route", id: "Sembunyikan rute" },
+  "explore.route.summary": {
+    en: "{distance} by car, about {duration}",
+    id: "{distance} berkendara, sekitar {duration}",
+  },
+  "explore.route.straight": {
+    en: "No road route available. The line shown is straight, not a road, and measures {distance} direct.",
+    id: "Rute jalan tidak tersedia. Garis yang tampil adalah garis lurus, bukan rute jalan, dan panjangnya {distance} langsung.",
+  },
+  "explore.route.needLocation": {
+    en: "Turn on location to get directions from where you are.",
+    id: "Aktifkan lokasi untuk mendapatkan arah dari posisi Anda.",
+  },
+  "explore.route.steps": { en: "Directions", id: "Petunjuk arah" },
+  "explore.route.on": { en: "on {road}", id: "di {road}" },
+
+  // One line per maneuver the server narrowed OSRM's vocabulary down to.
+  "explore.route.m.depart": { en: "Start", id: "Mulai" },
+  "explore.route.m.arrive": { en: "Arrive", id: "Tiba" },
+  "explore.route.m.straight": { en: "Carry on", id: "Terus" },
+  "explore.route.m.left": { en: "Turn left", id: "Belok kiri" },
+  "explore.route.m.right": { en: "Turn right", id: "Belok kanan" },
+  "explore.route.m.slight-left": { en: "Bear left", id: "Serong kiri" },
+  "explore.route.m.slight-right": { en: "Bear right", id: "Serong kanan" },
+  "explore.route.m.sharp-left": { en: "Sharp left", id: "Belok tajam ke kiri" },
+  "explore.route.m.sharp-right": { en: "Sharp right", id: "Belok tajam ke kanan" },
+  "explore.route.m.uturn": { en: "Turn back", id: "Putar balik" },
+  "explore.route.m.roundabout": { en: "At the roundabout", id: "Di bundaran" },
+  "explore.route.m.merge": { en: "Merge", id: "Bergabung" },
+  "explore.route.m.fork": { en: "At the fork", id: "Di percabangan" },
+  "explore.route.m.exit": { en: "Take the exit", id: "Ambil jalan keluar" },
 
   "explore.around.toggle": { en: "Look around", id: "Lihat sekitar" },
   "explore.around.active": {

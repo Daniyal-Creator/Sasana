@@ -140,6 +140,66 @@ export interface Amenity {
   lng: number;
 }
 
+/**
+ * One instruction in a route, reduced to a vocabulary the UI can name.
+ *
+ * OSRM does not return sentences. It returns a maneuver type and a modifier -
+ * "end of road" plus "left", "roundabout" plus "straight" - and leaves the
+ * wording to whoever displays it. Its full vocabulary is larger than anything
+ * this app needs and is not bilingual, so the server narrows it to this list
+ * and the client writes the sentence in the visitor's language.
+ */
+export type RouteManeuver =
+  | "depart"
+  | "arrive"
+  | "straight"
+  | "left"
+  | "right"
+  | "slight-left"
+  | "slight-right"
+  | "sharp-left"
+  | "sharp-right"
+  | "uturn"
+  | "roundabout"
+  | "merge"
+  | "fork"
+  | "exit";
+
+/** One written step: what to do, on which road, for how far. */
+export interface RouteStep {
+  maneuver: RouteManeuver;
+  /** The road this step follows. Empty when OpenStreetMap has not named it. */
+  road: string;
+  distanceM: number;
+}
+
+/**
+ * A driving route from the visitor to an Amenity.
+ *
+ * `profile` is on the wire and not implied, because the wording depends on it
+ * and getting that wrong is the failure this whole tier guards against. The
+ * OSRM demo server answers every profile with a car route - measured: `driving`
+ * and `foot` return the same distance to the decimal - so a route labelled for
+ * walking would be a car route wearing the wrong word.
+ */
+export interface Route {
+  /** Metres along the road, not as the crow flies. */
+  distanceM: number;
+  /** Seconds, the router's own estimate for a car. */
+  durationS: number;
+  /** The line to draw, in order, as [lat, lng] the way Leaflet wants it. */
+  points: [number, number][];
+  steps: RouteStep[];
+  profile: "driving";
+}
+
+/** `GET /api/route` response body. `route` is null when none could be found. */
+export interface RouteResponse {
+  route: Route | null;
+  /** Attribution for the road data. Required by the ODbL, never optional. */
+  source: string;
+}
+
 export interface ChatResponse {
   answer: string;
   kind: ChatKind;

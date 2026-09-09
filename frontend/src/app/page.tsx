@@ -104,8 +104,8 @@ export default function LandingPage() {
         </section>
 
         {/* Floating 3-segment action bar overlapping the hero bottom edge (ADR-0006) */}
-        <section className="relative z-20 mx-auto -mt-8 max-w-5xl px-3 sm:-mt-10 sm:px-6 lg:-mt-12 lg:px-8">
-          <div className="rounded-full border border-border bg-surface shadow-xl transition-all duration-200">
+        <section className="relative z-20 mx-auto -mt-9 max-w-5xl px-3 sm:-mt-10 sm:px-6 lg:-mt-12 lg:px-8">
+          <div className="rounded-2xl border border-border bg-surface shadow-xl transition-all duration-200 lg:rounded-full">
             <div
               ref={heroActionBarRef}
               className="flex flex-row items-center divide-x divide-border"
@@ -114,16 +114,16 @@ export default function LandingPage() {
               <Link
                 href="/check"
                 data-hero-door
-                className="group flex flex-1 flex-col items-center justify-center text-center gap-1 px-1.5 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] first:rounded-l-full hover:bg-surface-sunken/80"
+                className="group flex flex-1 flex-col items-center justify-center text-center gap-1.5 px-2 py-3.5 sm:gap-2 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] first:rounded-l-2xl lg:first:rounded-l-full hover:bg-surface-sunken/80"
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
                   <Camera size={16} strokeWidth={1.75} aria-hidden className="lg:h-5 lg:w-5" />
                 </div>
                 <div className="min-w-0">
                   <span className="hidden lg:block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-text-muted">
                     {t(lang, "cta.badge.ai_vision")}
                   </span>
-                  <span className="block text-[10px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
+                  <span className="block text-[11px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
                     {t(lang, "cta.check.title")}
                   </span>
                 </div>
@@ -133,16 +133,16 @@ export default function LandingPage() {
               <Link
                 href="/assistant"
                 data-hero-door
-                className="group flex flex-1 flex-col items-center justify-center text-center gap-1 px-1.5 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] hover:bg-surface-sunken/80"
+                className="group flex flex-1 flex-col items-center justify-center text-center gap-1.5 px-2 py-3.5 sm:gap-2 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] hover:bg-surface-sunken/80"
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
                   <MessageCircle size={16} strokeWidth={1.75} aria-hidden className="lg:h-5 lg:w-5" />
                 </div>
                 <div className="min-w-0">
                   <span className="hidden lg:block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-text-muted">
                     {t(lang, "cta.badge.chatbot")}
                   </span>
-                  <span className="block text-[10px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
+                  <span className="block text-[11px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
                     {t(lang, "cta.assistant.title")}
                   </span>
                 </div>
@@ -152,16 +152,16 @@ export default function LandingPage() {
               <Link
                 href="/explore"
                 data-hero-door
-                className="group flex flex-1 flex-col items-center justify-center text-center gap-1 px-1.5 py-2.5 sm:gap-2 sm:px-4 sm:py-3.5 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] last:rounded-r-full hover:bg-surface-sunken/80"
+                className="group flex flex-1 flex-col items-center justify-center text-center gap-1.5 px-2 py-3.5 sm:gap-2 sm:px-4 sm:py-4 lg:flex-row lg:items-center lg:justify-start lg:text-left lg:gap-4 lg:px-6 lg:py-5 transition-all duration-200 active:scale-[0.98] last:rounded-r-2xl lg:last:rounded-r-full hover:bg-surface-sunken/80"
               >
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
+                <div className="flex h-9 w-9 sm:h-10 sm:w-10 lg:h-11 lg:w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-sunken text-text-secondary transition-all duration-200 group-hover:scale-105 group-hover:border-primary group-hover:bg-primary group-hover:text-primary-fg">
                   <MapPin size={16} strokeWidth={1.75} aria-hidden className="lg:h-5 lg:w-5" />
                 </div>
                 <div className="min-w-0">
                   <span className="hidden lg:block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-text-muted">
                     {t(lang, "cta.badge.geofence")}
                   </span>
-                  <span className="block text-[10px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
+                  <span className="block text-[11px] sm:text-xs lg:text-sm font-semibold leading-tight text-text transition-colors group-hover:text-primary">
                     {t(lang, "cta.explore.title")}
                   </span>
                 </div>

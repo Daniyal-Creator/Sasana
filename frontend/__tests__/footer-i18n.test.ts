@@ -17,6 +17,7 @@ describe("Footer i18n & guardrails verification", () => {
     "footer.nav.about",
     "footer.nav.circular",
     "footer.nav.privacy",
+    "footer.nav.charter",
     "footer.disclaimer",
     "footer.privacy",
   ];

@@ -312,6 +312,10 @@ const dict = {
   "footer.nav.about": { en: "About SASANA", id: "Tentang SASANA" },
   "footer.nav.circular": { en: "Governor Circular No. 7/2025", id: "SE Gubernur No. 7/2025" },
   "footer.nav.privacy": { en: "Privacy Assurance", id: "Jaminan Privasi" },
+  "footer.nav.charter": {
+    en: "Cultural Charter & Legal Integrity",
+    id: "Piagam Integritas Budaya & Hukum",
+  },
   "footer.disclaimer": {
     en: "Not affiliated with the Bali government. Reference: Governor Circular No. 7/2025.",
     id: "Tidak berafiliasi dengan pemerintah Bali. Rujukan: Surat Edaran Gubernur No. 7/2025.",

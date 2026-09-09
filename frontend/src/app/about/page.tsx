@@ -19,10 +19,19 @@ import {
 import { Button } from "@/components/ui/Button";
 import { SectionDivider } from "@/components/ui/SectionDivider";
 import { Footer } from "@/components/layout/Footer";
+import { getLenis } from "@/components/providers/SmoothScroll";
 import { useLang } from "@/lib/language";
 import { t, type CopyKey } from "@/lib/i18n";
 import { useScrollFadeUp } from "@/lib/useScrollFadeUp";
 import { SITES, type Site } from "@/data/sites";
+import {
+  HeroBottomSkyline,
+  StoryBottomWatermark,
+  PrinciplesBottomWatermark,
+  CharterBottomWatermark,
+  TeamBottomWatermark,
+  ClosingBottomSkyline,
+} from "@/components/about/BalineseWatermarks";
 
 /* ─── Data Types & Definitions ───────────────────────────────────────────── */
 
@@ -199,269 +208,7 @@ function StarIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   );
 }
 
-function SacredHeroWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 flex items-center justify-center overflow-hidden opacity-[0.065] md:left-auto md:right-0 md:top-0 md:translate-x-0"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 500 500"
-        fill="none"
-        stroke="currentColor"
-        className="h-80 w-80 sm:h-96 sm:w-96 lg:h-[520px] lg:w-[520px] text-text"
-      >
-        {/* Outer orbital guide rings */}
-        <circle cx="250" cy="250" r="235" strokeWidth="1.25" strokeDasharray="6 6" />
-        <circle cx="250" cy="250" r="215" strokeWidth="1" />
-        <circle cx="250" cy="250" r="175" strokeWidth="1.5" />
-        <circle cx="250" cy="250" r="135" strokeWidth="1.25" />
-        <circle cx="250" cy="250" r="85" strokeWidth="1.5" />
-        <circle cx="250" cy="250" r="35" strokeWidth="1.75" />
-        <circle cx="250" cy="250" r="5" fill="currentColor" />
 
-        {/* 8-Directional Axes (Nawa Sanga cardinal alignment) */}
-        <line x1="15" y1="250" x2="485" y2="250" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="250" y1="15" x2="250" y2="485" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="84" y1="84" x2="416" y2="416" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="84" y1="416" x2="416" y2="84" strokeWidth="1" strokeDasharray="4 4" />
-
-        {/* Sacred Concentric Octagram / Diamond Star */}
-        <rect x="170" y="170" width="160" height="160" strokeWidth="1.5" />
-        <rect x="170" y="170" width="160" height="160" transform="rotate(45 250 250)" strokeWidth="1.5" />
-        <rect x="195" y="195" width="110" height="110" transform="rotate(22.5 250 250)" strokeWidth="1" />
-        <rect x="195" y="195" width="110" height="110" transform="rotate(67.5 250 250)" strokeWidth="1" />
-
-        {/* Outer cardinal compass markers */}
-        <path d="M250 8 L256 26 L250 34 L244 26 Z" fill="currentColor" />
-        <path d="M250 492 L256 474 L250 466 L244 474 Z" fill="currentColor" />
-        <path d="M8 250 L26 244 L34 250 L26 256 Z" fill="currentColor" />
-        <path d="M492 250 L474 244 L466 250 L474 256 Z" fill="currentColor" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredHeroLeftWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -left-24 top-12 hidden items-center justify-center overflow-hidden opacity-[0.055] md:flex"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 380 380"
-        fill="none"
-        stroke="currentColor"
-        className="h-80 w-80 lg:h-[400px] lg:w-[400px] text-text"
-      >
-        {/* Stepped Gateway & Quadrant Motif */}
-        <circle cx="60" cy="60" r="280" strokeWidth="1" strokeDasharray="6 6" />
-        <circle cx="60" cy="60" r="220" strokeWidth="1.25" />
-        <circle cx="60" cy="60" r="160" strokeWidth="1" strokeDasharray="4 4" />
-        <circle cx="60" cy="60" r="100" strokeWidth="1.5" />
-        <circle cx="60" cy="60" r="40" strokeWidth="1.75" />
-        <line x1="60" y1="60" x2="340" y2="60" strokeWidth="1.25" />
-        <line x1="60" y1="60" x2="60" y2="340" strokeWidth="1.25" />
-        <line x1="60" y1="60" x2="260" y2="260" strokeWidth="1" strokeDasharray="3 3" />
-        <rect x="60" y="60" width="120" height="120" strokeWidth="1.25" />
-        <rect x="60" y="60" width="180" height="180" strokeWidth="1" strokeDasharray="4 4" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredChronologyWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -left-20 -top-16 flex items-center justify-center overflow-hidden opacity-[0.065] sm:-left-12 lg:-left-6"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 520 520"
-        fill="none"
-        stroke="currentColor"
-        className="h-[460px] w-[460px] sm:h-[540px] sm:w-[540px] lg:h-[620px] lg:w-[620px] text-text"
-      >
-        {/* Balinese Saka / Solar-Lunar Astrological Time Rings */}
-        <circle cx="260" cy="260" r="245" strokeWidth="1" strokeDasharray="6 6" />
-        <circle cx="260" cy="260" r="225" strokeWidth="1.5" />
-        <circle cx="260" cy="260" r="185" strokeWidth="1.25" strokeDasharray="4 4" />
-        <circle cx="260" cy="260" r="145" strokeWidth="1.5" />
-        <circle cx="260" cy="260" r="95" strokeWidth="1.75" />
-        <circle cx="260" cy="260" r="45" strokeWidth="1.25" strokeDasharray="3 3" />
-        <circle cx="260" cy="260" r="6" fill="currentColor" />
-
-        {/* 12 Chronological Orbit Notches / Sun Ray Axes */}
-        <line x1="260" y1="15" x2="260" y2="505" strokeWidth="1.25" strokeDasharray="4 4" />
-        <line x1="15" y1="260" x2="505" y2="260" strokeWidth="1.25" strokeDasharray="4 4" />
-        <line x1="87" y1="87" x2="433" y2="433" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="87" y1="433" x2="433" y2="87" strokeWidth="1" strokeDasharray="4 4" />
-
-        {/* Intersecting Lunar Crescents & Solar Wheels */}
-        <path d="M260 75 C360 75, 445 160, 445 260 C445 360, 360 445, 260 445 C320 380, 320 140, 260 75 Z" strokeWidth="1.5" />
-        <path d="M260 75 C160 75, 75 160, 75 260 C75 360, 160 445, 260 445 C200 380, 200 140, 260 75 Z" strokeWidth="1.5" />
-
-        {/* Diagonal Cardinal Diamonds */}
-        <rect x="190" y="190" width="140" height="140" strokeWidth="1.5" />
-        <rect x="190" y="190" width="140" height="140" transform="rotate(45 260 260)" strokeWidth="1.5" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredPrinciplesWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 flex items-center justify-center overflow-hidden opacity-[0.065]"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 440 440"
-        fill="none"
-        stroke="currentColor"
-        className="h-96 w-96 lg:h-[480px] lg:w-[480px] text-text"
-      >
-        {/* Tri Hita Karana Triad circles (Interlocking harmonious trinity) */}
-        <circle cx="220" cy="150" r="95" strokeWidth="1.5" />
-        <circle cx="145" cy="280" r="95" strokeWidth="1.5" />
-        <circle cx="295" cy="280" r="95" strokeWidth="1.5" />
-        
-        {/* Outer harmonic envelope */}
-        <circle cx="220" cy="235" r="180" strokeWidth="1.25" strokeDasharray="5 5" />
-        <circle cx="220" cy="235" r="210" strokeWidth="1" />
-        
-        {/* Triad connective tangent lines */}
-        <polygon points="220,150 145,280 295,280" strokeWidth="1.25" strokeDasharray="4 4" />
-        <polygon points="220,80 85,320 355,320" strokeWidth="1" />
-        
-        {/* Central focal point */}
-        <circle cx="220" cy="235" r="6" fill="currentColor" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredCharterWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -left-12 bottom-0 flex items-center justify-center overflow-hidden opacity-[0.065]"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 380 380"
-        fill="none"
-        stroke="currentColor"
-        className="h-80 w-80 lg:h-[420px] lg:w-[420px] text-text"
-      >
-        {/* Balinese Candi Bentar / Meru architectural tiered profile */}
-        <path
-          d="M60 350 L60 280 L95 280 L95 220 L130 220 L130 160 L165 160 L165 100 L190 100 L190 30"
-          strokeWidth="1.75"
-        />
-        <path
-          d="M320 350 L320 280 L285 280 L285 220 L250 220 L250 160 L215 160 L215 100 L190 100 L190 30"
-          strokeWidth="1.75"
-        />
-        {/* Horizontal tier base hairlines */}
-        <line x1="30" y1="350" x2="350" y2="350" strokeWidth="1.5" />
-        <line x1="60" y1="280" x2="320" y2="280" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="95" y1="220" x2="285" y2="220" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="130" y1="160" x2="250" y2="160" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="165" y1="100" x2="215" y2="100" strokeWidth="1" strokeDasharray="4 4" />
-
-        {/* Central pinnacle axis */}
-        <line x1="190" y1="10" x2="190" y2="370" strokeWidth="1" strokeDasharray="3 4" />
-        <circle cx="190" cy="30" r="5" fill="currentColor" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredTeamWatermark() {
-  return (
-    <div
-      className="pointer-events-none absolute -right-16 top-1/2 -translate-y-1/2 flex items-center justify-center overflow-hidden opacity-[0.065]"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 500 500"
-        fill="none"
-        stroke="currentColor"
-        className="h-[480px] w-[480px] lg:h-[580px] lg:w-[580px] text-text"
-      >
-        {/* Architect Sacred Harmonic Matrix & Constellation Nodes */}
-        <circle cx="250" cy="250" r="235" strokeWidth="1" strokeDasharray="5 5" />
-        <circle cx="250" cy="250" r="195" strokeWidth="1.5" />
-        <circle cx="250" cy="250" r="135" strokeWidth="1.25" />
-        <circle cx="250" cy="250" r="75" strokeWidth="1.75" strokeDasharray="3 3" />
-        <circle cx="250" cy="250" r="6" fill="currentColor" />
-
-        {/* Sacred Hexagram / Triad alignment paths */}
-        <polygon points="250,60 415,345 85,345" strokeWidth="1.5" />
-        <polygon points="250,440 85,155 415,155" strokeWidth="1.5" />
-
-        {/* Node intersection pins */}
-        <circle cx="250" cy="60" r="4.5" fill="currentColor" />
-        <circle cx="415" cy="345" r="4.5" fill="currentColor" />
-        <circle cx="85" cy="345" r="4.5" fill="currentColor" />
-        <circle cx="250" cy="440" r="4.5" fill="currentColor" />
-        <circle cx="85" cy="155" r="4.5" fill="currentColor" />
-        <circle cx="415" cy="155" r="4.5" fill="currentColor" />
-
-        {/* Continuous coordinate cross-grid lines */}
-        <line x1="20" y1="250" x2="480" y2="250" strokeWidth="1" strokeDasharray="4 4" />
-        <line x1="250" y1="20" x2="250" y2="480" strokeWidth="1" strokeDasharray="4 4" />
-      </svg>
-    </div>
-  );
-}
-
-function SacredClosingMandala() {
-  return (
-    <div
-      className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center overflow-hidden opacity-[0.075]"
-      aria-hidden="true"
-    >
-      <svg
-        viewBox="0 0 540 540"
-        fill="none"
-        stroke="currentColor"
-        className="h-[520px] w-[520px] sm:h-[620px] sm:w-[620px] lg:h-[720px] lg:w-[720px] text-text"
-      >
-        {/* Concentric radiant aura rings */}
-        <circle cx="270" cy="270" r="260" strokeWidth="1" strokeDasharray="8 8" />
-        <circle cx="270" cy="270" r="235" strokeWidth="1.25" />
-        <circle cx="270" cy="270" r="190" strokeWidth="1.5" strokeDasharray="4 4" />
-        <circle cx="270" cy="270" r="150" strokeWidth="1.25" />
-        <circle cx="270" cy="270" r="110" strokeWidth="1.75" />
-        <circle cx="270" cy="270" r="60" strokeWidth="1.25" />
-        <circle cx="270" cy="270" r="6" fill="currentColor" />
-
-        {/* 12-petaled sacred lotus petals / Surya Majapahit geometric rays */}
-        <path d="M270 110 C290 170, 290 210, 270 270 C250 210, 250 170, 270 110 Z" strokeWidth="1.5" />
-        <path d="M270 270 C290 330, 290 370, 270 430 C250 370, 250 330, 270 270 Z" strokeWidth="1.5" />
-        <path d="M110 270 C170 290, 210 290, 270 270 C210 250, 170 250, 110 270 Z" strokeWidth="1.5" />
-        <path d="M270 270 C330 290, 370 290, 430 270 C370 250, 330 250, 270 270 Z" strokeWidth="1.5" />
-
-        {/* Rotated 45-degree diagonal petals */}
-        <g transform="rotate(45 270 270)">
-          <path d="M270 110 C290 170, 290 210, 270 270 C250 210, 250 170, 270 110 Z" strokeWidth="1.5" />
-          <path d="M270 270 C290 330, 290 370, 270 430 C250 370, 250 330, 270 270 Z" strokeWidth="1.5" />
-          <path d="M110 270 C170 290, 210 290, 270 270 C210 250, 170 250, 110 270 Z" strokeWidth="1.5" />
-          <path d="M270 270 C330 290, 370 290, 430 270 C370 250, 330 250, 270 270 Z" strokeWidth="1.5" />
-        </g>
-
-        {/* 16-point ray lines extending outward */}
-        <g strokeWidth="1" strokeDasharray="3 5">
-          <line x1="270" y1="35" x2="270" y2="110" />
-          <line x1="270" y1="430" x2="270" y2="505" />
-          <line x1="35" y1="270" x2="110" y2="270" />
-          <line x1="430" y1="270" x2="505" y2="270" />
-        </g>
-      </svg>
-    </div>
-  );
-}
 
 /* ─── Hero Sites Slider Component (5s Auto-Rotation) ─────────────────────── */
 
@@ -1066,6 +813,35 @@ export default function AboutPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Handle URL hash navigation (e.g. /about#source from footer)
+  useEffect(() => {
+    const handleHash = () => {
+      const rawHash = window.location.hash.replace("#", "");
+      if (!rawHash) return;
+      const targetId =
+        rawHash === "rules" || rawHash === "privacy" || rawHash === "charter" ? "source" : rawHash;
+      const el = document.getElementById(targetId);
+      if (el) {
+        setTimeout(() => {
+          const yOffset = -90;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          const lenis = getLenis();
+          if (lenis) {
+            lenis.scrollTo(y);
+          } else {
+            const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
+          }
+          setActiveNav(targetId);
+        }, 150);
+      }
+    };
+
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
+
   // Handle mobile principles scroll-snap tracking
   const handlePrinciplesScroll = () => {
     const track = principlesTrackRef.current;
@@ -1088,7 +864,13 @@ export default function AboutPage() {
     if (!el) return;
     const yOffset = -90;
     const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-    window.scrollTo({ top: y, behavior: "smooth" });
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.scrollTo(y);
+    } else {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
+    }
     setActiveNav(id);
   };
 
@@ -1102,7 +884,7 @@ export default function AboutPage() {
 
   return (
     <>
-      <div className="flex-1 bg-bg">
+      <div className="relative flex-1 overflow-x-hidden bg-bg">
         {/* ── Mobile Sticky Sub-Nav (Pocket Guide Menu) ───────────── */}
         <div className="sticky top-14 z-20 border-b border-border bg-bg/95 backdrop-blur-none md:hidden">
           <nav
@@ -1136,10 +918,8 @@ export default function AboutPage() {
           {/* ── 1. Hero: Magazine Split-Hero with 5s Sites Slider ──── */}
           <header
             id="hero"
-            className="relative overflow-hidden pb-8 pt-6 sm:pb-12 sm:pt-12 lg:pb-14 lg:pt-16"
+            className="relative overflow-hidden pb-16 pt-6 sm:pb-20 sm:pt-12 lg:pb-24 lg:pt-16"
           >
-            <SacredHeroWatermark />
-            <SacredHeroLeftWatermark />
 
             {/* Mobile Editorial Hero (< 768px) */}
             <div ref={heroTextRef} className="relative block md:hidden">
@@ -1191,7 +971,7 @@ export default function AboutPage() {
             {/* ── Quick Impact & Pillars Ribbon ─────────────────────── */}
             <div
               ref={impactRef}
-              className="mt-8 rounded-2xl border border-border bg-surface shadow-sm sm:mt-12"
+              className="relative z-10 mt-8 rounded-2xl border border-border bg-surface shadow-sm sm:mt-12"
             >
               <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 {IMPACT_METRICS.map((item) => {
@@ -1222,6 +1002,8 @@ export default function AboutPage() {
                 })}
               </div>
             </div>
+
+            <HeroBottomSkyline />
           </header>
 
           <SectionDivider />
@@ -1231,12 +1013,12 @@ export default function AboutPage() {
             id="story"
             ref={storyRef}
             aria-labelledby="story-heading"
-            className="relative overflow-hidden py-8 sm:py-12 lg:py-16"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
           >
-            <SacredChronologyWatermark />
             <div className="relative z-10 rounded-2xl border border-border bg-surface-sunken/40 p-5 sm:p-8 lg:p-10">
               <StackedTimelineDeck />
             </div>
+            <StoryBottomWatermark />
           </section>
 
           <SectionDivider />
@@ -1246,9 +1028,8 @@ export default function AboutPage() {
             id="principles"
             ref={principlesRef}
             aria-labelledby="principles-heading"
-            className="relative overflow-hidden py-8 sm:py-12 lg:py-16"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
           >
-            <SacredPrinciplesWatermark />
             <div className="principle-animate">
               <span className="block text-[11px] font-bold uppercase tracking-widest text-accent-strong sm:text-xs">
                 {t(lang, "about.principles.eyebrow")}
@@ -1354,6 +1135,7 @@ export default function AboutPage() {
                 </div>
               ))}
             </div>
+            <PrinciplesBottomWatermark />
           </section>
 
           <SectionDivider />
@@ -1363,9 +1145,11 @@ export default function AboutPage() {
             id="source"
             ref={foundationRef}
             aria-labelledby="charter-heading"
-            className="relative overflow-hidden py-8 sm:py-12 lg:py-16"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24 scroll-mt-24"
           >
-            <SacredCharterWatermark />
+            <span id="charter" className="sr-only" />
+            <span id="rules" className="sr-only" />
+            <span id="privacy" className="sr-only" />
             <div className="foundation-animate">
               <span className="block text-[11px] font-bold uppercase tracking-widest text-accent-strong sm:text-xs">
                 {t(lang, "about.charter.eyebrow")}
@@ -1486,6 +1270,7 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
+            <CharterBottomWatermark />
           </section>
 
           <SectionDivider />
@@ -1495,9 +1280,8 @@ export default function AboutPage() {
             id="team"
             ref={teamRef}
             aria-labelledby="team-heading"
-            className="relative overflow-hidden py-8 sm:py-12 lg:py-16"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
           >
-            <SacredTeamWatermark />
             <div className="relative z-10 team-animate">
               <span className="block text-[11px] font-bold uppercase tracking-widest text-accent-strong sm:text-xs">
                 {t(lang, "about.team.eyebrow")}
@@ -1552,6 +1336,7 @@ export default function AboutPage() {
                 </div>
               ))}
             </div>
+            <TeamBottomWatermark />
           </section>
 
           <SectionDivider />
@@ -1560,9 +1345,8 @@ export default function AboutPage() {
           <section
             ref={closingRef}
             aria-label="Closing statement"
-            className="relative overflow-hidden py-10 text-center sm:py-14 lg:py-20"
+            className="relative overflow-hidden pt-10 pb-20 text-center sm:pt-14 sm:pb-24 lg:pt-20 lg:pb-28"
           >
-            <SacredClosingMandala />
             <div className="closing-animate relative z-10 mx-auto max-w-2xl rounded-2xl border border-border bg-surface p-8 shadow-sm sm:p-12">
               <div className="mx-auto mb-3 flex items-center justify-center text-accent-strong">
                 <StarIcon className="h-4 w-4" />
@@ -1616,6 +1400,8 @@ export default function AboutPage() {
                 <span>{t(lang, "about.version")}</span>
               </div>
             </div>
+
+            <ClosingBottomSkyline />
           </section>
 
         </main>

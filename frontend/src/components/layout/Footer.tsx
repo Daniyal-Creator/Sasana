@@ -125,18 +125,10 @@ export function Footer({ className = "" }: FooterProps = {}) {
                 </li>
                 <li>
                   <Link
-                    href="/about#rules"
+                    href="/about#source"
                     className="inline-flex items-center text-text-secondary transition-all duration-150 hover:translate-x-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                   >
-                    {t(lang, "footer.nav.circular")}
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/about#privacy"
-                    className="inline-flex items-center text-text-secondary transition-all duration-150 hover:translate-x-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                  >
-                    {t(lang, "footer.nav.privacy")}
+                    {t(lang, "footer.nav.charter")}
                   </Link>
                 </li>
               </ul>

@@ -331,12 +331,47 @@ describe("POST /api/chat — nearby places from the map", () => {
     expect(systemInstruction).toContain("Guest House Melati");
     expect(systemInstruction).toContain("around Pura Tanah Lot");
 
+    // The prose is still the answer. The list rides alongside it, carrying the
+    // one thing a sentence cannot: where to go.
     expect(await readBody(res)).toEqual({
       answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
       kind: "places",
       ruleIds: [],
       source: "OpenStreetMap contributors",
+      amenities: [
+        { name: "Guest House Melati", kind: "guest_house", distanceM: 111, lat: -8.6202, lng: 115.0868 },
+        { name: "Puri Bagus", kind: "guest_house", distanceM: 222, lat: -8.6192, lng: 115.0868 },
+      ],
     });
+  });
+
+  // `ruleIds` is empty outside the rule tier for the same reason: what the
+  // server sends is what the answer actually stands on. A list hung off a
+  // refusal would name places nobody was told about.
+  it("never attaches amenities to an answer that is not from the map", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    const res = await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(await readBody(res)).not.toHaveProperty("amenities");
+  });
+
+  // The pins come from the server's own lookup, so a sixth name the model
+  // invented cannot become somewhere a visitor is sent.
+  it("draws the amenities from the lookup rather than from the reply", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({
+      answer: "Ada Guest House Melati, dan juga Hotel Karangan.",
+      kind: "places",
+      ruleIds: [],
+    });
+
+    const res = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    const json = await readBody(res);
+    const amenities = json.amenities as Array<{ name: string }>;
+    expect(amenities.map((a) => a.name)).toEqual(["Guest House Melati"]);
   });
 
   // Without somewhere to search from there is nothing to look up, and guessing

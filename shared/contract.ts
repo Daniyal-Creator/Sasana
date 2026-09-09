@@ -119,6 +119,27 @@ export interface VisionResult {
 export type ChatKind = "rule" | "context" | "general" | "places" | "none";
 
 /** `POST /api/chat` response body. */
+/**
+ * A place near a visitor that they might need rather than revere: somewhere to
+ * stay, somewhere to eat. Read from OpenStreetMap at request time, never held
+ * in the app's own data.
+ *
+ * An Amenity carries no Custom, and it has no Zone and no Approach, because
+ * nothing is expected of anybody at a guest house. That is the whole reason it
+ * is a separate word from Site rather than a flag on one: the two are drawn
+ * differently, they behave differently on the map, and only one of them is
+ * what this app is for. See CONTEXT.md.
+ */
+export interface Amenity {
+  name: string;
+  /** The OSM tag value, e.g. `guest_house`, so "hotel" is never implied. */
+  kind: string;
+  /** Metres from the point the search was anchored on. */
+  distanceM: number;
+  lat: number;
+  lng: number;
+}
+
 export interface ChatResponse {
   answer: string;
   kind: ChatKind;
@@ -133,6 +154,19 @@ export interface ChatResponse {
    * `rule`, the map's for `places`, and null for everything else.
    */
   source: string | null;
+  /**
+   * The places the answer was written from, when there were any.
+   *
+   * Rides alongside the prose rather than replacing it. The sentence is still
+   * the answer; this is the same facts in a shape a map can draw, so a visitor
+   * can go to one of them instead of only reading its name.
+   *
+   * Only ever present when `kind` is `"places"`, for the same reason `ruleIds`
+   * is empty outside `"rule"`: the server sends what an answer actually stands
+   * on, and a list attached to a refusal would be a list of somewhere nobody
+   * was told about.
+   */
+  amenities?: Amenity[];
 }
 
 /** One turn of assistant conversation, as sent in the `POST /api/chat` history. */
@@ -142,5 +176,6 @@ export interface ChatMessage {
   kind?: ChatKind;
   ruleIds?: string[];
   source?: string | null;
+  amenities?: Amenity[];
   error?: boolean;
 }

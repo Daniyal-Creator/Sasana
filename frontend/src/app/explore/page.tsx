@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { BaseMap } from "@/components/explore/BaseMap";
 import { MapLayers } from "@/components/explore/MapLayers";
 import { NearbyToggle } from "@/components/explore/NearbyToggle";
+import { DestinationCard } from "@/components/explore/DestinationCard";
 import {
   MapSheet,
   PEEK_HEIGHT_PX,
@@ -36,6 +37,8 @@ import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
 import { NEARBY_ZOOM } from "@/lib/nearby";
+import { readAmenityDestination, writeAmenityDestination } from "@/lib/amenity-destination";
+import type { Amenity } from "@shared/contract";
 import type { LatLng } from "@/lib/geo";
 import {
   haversineMeters,
@@ -123,6 +126,11 @@ const WALKING_ZOOM = 14;
 // there is no way to reach it: the map is true to scale now, and true to scale
 // means small until you go closer.
 const SITE_ZOOM = 14;
+
+// Close enough to see the street a guest house is on. SITE_ZOOM answers "which
+// temple is this", which a 400 m Zone is legible at; a destination is a single
+// point, and at 14 it is a dot in a field.
+const DESTINATION_ZOOM = 16;
 
 function metresNorthOf(site: Site, metres: number): LatLng {
   return {
@@ -349,6 +357,23 @@ function ExploreInner() {
    * is around, and the Zones stand aside while it does (`lib/nearby.ts`).
    */
   const [nearby, setNearby] = useState(false);
+
+  /**
+   * The Amenity a visitor picked out of an assistant answer, if they did.
+   *
+   * Read once on mount rather than watched: it is written on the other screen,
+   * and arriving here is the only moment it can have changed.
+   */
+  const [destination, setDestination] = useState<Amenity | null>(null);
+
+  /**
+   * Whether the camera is pointed at a destination the visitor chose.
+   *
+   * A ref rather than a read of the state below, because the effect this
+   * guards depends on `view` alone and would otherwise be looking at whatever
+   * `destination` held when that dependency last changed.
+   */
+  const cameraOnDestination = useRef(false);
 
   // ApproachSheet sizes itself as a fraction of the viewport, and the desktop
   // panel as a fraction of the width, so how much of the map either one hides
@@ -744,6 +769,10 @@ function ExploreInner() {
   // `selectSite`, so this deliberately does not depend on the selection.
   useEffect(() => {
     if (view !== "explore") return;
+    // A visitor who arrived here to be shown a place gets shown it. This effect
+    // exists so the camera does not settle on open sea with the sheet
+    // describing a temple, and a destination answers that just as well.
+    if (cameraOnDestination.current) return;
     const site = allSites.find((s) => s.id === selectedSiteId);
     if (site) setFocus({ center: { lat: site.lat, lng: site.lng }, zoom: SITE_ZOOM });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -818,6 +847,30 @@ function ExploreInner() {
   }, [allSites]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
+
+  /**
+   * Arriving with a destination: show it, and look at it.
+   *
+   * "Lihat sekitar" goes off with it. That mode is for reading what the
+   * basemap names around you; a destination is one named thing the visitor
+   * already chose, and leaving both on would have the map answering a question
+   * nobody asked any more.
+   */
+  useEffect(() => {
+    const chosen = readAmenityDestination();
+    if (!chosen) return;
+    cameraOnDestination.current = true;
+    setDestination(chosen);
+    setNearby(false);
+    setFollow(false);
+    setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
+  }, []);
+
+  const clearDestination = useCallback(() => {
+    writeAmenityDestination(null);
+    setDestination(null);
+    cameraOnDestination.current = false;
+  }, []);
 
   /**
    * Opening a Site ends "Lihat sekitar".
@@ -918,12 +971,20 @@ function ExploreInner() {
           selectedSiteId={selected}
           onSelectSite={selectSite}
           nearby={nearby}
+          destination={destination}
         />
         <NearbyToggle
           active={nearby}
           onToggle={() => setNearby((on) => !on)}
           bottomInset={isDesktop ? 0 : sheetInset}
         />
+        {/* On a phone this shares the top strip with the Approach card, and
+            loses it for the six seconds that card is up. That is the right way
+            round: crossing into an Approach is the notice this whole app
+            exists to deliver, and a destination the visitor chose themselves
+            can wait. On a wide screen the Approach card docks to the right rail
+            and the two never meet. */}
+        {destination && <DestinationCard amenity={destination} onClear={clearDestination} />}
       </BaseMap>
     );
 

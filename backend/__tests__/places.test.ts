@@ -104,6 +104,26 @@ describe("parseOverpass", () => {
     expect(parseOverpass(data, TANAH_LOT.lat, TANAH_LOT.lng, 5, "lodging")).toHaveLength(1);
   });
 
+  // The point is a fact about the place, not scratch work for the distance.
+  // A visitor told a guest house is 400 m away still has to find it.
+  it("keeps the coordinates it measured the distance from", () => {
+    const data = { elements: [node("Puri Melati", TANAH_LOT.lat + 0.001, TANAH_LOT.lng)] };
+    const [place] = parseOverpass(data, TANAH_LOT.lat, TANAH_LOT.lng, 5, "lodging");
+
+    expect(place.lat).toBeCloseTo(TANAH_LOT.lat + 0.001, 6);
+    expect(place.lng).toBeCloseTo(TANAH_LOT.lng, 6);
+  });
+
+  it("reads a way's center as the point, not just as a distance", () => {
+    const data = {
+      elements: [
+        { center: { lat: TANAH_LOT.lat + 0.002, lon: TANAH_LOT.lng }, tags: { name: "Resort", tourism: "hotel" } },
+      ],
+    };
+    const [place] = parseOverpass(data, TANAH_LOT.lat, TANAH_LOT.lng, 5, "lodging");
+    expect(place.lat).toBeCloseTo(TANAH_LOT.lat + 0.002, 6);
+  });
+
   it("drops anything without a name", () => {
     const data = { elements: [{ lat: TANAH_LOT.lat, lon: TANAH_LOT.lng, tags: { tourism: "hotel" } }] };
     expect(parseOverpass(data, TANAH_LOT.lat, TANAH_LOT.lng, 5, "lodging")).toEqual([]);
@@ -150,8 +170,8 @@ describe("findNearbyPlaces", () => {
 describe("formatPlacesForPrompt", () => {
   it("writes metres under a kilometre and kilometres above", () => {
     const text = formatPlacesForPrompt([
-      { name: "Warung Bagus", kind: "restaurant", distanceM: 320 },
-      { name: "Guest House Melati", kind: "guest_house", distanceM: 2400 },
+      { name: "Warung Bagus", kind: "restaurant", distanceM: 320, lat: -8.62, lng: 115.09 },
+      { name: "Guest House Melati", kind: "guest_house", distanceM: 2400, lat: -8.63, lng: 115.09 },
     ]);
 
     expect(text).toContain("1. Warung Bagus — restaurant, 320 m");

@@ -244,7 +244,7 @@ export async function askQuestion(
     );
     const result = safeParseChat(res.text, lang, rules, {
       message,
-      hasPlaces: places.length > 0,
+      places,
       unanchoredPlaceQuery,
       allRules,
     });
@@ -297,8 +297,17 @@ export async function askQuestion(
 export interface ChatParseContext {
   /** The question, so a refusal can offer what the knowledge base does hold. */
   message: string;
-  /** Whether the server actually put a map lookup in front of the model. */
-  hasPlaces?: boolean;
+  /**
+   * The map lookup the server put in front of the model, empty when it made
+   * none.
+   *
+   * Two jobs, and they are the same fact read twice: whether a lookup happened
+   * at all, which is what makes the `places` tier checkable, and what it found,
+   * which the answer carries back so a visitor can go to one of them. Keeping
+   * them as one field is what stops an answer ever claiming the tier while
+   * shipping a list from somewhere else.
+   */
+  places?: Place[];
   /**
    * The question asked what is nearby and the server had nowhere to search.
    * Changes which refusal is read, never whether one happens.
@@ -334,7 +343,7 @@ export function safeParseChat(
   text: string | undefined,
   lang: Lang,
   rules: Rule[],
-  { message, hasPlaces = false, unanchoredPlaceQuery = false, allRules = rules }: ChatParseContext,
+  { message, places = [], unanchoredPlaceQuery = false, allRules = rules }: ChatParseContext,
 ): ChatResponse {
   let raw: { answer?: unknown; kind?: unknown; ruleIds?: unknown } | null = null;
   try {
@@ -398,8 +407,23 @@ export function safeParseChat(
   // one in front of it is naming hotels out of memory, which is the exact
   // failure this tier was built to end.
   if (claimedKind === "places") {
-    if (!hasPlaces) return refused;
-    return { answer, kind: "places", ruleIds: [], source: PLACES_SOURCE };
+    if (places.length === 0) return refused;
+    return {
+      answer,
+      kind: "places",
+      ruleIds: [],
+      source: PLACES_SOURCE,
+      // The same places the sentence was written from, in a shape a map can
+      // draw. Taken from the server's own lookup rather than from anything the
+      // model returned, so a name it invented cannot become a pin.
+      amenities: places.map(({ name, kind, distanceM, lat, lng }) => ({
+        name,
+        kind,
+        distanceM,
+        lat,
+        lng,
+      })),
+    };
   }
 
   if (claimedKind === "context" || claimedKind === "general") {

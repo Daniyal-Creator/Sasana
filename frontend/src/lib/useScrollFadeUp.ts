@@ -24,6 +24,8 @@ export interface ScrollFadeUpOptions {
   stagger?: number;
   /** Starting translateY offset in pixels. Default: 12 */
   y?: number;
+  /** Optional starting rotation angle in degrees. Default: 0 */
+  rotate?: number;
   /** Animation duration in seconds. Default: 0.35s (within M3 band) */
   duration?: number;
   /** ScrollTrigger start position. Default: "top 88%" */
@@ -56,6 +58,7 @@ export function useScrollFadeUp<T extends HTMLElement>(
     selector,
     stagger = 0.06,
     y = 12,
+    rotate = 0,
     duration = 0.35,
     start = "top 88%",
     end = "bottom 12%",
@@ -76,6 +79,7 @@ export function useScrollFadeUp<T extends HTMLElement>(
           : [container];
         targets.forEach((el) => {
           (el as HTMLElement).style.opacity = "1";
+          (el as HTMLElement).style.transform = "none";
         });
         return;
       }
@@ -91,12 +95,13 @@ export function useScrollFadeUp<T extends HTMLElement>(
       : container;
 
     // Set initial state
-    gsap.set(targets, { opacity: 0, y });
+    gsap.set(targets, { opacity: 0, y, ...(rotate ? { rotate } : {}) });
 
     // Animate on scroll (bi-directional in/out)
     const tween = gsap.to(targets, {
       opacity: 1,
       y: 0,
+      ...(rotate ? { rotate: 0 } : {}),
       duration,
       ease: "power2.out",
       stagger: selector ? stagger : 0,
@@ -115,7 +120,7 @@ export function useScrollFadeUp<T extends HTMLElement>(
       tween.kill();
       gsap.killTweensOf(targets);
     };
-  }, [selector, stagger, y, duration, start, end, toggleActions, once]);
+  }, [selector, stagger, y, rotate, duration, start, end, toggleActions, once]);
 
   return containerRef;
 }

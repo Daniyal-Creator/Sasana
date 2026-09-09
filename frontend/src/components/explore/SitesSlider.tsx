@@ -203,7 +203,7 @@ export function SitesSlider() {
                 aria-label={`${index + 1} of ${SITES.length}: ${site.name}`}
               >
                 <Link
-                  href={`/explore/${site.id}`}
+                  href={`/explore?site=${site.id}`}
                   className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-border-strong hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus"
                 >
                   {/* Image Area */}

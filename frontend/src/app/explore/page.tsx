@@ -326,6 +326,8 @@ function ExploreInner() {
   const { lang } = useLang();
   const searchParams = useSearchParams();
   const simulateId = searchParams.get("simulate");
+  const siteParam = searchParams.get("site");
+  const targetSite = siteParam ? SITES.find((s) => s.id === siteParam) : undefined;
   /**
    * A real Site can be simulated the moment the page loads: its coordinates
    * ship in the bundle. A Dummy Site cannot, because it does not exist until a
@@ -335,12 +337,12 @@ function ExploreInner() {
    */
   const simulatingRealSite = Boolean(simulateId && SITES.some((s) => s.id === simulateId));
 
-  const [view, setView] = useState<View>("checking");
+  const [view, setView] = useState<View>(targetSite ? "explore" : "checking");
   const [position, setPosition] = useState<LatLng | null>(null);
   const [accuracyM, setAccuracyM] = useState<number | null>(null);
   const [approachSite, setApproachSite] = useState<Site | null>(null);
   const [simulated] = useState(Boolean(simulateId));
-  const [selectedSiteId, setSelectedSiteId] = useState<string>(SITES[0].id);
+  const [selectedSiteId, setSelectedSiteId] = useState<string>(targetSite ? targetSite.id : SITES[0].id);
   const [signalUnsure, setSignalUnsure] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -361,16 +363,18 @@ function ExploreInner() {
   const [simulateStep, setSimulateStep] = useState<{ id: string; leg: number } | null>(null);
 
   // Map state. `follow` is the camera; the visitor takes it back by dragging.
-  const [follow, setFollow] = useState(true);
+  const [follow, setFollow] = useState(!targetSite);
   const [tilesFailed, setTilesFailed] = useState(false);
-  const [sheetStage, setSheetStage] = useState<SheetStage>("peek");
+  const [sheetStage, setSheetStage] = useState<SheetStage>(targetSite ? "full" : "peek");
   const [bannerSite, setBannerSite] = useState<Site | null>(null);
-  const [focus, setFocus] = useState<{ center: LatLng; zoom: number } | null>(null);
+  const [focus, setFocus] = useState<{ center: LatLng; zoom: number } | null>(
+    targetSite ? { center: { lat: targetSite.lat, lng: targetSite.lng }, zoom: SITE_ZOOM } : null
+  );
 
   // The panel has two states: the list it opened with, and one Site. null is
   // the list. It replaces its own contents rather than navigating, so the map
   // underneath keeps its camera and the visitor never loses their place.
-  const [panelSiteId, setPanelSiteId] = useState<string | null>(null);
+  const [panelSiteId, setPanelSiteId] = useState<string | null>(targetSite ? targetSite.id : null);
 
   /**
    * A Site the visitor asked to read while standing inside another's Approach.
@@ -540,6 +544,20 @@ function ExploreInner() {
   useEffect(() => {
     dummySitesRef.current = dummySites;
   }, [dummySites]);
+
+  useEffect(() => {
+    if (!siteParam) return;
+    const target = allSites.find((s) => s.id === siteParam);
+    if (!target) return;
+    siteChosenByHand.current = true;
+    setSelectedSiteId(target.id);
+    setPanelSiteId(target.id);
+    setFollow(false);
+    setFocus({ center: { lat: target.lat, lng: target.lng }, zoom: SITE_ZOOM });
+    setSheetStage("full");
+    viewRef.current = "explore";
+    setView("explore");
+  }, [siteParam, allSites]);
 
   const searching = query.trim().length > 0;
 
@@ -752,7 +770,7 @@ function ExploreInner() {
   // again on every visit. Screen A exists to explain the request, not to be a
   // toll gate.
   useEffect(() => {
-    if (simulatingRealSite) return;
+    if (simulatingRealSite || targetSite) return;
     let cancelled = false;
     (async () => {
       let next: View = "asking";
@@ -1117,9 +1135,9 @@ function ExploreInner() {
           // and it is the only description a screen reader gets.
           dummySites.length > 0
             ? tExplore(lang, "explore.map.aria.dummy", {
-                count: String(allSites.length),
-                dummies: String(dummySites.length),
-              })
+              count: String(allSites.length),
+              dummies: String(dummySites.length),
+            })
             : tExplore(lang, "explore.map.aria", { count: String(allSites.length) })
         }
         center={position ?? BALI_CENTER}
@@ -1223,12 +1241,12 @@ function ExploreInner() {
                     dummySites.length > 0
                       ? tExplore(lang, "explore.dummy.none.description")
                       : tExplore(
-                          lang,
-                          "explore.none.description",
-                          closest[0]
-                            ? { distance: formatDistance(closest[0].distanceM, lang) }
-                            : undefined,
-                        )
+                        lang,
+                        "explore.none.description",
+                        closest[0]
+                          ? { distance: formatDistance(closest[0].distanceM, lang) }
+                          : undefined,
+                      )
                   }
                 >
                   <Button variant="secondary" onClick={() => changeView("explore")}>
@@ -1388,9 +1406,9 @@ function ExploreInner() {
                     searching
                       ? searchRows
                       : allSites.map((site) => ({
-                          site,
-                          distanceM: position ? haversineMeters(position, site) : null,
-                        }))
+                        site,
+                        distanceM: position ? haversineMeters(position, site) : null,
+                      }))
                   }
                   selectedSiteId={selectedSiteId}
                   onSelect={selectSite}

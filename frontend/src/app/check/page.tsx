@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
-import { ShieldCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Shield } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ErrorFallback } from "@/components/ui/ErrorFallback";
+import { ScrollIndicator } from "@/components/ui/ScrollIndicator";
 import { CameraUploader } from "@/components/check/CameraUploader";
 import { ContextSelector, type CheckContext } from "@/components/check/ContextSelector";
+import { PhotoMetaBar, type LocationPhase } from "@/components/check/PhotoMetaBar";
 import { ResultCard } from "@/components/check/ResultCard";
+import { CheckEmptyState } from "@/components/check/CheckEmptyState";
 import { Footer } from "@/components/layout/Footer";
 import { useLang } from "@/lib/language";
 import { apiUrl } from "@/lib/api";
 import { t } from "@/lib/i18n";
+import { readActiveSite, siteContextNear } from "@/lib/site-context";
+import { requestDeviceCoords } from "@/lib/photo-meta";
 import type { PreparedImage } from "@/lib/image";
-import type { VisionResult } from "@shared/contract";
+import type { SiteContext, VisionResult } from "@shared/contract";
 
 type Phase = "idle" | "loading" | "done" | "error";
 
@@ -23,8 +28,46 @@ export default function CheckPage() {
   const [image, setImage] = useState<PreparedImage | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<VisionResult | null>(null);
+  // The Site the visitor picked in Explore, if they came from there. Read after
+  // mount rather than during render: sessionStorage does not exist on the
+  // server, and reading it in a useState initialiser makes the first client
+  // render disagree with the server's.
+  const [site, setSite] = useState<SiteContext | null>(null);
+  // A Site the photo's own coordinates landed in. It outranks the stored one:
+  // a visitor who picked Besakih on the map yesterday and is photographing
+  // Tirta Empul today is at Tirta Empul.
+  const [photoSite, setPhotoSite] = useState<SiteContext | null>(null);
+  const [locationPhase, setLocationPhase] = useState<LocationPhase>("idle");
+
+  useEffect(() => {
+    setSite(readActiveSite());
+  }, []);
 
   const busy = phase === "loading";
+  const activeSite = photoSite ?? site;
+
+  function receiveImage(next: PreparedImage) {
+    setImage(next);
+    setResult(null);
+    setPhase("idle");
+    setLocationPhase("idle");
+    // A photo that carries its own GPS names its Site without anyone being
+    // asked for permission a second time.
+    setPhotoSite(next.meta.coords ? siteContextNear(next.meta.coords) : null);
+  }
+
+  async function addLocation() {
+    if (!image || busy) return;
+    setLocationPhase("locating");
+    const coords = await requestDeviceCoords();
+    if (!coords) {
+      setLocationPhase("unavailable");
+      return;
+    }
+    setLocationPhase("idle");
+    setImage((prev) => (prev ? { ...prev, meta: { ...prev.meta, coords } } : prev));
+    setPhotoSite(siteContextNear(coords));
+  }
 
   async function analyze() {
     if (!image) return;
@@ -34,7 +77,16 @@ export default function CheckPage() {
       const res = await fetch(apiUrl("/api/vision"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: image.base64, mimeType: image.mimeType, context, lang }),
+        // `site` is omitted when the visitor did not come from Explore, which
+        // is what keeps the standalone check behaving exactly as it always has.
+        body: JSON.stringify({
+          image: image.base64,
+          mimeType: image.mimeType,
+          context,
+          lang,
+          photo: image.meta,
+          ...(activeSite ? { site: activeSite } : {}),
+        }),
       });
       if (!res.ok) throw new Error("vision request failed");
       setResult((await res.json()) as VisionResult);
@@ -48,46 +100,50 @@ export default function CheckPage() {
     setImage(null);
     setResult(null);
     setPhase("idle");
+    setPhotoSite(null);
+    setLocationPhase("idle");
   }
 
   return (
-    <>
-      <div className="mx-auto w-full max-w-tool flex-1 px-4 pb-6 pt-6 sm:px-6">
-        <h1 className="font-display text-h1 font-semibold text-text">{t(lang, "check.title")}</h1>
-        <p className="mt-1 text-sm text-text-secondary">{t(lang, "check.subtitle")}</p>
+    // `main` is already `flex-1` inside the layout's `min-h-dvh` column, so
+    // filling the viewport is `flex-1` — not a `100vh` calc, which overshoots
+    // by the height of the mobile URL bar and pushes the footer off-screen.
+    <div className="flex flex-1 flex-col justify-between">
+      <div className="mx-auto w-full max-w-container flex-1 px-4 py-8 sm:px-6 lg:px-8">
+        <h1 className="font-display text-3xl font-bold tracking-tight text-text sm:text-4xl">
+          {t(lang, "check.title")}
+        </h1>
+        <p className="mt-1.5 text-sm text-text-secondary">{t(lang, "check.subtitle")}</p>
 
-        <div className="mt-6 space-y-6">
-          <div>
-            <p className="mb-2 text-sm font-medium text-text-secondary">{t(lang, "check.context.label")}</p>
-            <ContextSelector value={context} onChange={setContext} disabled={busy} />
-          </div>
-
-          <CameraUploader image={image} onImageReady={setImage} onClear={reset} disabled={busy} />
-
-          {phase === "loading" && (
-            <div>
-              <span className="sr-only" role="status">
-                {t(lang, "check.loading")}
-              </span>
-              <Skeleton variant="card" />
-            </div>
-          )}
-          {phase === "done" && result && <ResultCard result={result} onReset={reset} />}
-          {phase === "error" && <ErrorFallback message={t(lang, "check.error")} onRetry={analyze} />}
+        <div className="mt-6 max-w-md">
+          <p className="mb-2 text-sm font-semibold text-text">{t(lang, "check.context.label")}</p>
+          <ContextSelector value={context} onChange={setContext} disabled={busy} />
         </div>
-      </div>
 
-      {/* Sticky action bar on mobile, inline at md+ (ui-spec §4.2) */}
-      {phase !== "done" && (
-        <div className="sticky bottom-0 border-t border-border bg-bg px-4 py-3 md:static md:border-0 md:bg-transparent md:py-0">
-          <div className="mx-auto max-w-tool space-y-3 md:px-2 md:pb-8">
-            <p className="flex items-start gap-2 text-xs text-text-secondary">
-              <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-accent-strong" />
-              {t(lang, "check.privacy")}
-            </p>
+        <div className="mt-6 grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-8">
+          {/* Left Column: Upload & Actions */}
+          <div className="flex flex-col">
+            <CameraUploader image={image} onImageReady={receiveImage} onClear={reset} disabled={busy} />
+
+            {image && (
+              <PhotoMetaBar
+                meta={image.meta}
+                device={image.device}
+                siteName={activeSite?.name}
+                phase={locationPhase}
+                onAddLocation={addLocation}
+                disabled={busy}
+              />
+            )}
+
+            <div className="mt-3 flex items-start gap-2.5 text-xs text-text-secondary leading-relaxed">
+              <Shield size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-text-muted" />
+              <p>{t(lang, "check.privacy")}</p>
+            </div>
+
             <Button
               size="lg"
-              className="w-full"
+              className="mt-4 w-full rounded-xl text-base"
               disabled={!image || busy}
               loading={busy}
               onClick={analyze}
@@ -95,11 +151,26 @@ export default function CheckPage() {
               {busy ? t(lang, "check.loading") : t(lang, "check.analyze")}
             </Button>
           </div>
+
+          {/* Right Column: Result, Loading, Error, or Idle Placeholder */}
+          <div className="min-h-[300px] lg:min-h-[380px]">
+            {phase === "idle" && <CheckEmptyState />}
+            {phase === "loading" && (
+              <div className="flex h-full flex-col">
+                <span className="sr-only" role="status">
+                  {t(lang, "check.loading")}
+                </span>
+                <Skeleton variant="card" className="h-full min-h-[300px] rounded-2xl" />
+              </div>
+            )}
+            {phase === "done" && result && <ResultCard result={result} image={image} onReset={reset} />}
+            {phase === "error" && <ErrorFallback message={t(lang, "check.error")} onRetry={analyze} />}
+          </div>
         </div>
-      )}
-      <div className="hidden md:block">
-        <Footer />
       </div>
-    </>
+
+      <Footer className="bg-transparent" />
+      <ScrollIndicator />
+    </div>
   );
 }

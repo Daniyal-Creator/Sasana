@@ -1,28 +1,41 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
+import { resolveTierLine } from "@/lib/answer-tier";
+import type { ChatKind } from "@shared/contract";
 
 interface SourceReferenceProps {
   source: string | null;
-  grounded: boolean;
+  kind: ChatKind;
 }
 
-export function SourceReference({ source, grounded }: SourceReferenceProps) {
+export function SourceReference({ source, kind }: SourceReferenceProps) {
   const { lang } = useLang();
 
-  if (!grounded) {
-    return <p className="mt-2 text-sm italic text-text-muted">{t(lang, "assistant.nosource")}</p>;
-  }
+  const line = resolveTierLine(kind, source);
+  if (!line) return null;
 
-  if (!source) return null;
+  const { icon: Icon, labelKey, params, attributed } = line;
 
+  // Weight follows attribution. The separator and the accent colour belong to
+  // answers that can name where they came from; background and history stay
+  // muted, because reading with authority is the one thing they must not do.
   return (
-    <div className="mt-3 border-t border-accent pt-2">
-      <p className="flex items-center gap-1.5 text-sm text-text-secondary">
-        <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
-        {t(lang, "assistant.source", { source })}
+    <div className={attributed ? "mt-3 border-t border-accent pt-2" : "mt-2"}>
+      <p
+        className={[
+          "flex items-center gap-1.5 text-sm",
+          attributed ? "text-text-secondary" : "text-text-muted",
+        ].join(" ")}
+      >
+        <Icon
+          size={16}
+          strokeWidth={1.75}
+          aria-hidden
+          className={`shrink-0 ${attributed ? "text-accent-strong" : "text-text-muted"}`}
+        />
+        {t(lang, labelKey, params)}
       </p>
     </div>
   );

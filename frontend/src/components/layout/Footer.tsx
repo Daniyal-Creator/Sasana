@@ -6,7 +6,11 @@ import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
 import { useScrollFadeUp } from "@/lib/useScrollFadeUp";
 
-export function Footer() {
+interface FooterProps {
+  className?: string;
+}
+
+export function Footer({ className = "" }: FooterProps = {}) {
   const { lang } = useLang();
   const currentYear = new Date().getFullYear();
 
@@ -17,7 +21,7 @@ export function Footer() {
   });
 
   return (
-    <footer className="border-t border-border-strong bg-surface-sunken text-text">
+    <footer className={`border-t border-border-strong bg-surface-sunken text-text ${className}`.trim()}>
       <div ref={footerRef} className="mx-auto max-w-container px-4 py-12 sm:px-6 lg:px-8">
         {/* Top: Editorial Brand Area & 3-Column Navigation Grid */}
         <div data-footer-block className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12">

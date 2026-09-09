@@ -33,6 +33,7 @@ import { ApproachCard } from "@/components/explore/ApproachCard";
 import { ApproachSheet, APPROACH_SHEET_PEEK_FRAC } from "@/components/explore/ApproachSheet";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
+import { siteContextFrom, writeActiveSite } from "@/lib/site-context";
 import type { LatLng } from "@/lib/geo";
 import {
   haversineMeters,
@@ -420,6 +421,25 @@ function ExploreInner() {
   // the app still imports SITES and still gets six real places.
   const allSites = useMemo(() => [...SITES, ...dummySites], [dummySites]);
 
+  // Hands the Site to the Situation Check and the Assistant, so a photo taken
+  // here is judged against this Site's own Customs rather than against temple
+  // etiquette in general.
+  //
+  // Read from the Approach the visitor has actually crossed into, and failing
+  // that from the Site whose panel they opened by hand. Deliberately NOT from
+  // `selectedSiteId`: that starts at SITES[0] as the map's opening camera, so
+  // using it would tell a visitor who has only glanced at Explore that they are
+  // standing at Tanah Lot - a confident wrong place, which is the failure this
+  // product exists to prevent. No Approach and no open panel means no claim.
+  //
+  // `siteContextFrom` returns null for a Dummy Site, whose name is invented;
+  // ADR-0012 forbids a fictional place reaching the backend. That clears the
+  // Site and restores the generic check, exactly how both pages behaved before.
+  useEffect(() => {
+    const here = approachSite ?? allSites.find((s) => s.id === panelSiteId) ?? null;
+    writeActiveSite(here ? siteContextFrom(here) : null);
+  }, [allSites, approachSite, panelSiteId]);
+
   useEffect(() => {
     dummySitesRef.current = dummySites;
   }, [dummySites]);
@@ -555,6 +575,8 @@ function ExploreInner() {
           setBannerSite(site);
           approachSiteRef.current = site;
           setApproachSite(site);
+          setSelectedSiteId(site.id);
+          setPanelSiteId(site.id);
           changeView("inside");
           setSheetStage("full");
         }
@@ -895,11 +917,23 @@ function ExploreInner() {
 
   if (view === "outside") {
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {mapSurface(panelSiteId, sheetInsetNow)}
 
         {bannerSite && (
-          <ApproachCard site={bannerSite} />
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSelectedSiteId(bannerSite.id);
+              setPanelSiteId(bannerSite.id);
+              setSheetStage("full");
+              setFocus({
+                center: { lat: bannerSite.lat, lng: bannerSite.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
@@ -1002,18 +1036,31 @@ function ExploreInner() {
   }
 
   if (view === "inside" && approachSiteLive) {
-    // ApproachSheet is already a two-stage sheet of its own, so it stands in
-    // for MapSheet here rather than being nested inside it.
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {mapSurface(approachSiteLive.id, Math.round(viewport.h * APPROACH_SHEET_PEEK_FRAC))}
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        {mapSurface(approachSiteLive.id, sheetInsetNow)}
 
-        {/* The card belongs here too, and only here in practice: the crossing
-            that raises it is the same crossing that switches to this view, so
-            leaving it out of this branch meant it was set and never rendered. */}
-        {bannerSite && <ApproachCard site={bannerSite} />}
+        {bannerSite && (
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSheetStage("full");
+              setFocus({
+                center: { lat: approachSiteLive.lat, lng: approachSiteLive.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
+        )}
 
-        <ApproachSheet site={approachSiteLive} notice={sheetNotice} onBack={restorePanel} />
+        <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+          <SiteBrief
+            site={approachSiteLive}
+            distanceM={position ? haversineMeters(position, approachSiteLive) : null}
+            onBack={restorePanel}
+          />
+        </MapSheet>
       </div>
     );
   }
@@ -1021,13 +1068,25 @@ function ExploreInner() {
   if (view === "explore") {
     const selected = allSites.find((site) => site.id === selectedSiteId) ?? allSites[0];
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         <h1 className="sr-only">{tExplore(lang, "explore.browse.title")}</h1>
 
         {mapSurface(selected.id, sheetInsetNow)}
 
         {bannerSite && (
-          <ApproachCard site={bannerSite} />
+          <ApproachCard
+            site={bannerSite}
+            onDismiss={() => setBannerSite(null)}
+            onClick={() => {
+              setSelectedSiteId(bannerSite.id);
+              setPanelSiteId(bannerSite.id);
+              setSheetStage("full");
+              setFocus({
+                center: { lat: bannerSite.lat, lng: bannerSite.lng },
+                zoom: SITE_ZOOM,
+              });
+            }}
+          />
         )}
 
         <MapSheet stage={sheetStage} onStageChange={setSheetStage}>

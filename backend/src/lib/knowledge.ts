@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 // The import attribute is required for JSON under Node's ESM loader.
 import rulesData from "@/data/rules.json" with { type: "json" };
 import { KnowledgeBaseError } from "@/lib/errors";
@@ -47,19 +48,60 @@ export function loadRules(): Rule[] {
   return cache;
 }
 
+let hash: string | null = null;
+
+/**
+ * A fingerprint of the knowledge base, computed once at first use.
+ *
+ * The answer cache stores it alongside every entry and treats a mismatch as a
+ * miss. That is the whole invalidation strategy, and it is the right one: an
+ * answer derived from these rules does not go stale because time passed, it
+ * goes stale when the rules change. A TTL would throw away answers that are
+ * still correct while keeping ones that are not.
+ *
+ * Deriving it from the file beats a version number a human has to remember to
+ * raise, because the human who forgets is the one editing rules at midnight
+ * before a demo.
+ */
+export function rulesHash(): string {
+  if (!hash) {
+    hash = createHash("sha256").update(JSON.stringify(rulesData)).digest("hex").slice(0, 16);
+  }
+  return hash;
+}
+
+// Resolves rule ids - as sent by a client alongside a Site - against the loaded
+// knowledge base. This is where the grounding guarantee is kept: the caller
+// names rules, the server supplies their text, and an id the KB does not know
+// is dropped rather than echoed back. Order follows the KB, not the caller, so
+// the same Site always reads the same way; duplicates collapse.
+export function rulesByIds(rules: Rule[], ids: string[]): Rule[] {
+  const wanted = new Set(ids);
+  return rules.filter((rule) => wanted.has(rule.id));
+}
+
 // Formats rules as a numbered list for system-prompt injection
 // (context stuffing, PRD §12).
-export function formatRulesForPrompt(rules: Rule[], lang: Lang): string {
+//
+// `withIds` prints each rule's id so the model can cite it back. Chat needs
+// that - an answer names the ids it stands on and the server resolves them -
+// while vision never cites anything, so it keeps the shorter, cheaper form.
+export function formatRulesForPrompt(
+  rules: Rule[],
+  lang: Lang,
+  { withIds = false }: { withIds?: boolean } = {},
+): string {
   return rules
     .map((r, i) => {
       const text = lang === "id" ? r.rule_id : r.rule_en;
       const why = lang === "id" ? r.why_id : r.why_en;
       const category = lang === "id" ? r.category_id : r.category_en;
+      const id = withIds ? `(id: ${r.id}) ` : "";
       // `why` is included so the assistant can answer "what is a canang?" and
       // other meaning questions from the KB instead of declining (ADR-0002).
       // `why_source` is deliberately left out: it is display-only attribution
       // and would only add prompt tokens.
-      return `${i + 1}. [${category}] ${text} Why it matters: ${why} (Source: ${r.source})`;
+      return `${i + 1}. ${id}[${category}] ${text} Why it matters: ${why} (Source: ${r.source})`;
     })
     .join("\n");
 }
@@ -80,7 +122,57 @@ const STOPWORDS = new Set([
   "adalah", "saya", "anda", "kamu", "bisa", "boleh", "harus", "tidak", "ada", "juga",
   "saja", "sudah", "akan", "masih", "lagi", "kalau", "jika", "bagaimana", "kenapa",
   "mengapa", "dimana", "kah",
+  // Added when the answer cache started keying on these tokens. Every one is a
+  // question word or filler; none is a domain term.
+  "berapa", "mana", "siapa", "kapan", "tolong", "mohon", "gimana", "sih", "dong",
+  "nya", "lah", "kek", "deh", "ya",
 ]);
+
+// Indonesian clitics. Stripping them lets "bolehkah" reach the stopword list as
+// "boleh", and "upacaranya" match "upacara", without attempting real morphology:
+// prefixes carry nasal assimilation ("memakai" is me+pakai) and a naive stripper
+// mangles more words than it fixes.
+//
+// The three-character floor is what keeps the safe words safe. "punya" and
+// "tanya" both end in -nya, and both leave two letters behind, so neither is
+// touched.
+const CLITICS = ["kah", "lah", "nya"];
+const MIN_STEM = 3;
+
+function stripClitic(token: string): string {
+  for (const clitic of CLITICS) {
+    if (token.endsWith(clitic) && token.length - clitic.length >= MIN_STEM) {
+      return token.slice(0, -clitic.length);
+    }
+  }
+  return token;
+}
+
+/**
+ * The content words of a question, lowercased, deduplicated and sorted.
+ *
+ * This is the answer cache's key, and it deliberately shares its tokenizer with
+ * `searchRules`: both are asking "what is this question about", and two answers
+ * to that question would be two behaviours to keep in step.
+ *
+ * Sorting is what makes it a key rather than a fingerprint of phrasing. "Boleh
+ * pakai celana pendek tidak?" and "Apakah saya boleh pakai celana pendek?" both
+ * reduce to `celana|pakai|pendek`, so the second visitor to ask is served the
+ * first one's answer without a model call.
+ *
+ * What it cannot do is synonyms: "shorts" and "celana pendek" are different
+ * keys, and always will be without embeddings. That trade is the point - an
+ * embedding call per question would add tokens to a feature whose whole purpose
+ * is removing them.
+ */
+export function normalizeQuestion(message: string): string {
+  const tokens = message
+    .toLowerCase()
+    .split(/\W+/)
+    .map(stripClitic)
+    .filter((token) => token.length > 2 && !STOPWORDS.has(token));
+  return [...new Set(tokens)].sort().join("|");
+}
 
 function keywordMatchesToken(keyword: string, token: string): boolean {
   if (keyword === token) return true;
@@ -91,7 +183,15 @@ function keywordMatchesToken(keyword: string, token: string): boolean {
 
 export function searchRules(rules: Rule[], query: string): Rule[] {
   const q = query.toLowerCase();
-  const tokens = q.split(/\W+/).filter((t) => t.length > 2 && !STOPWORDS.has(t));
+  // Clitics come off here for the same reason they come off in
+  // `normalizeQuestion`: the two are asking the same thing about a question, so
+  // they have to read it the same way. They had drifted, and it cost real
+  // matches - "aturannya" never reached the keyword "aturan", so a question
+  // about each temple having its own rules found nothing.
+  const tokens = q
+    .split(/\W+/)
+    .map(stripClitic)
+    .filter((t) => t.length > 2 && !STOPWORDS.has(t));
   return rules
     .map((rule) => {
       const phraseHits = rule.keywords.reduce((sum, k) => sum + (q.includes(k) ? 2 : 0), 0);
@@ -110,4 +210,40 @@ export function searchRules(rules: Rule[], query: string): Rule[] {
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((x) => x.rule);
+}
+
+/**
+ * The rules worth putting in front of the model for one question.
+ *
+ * Stuffing all of them was right when there were thirteen. At twenty-seven the
+ * prompt is 3,838 tokens and, measured live, 98% of what a question costs -
+ * output averages 73. Sending only what the question is about cuts the average
+ * to about 1,240.
+ *
+ * The safety of that rests on one measurement rather than on hope. Across
+ * fifty labelled questions, including a set deliberately worded to avoid the
+ * rules' own vocabulary, `searchRules` never once ranked the answering rule low:
+ * when it found anything at all, the right rule was in the top three. It failed
+ * only by returning NOTHING - "Ada yang ditaruh di tanah depan pintu" finds no
+ * rule, though offerings-canang answers it.
+ *
+ * So an empty result is the one case that must not be trusted, and it falls
+ * back to the whole knowledge base. That is the case which used to be
+ * answerable, and it stays answerable; every other case is narrowed.
+ *
+ * The Site's own rules are always included. A visitor standing somewhere is
+ * owed what applies there whether or not their wording happened to match it.
+ */
+export function selectRules(
+  rules: Rule[],
+  message: string,
+  siteRules: Rule[] = [],
+  limit = 5,
+): Rule[] {
+  const found = searchRules(rules, message);
+  if (found.length === 0) return rules;
+
+  const wanted = new Set([...found.slice(0, limit), ...siteRules].map((rule) => rule.id));
+  // Knowledge-base order, so the same question always reads the same way.
+  return rules.filter((rule) => wanted.has(rule.id));
 }

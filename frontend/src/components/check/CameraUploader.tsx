@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, ImageUp, X } from "lucide-react";
+import { Camera, Image as ImageIcon, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
-import { prepareImage, validateImage, type PreparedImage } from "@/lib/image";
+import { CameraCapture } from "@/components/check/CameraCapture";
+import { preparePhoto, validateImage, type PreparedImage } from "@/lib/image";
+import type { PhotoMeta } from "@shared/contract";
 
 interface CameraUploaderProps {
   image: PreparedImage | null;
@@ -18,10 +20,11 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
   const { lang } = useLang();
   const [error, setError] = useState<"type" | "size" | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const cameraInput = useRef<HTMLInputElement>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
 
-  async function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined, source: PhotoMeta["source"]) {
     if (!file || disabled) return;
     const problem = validateImage(file);
     if (problem) {
@@ -29,13 +32,13 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
       return;
     }
     setError(null);
-    onImageReady(await prepareImage(file));
+    onImageReady(await preparePhoto(file, source));
   }
 
   if (image) {
     return (
       <div className="animate-fadeUp">
-        <div className="relative overflow-hidden rounded-lg border border-border bg-surface shadow-sm">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={image.previewUrl}
@@ -53,7 +56,7 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
             </button>
           )}
         </div>
-        <p className="mt-2 truncate text-sm text-text-muted">{image.name}</p>
+        <p className="mt-2 truncate text-xs text-text-muted">{image.name}</p>
       </div>
     );
   }
@@ -69,35 +72,37 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
         onDrop={(e) => {
           e.preventDefault();
           setDragOver(false);
-          handleFile(e.dataTransfer.files[0]);
+          handleFile(e.dataTransfer.files[0], "upload");
         }}
         className={[
-          "flex min-h-52 flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-6 text-center",
+          "flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center",
           "transition-colors duration-150 ease-out",
-          dragOver ? "border-primary bg-primary-tint" : "border-border-strong bg-surface-sunken",
+          dragOver ? "border-primary bg-primary-tint" : "border-border-strong bg-transparent",
         ].join(" ")}
       >
-        <ImageUp size={24} strokeWidth={1.75} aria-hidden className="text-text-muted" />
+        <ImageIcon size={30} strokeWidth={1.5} aria-hidden className="text-text-muted" />
         <div>
-          <p className="text-base font-medium text-text">{t(lang, "check.upload.prompt")}</p>
-          <p className="mt-1 text-sm text-text-muted">{t(lang, "check.upload.hint")}</p>
+          <p className="text-sm font-semibold text-text sm:text-base">{t(lang, "check.upload.prompt")}</p>
+          <p className="mt-0.5 text-xs text-text-muted">{t(lang, "check.upload.hint")}</p>
         </div>
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="mt-1 flex flex-wrap justify-center gap-3">
           <Button
             variant="secondary"
             size="sm"
             icon={Camera}
             disabled={disabled}
-            onClick={() => cameraInput.current?.click()}
+            onClick={() => setCameraOpen(true)}
+            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium shadow-sm hover:bg-surface-sunken"
           >
             {t(lang, "check.upload.take")}
           </Button>
           <Button
             variant="secondary"
             size="sm"
-            icon={ImageUp}
+            icon={Upload}
             disabled={disabled}
             onClick={() => galleryInput.current?.click()}
+            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium shadow-sm hover:bg-surface-sunken"
           >
             {t(lang, "check.upload.pick")}
           </Button>
@@ -118,7 +123,7 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
         className="sr-only"
         aria-label={t(lang, "check.upload.take")}
         onChange={(e) => {
-          handleFile(e.target.files?.[0]);
+          handleFile(e.target.files?.[0], "camera");
           e.target.value = "";
         }}
       />
@@ -129,10 +134,26 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
         className="sr-only"
         aria-label={t(lang, "check.upload.pick")}
         onChange={(e) => {
-          handleFile(e.target.files?.[0]);
+          handleFile(e.target.files?.[0], "upload");
           e.target.value = "";
         }}
       />
+
+      {cameraOpen && (
+        <CameraCapture
+          onCapture={(file) => {
+            setCameraOpen(false);
+            handleFile(file, "camera");
+          }}
+          onClose={() => setCameraOpen(false)}
+          onFallback={() => {
+            setCameraOpen(false);
+            // The native input, which is what "Take photo" used to be on its
+            // own: still the camera app on a phone, a file dialog on a laptop.
+            cameraInput.current?.click();
+          }}
+        />
+      )}
     </div>
   );
 }

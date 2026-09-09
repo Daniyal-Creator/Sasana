@@ -20,6 +20,17 @@ export default defineConfig({
       // Both advance fake timers by 10s, which has to overshoot these.
       GEMINI_VISION_TIMEOUT_MS: "5000",
       GEMINI_CHAT_TIMEOUT_MS: "5000",
+      // The answer cache must never touch the real database. Test files run in
+      // parallel and would otherwise all open the same file, which SQLite
+      // answers with "database is locked" - and a suite that writes to the
+      // store it is testing carries results between runs.
+      CACHE_DB_PATH: ":memory:",
+      // Same reasoning, one layer up: DATABASE_URL is what selects the Postgres
+      // store (ADR-0018), so a developer who happens to have it exported in
+      // their shell would otherwise have the whole suite reading and writing a
+      // real Supabase project. Pinned empty so the choice belongs to the test
+      // rather than to whoever's machine is running it.
+      DATABASE_URL: "",
     },
   },
 });

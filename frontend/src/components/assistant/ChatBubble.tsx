@@ -1,15 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
+import { Maximize2 } from "lucide-react";
 import { SourceReference } from "@/components/assistant/SourceReference";
+import { ImagePreviewModal } from "@/components/assistant/ImagePreviewModal";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
+import type { ChatKind } from "@shared/contract";
 
 interface ChatBubbleProps {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string | null;
   source?: string | null;
-  grounded?: boolean;
+  kind?: ChatKind;
   isFirstOfTurn?: boolean;
 }
 
@@ -23,20 +28,30 @@ export function SasanaAvatar({ size = "md" }: { size?: "md" | "lg" }) {
         isLg ? "h-16 w-16" : "h-7 w-7",
       ].join(" ")}
     >
+      {/* Sized by width/height alone. `h-full w-full` said the same thing a
+          second time, through the parent, and the two disagreeing for a frame
+          is what Next reads as a broken aspect ratio. */}
       <Image
         src="/sasana-logo.png"
         alt="Sasana"
         width={isLg ? 64 : 28}
         height={isLg ? 64 : 28}
-        className="h-full w-full object-contain"
         priority={isLg}
       />
     </span>
   );
 }
 
-export function ChatBubble({ role, content, source, grounded, isFirstOfTurn = true }: ChatBubbleProps) {
+export function ChatBubble({
+  role,
+  content,
+  imageUrl,
+  source,
+  kind,
+  isFirstOfTurn = true,
+}: ChatBubbleProps) {
   const { lang } = useLang();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const isUser = role === "user";
 
   return (
@@ -51,8 +66,35 @@ export function ChatBubble({ role, content, source, grounded, isFirstOfTurn = tr
         ].join(" ")}
       >
         <span className="sr-only">{t(lang, isUser ? "sr.you" : "sr.assistant")}: </span>
+        {imageUrl && (
+          <div className="mb-2">
+            <button
+              type="button"
+              onClick={() => setIsPreviewOpen(true)}
+              aria-label={t(lang, "assistant.photo.view")}
+              className="group relative block w-full overflow-hidden rounded-md border border-border/30 text-left transition-transform duration-150 active:scale-[0.99] focus-visible:shadow-focus cursor-pointer"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt={t(lang, "check.photo.alt")}
+                className="max-h-48 w-full object-cover transition-opacity duration-150 group-hover:opacity-95"
+              />
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded bg-text/75 px-2 py-1 text-xs font-medium text-surface shadow-sm transition-colors duration-150 group-hover:bg-text/90">
+                <Maximize2 size={12} strokeWidth={1.75} aria-hidden />
+                <span>{t(lang, "assistant.photo.view")}</span>
+              </span>
+            </button>
+            <ImagePreviewModal
+              isOpen={isPreviewOpen}
+              onClose={() => setIsPreviewOpen(false)}
+              imageUrl={imageUrl}
+              altText={t(lang, "check.photo.alt")}
+            />
+          </div>
+        )}
         <p className="whitespace-pre-wrap text-base">{content}</p>
-        {!isUser && grounded !== undefined && <SourceReference source={source ?? null} grounded={grounded} />}
+        {!isUser && kind !== undefined && <SourceReference source={source ?? null} kind={kind} />}
       </div>
     </li>
   );

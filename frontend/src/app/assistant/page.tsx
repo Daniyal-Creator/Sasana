@@ -14,17 +14,25 @@ import { TopicExplorer } from "@/components/assistant/TopicExplorer";
 import { SuggestedQuestions } from "@/components/assistant/SuggestedQuestions";
 import { MobileTopicChips } from "@/components/assistant/MobileTopicChips";
 import { useLang } from "@/lib/language";
+import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
+import { readActiveSite, siteContextNamed } from "@/lib/site-context";
 import { t } from "@/lib/i18n";
 import type { ChatMessage, ChatResponse } from "@shared/contract";
 
+interface UIMessage extends ChatMessage {
+  imageUrl?: string | null;
+}
+
 export default function AssistantPage() {
   const { lang } = useLang();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { consumeHandoffPayload } = useAssistant();
+  const [messages, setMessages] = useState<UIMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const handoffCheckedRef = useRef(false);
 
   const chips = [
     t(lang, "assistant.chip.shorts"),
@@ -37,29 +45,39 @@ export default function AssistantPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, sending, failed]);
 
-  async function send(text: string) {
+  async function send(text: string, opts?: { imageUrl?: string | null; apiMessage?: string }) {
     const question = text.trim();
     if (!question || sending) return;
     setFailed(null);
     setInput("");
     const history = messages;
-    setMessages((prev) => [...prev, { role: "user", content: question }]);
+    setMessages((prev) => [...prev, { role: "user", content: question, imageUrl: opts?.imageUrl ?? null }]);
     setSending(true);
     try {
       const res = await fetch(apiUrl("/api/chat"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: question,
+          // If an enriched message with Vision context was provided, send that
+          // to the API instead. The user's bubble still shows the original text.
+          message: opts?.apiMessage ?? question,
           lang,
           history: history.map(({ role, content }) => ({ role, content })),
+          // Read per send, not once on mount: a visitor can pick a different
+          // Site in another tab, and the answer must follow where they are now.
+          // Where the visitor is wins over the Site they merely named, because
+          // "here" has to mean here. Omitted entirely when neither applies.
+          ...(() => {
+            const site = readActiveSite() ?? siteContextNamed(question);
+            return site ? { site } : {};
+          })(),
         }),
       });
       if (!res.ok) throw new Error("chat request failed");
       const data = (await res.json()) as ChatResponse;
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.answer, source: data.source, grounded: data.grounded },
+        { role: "assistant", content: data.answer, source: data.source, kind: data.kind, ruleIds: data.ruleIds },
       ]);
     } catch {
       setFailed(question);
@@ -67,6 +85,36 @@ export default function AssistantPage() {
       setSending(false);
     }
   }
+
+  useEffect(() => {
+    if (handoffCheckedRef.current) return;
+    handoffCheckedRef.current = true;
+
+    const payload = consumeHandoffPayload();
+    if (payload && payload.question) {
+      // Build an enriched message that includes the Vision analysis context
+      // so the LLM can answer follow-up questions about the photo result,
+      // without re-sending the actual image (no extra image token cost).
+      let apiMessage = payload.question;
+      const ctx = payload.contextResult;
+      if (ctx) {
+        const contextBlock = [
+          `[Photo analysis context — status: ${ctx.status}`,
+          ctx.reason ? `reason: "${ctx.reason}"` : "",
+          ctx.suggestion ? `suggestion: "${ctx.suggestion}"` : "",
+          ctx.reference ? `reference: ${ctx.reference}` : "",
+        ]
+          .filter(Boolean)
+          .join("; ");
+        apiMessage = `${contextBlock}]\n\nFollow-up question: ${payload.question}`;
+      }
+
+      send(payload.question, {
+        imageUrl: payload.imageUrl ?? null,
+        apiMessage,
+      });
+    }
+  }, [consumeHandoffPayload]);
 
   const isEmpty = messages.length === 0;
 
@@ -143,8 +191,9 @@ export default function AssistantPage() {
                   key={i}
                   role={message.role}
                   content={message.content}
+                  imageUrl={message.imageUrl}
                   source={message.source}
-                  grounded={message.grounded}
+                  kind={message.kind}
                   isFirstOfTurn={message.role === "user" || messages[i - 1]?.role !== "assistant"}
                 />
               ))}

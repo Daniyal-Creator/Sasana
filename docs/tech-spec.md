@@ -39,6 +39,16 @@
 
 ## 1. Architecture Overview
 
+> **Superseded in part.** Two sentences below are no longer true of the code.
+> The backend is a **standalone Hono service** in `backend/`, deployed as its
+> own Vercel project and called cross-origin — not Next.js Route Handlers
+> co-deployed with the UI. And there *is* a database: the answer cache
+> ([ADR-0016](adr/0016-persistent-answer-cache.md)), which in production is
+> Supabase Postgres and locally is SQLite
+> ([ADR-0018](adr/0018-deploy-to-vercel-answer-cache-to-postgres.md)).
+> What still holds, and is the part that matters: no visitor content is
+> persisted anywhere — see §9 and `backend-spec.md` §8.6.
+
 SASANA is a **three-tier application** running entirely on Vercel's serverless platform. There is no database and no persistent user state — the only durable data is a static JSON knowledge base bundled with the app. The tiers are: (1) the browser-rendered React UI, (2) a thin **Backend-for-Frontend (BFF)** layer of Next.js API Route Handlers, and (3) the external Google Gemini API plus the local knowledge base.
 
 ### 1.1 High-level diagram

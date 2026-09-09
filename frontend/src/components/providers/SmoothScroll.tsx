@@ -7,6 +7,30 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
+declare global {
+  interface Window {
+    __sasanaLenis?: Lenis | null;
+  }
+}
+
+/**
+ * The running Lenis instance, or null when smooth scrolling is off — which is
+ * the case under `prefers-reduced-motion`. Programmatic scrolling must go
+ * through this: a native `scrollTo`/`scrollBy` fights Lenis' RAF loop and is
+ * swallowed outright.
+ *
+ * The handle hangs off `window` rather than a module variable. SmoothScroll
+ * renders nothing and sits beside the tree instead of wrapping it, so there is
+ * no provider for a context to attach to, and Next.js reaches this file
+ * through two client entries — the layout's boundary and ScrollIndicator's
+ * import — which can leave each copy with its own module state. `window` is
+ * the one object every copy agrees on.
+ */
+export function getLenis(): Lenis | null {
+  if (typeof window === "undefined") return null;
+  return window.__sasanaLenis ?? null;
+}
+
 /**
  * SmoothScroll provider using Lenis.
  *
@@ -33,6 +57,7 @@ export function SmoothScroll() {
     });
 
     lenisRef.current = lenis;
+    window.__sasanaLenis = lenis;
 
     // Synchronize Lenis scroll with GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
@@ -48,6 +73,7 @@ export function SmoothScroll() {
       gsap.ticker.remove(updateTicker);
       lenis.destroy();
       lenisRef.current = null;
+      window.__sasanaLenis = null;
     };
   }, []);
 

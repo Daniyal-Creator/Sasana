@@ -11,7 +11,7 @@ vi.mock("@google/genai", () => ({
 }));
 
 import { POST } from "@/routes/chat";
-import { chatCache } from "@/lib/cache";
+import { answerCache } from "@/lib/answer-cache";
 
 // Response.json() is typed `unknown` on Node (it comes from @types/node, not
 // from the DOM lib), so every body is read through this helper.
@@ -42,24 +42,35 @@ function mockAnswer(payload: unknown, usage?: Record<string, number>) {
   });
 }
 
+const CIRCULAR = "Bali Governor Circular No. 7 of 2025";
+
+// What a well-behaved model returns now: an answer plus the ids it stands on.
+// It no longer types the attribution - the server reads that off the rules the
+// ids resolve to.
 const GROUNDED = {
   answer: "Wear a kamen and sash when entering temple grounds.",
-  source: "Bali Governor Circular No. 7 of 2025",
-  grounded: true,
+  kind: "rule",
+  ruleIds: ["temple-attire"],
 };
 
-const EN_FALLBACK = "I don't have official information on that in the Bali code of conduct.";
-const ID_FALLBACK = "Saya tidak punya informasi resmi soal itu dalam tata krama Bali.";
+// A refusal is now built per question, so tests assert its opening rather than
+// the whole string. The rest is the offer of what the knowledge base does hold,
+// and that changes as rules are added.
+const EN_REFUSED = "I don't have an official rule for that yet.";
+const ID_REFUSED = "Saya belum punya aturan resmi soal itu.";
+const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
+const EN_ASK_THERE = "Ask at the place itself.";
 
-beforeEach(() => {
+beforeEach(async () => {
+  vi.restoreAllMocks();
   generateContent.mockReset();
-  chatCache.clear(); // module singleton; a leftover entry would mask a real call
+  await answerCache.clear(); // module singleton; a leftover entry would mask a real call
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 describe("POST /api/chat — grounded answers", () => {
-  it("returns the model answer with its source when grounded", async () => {
+  it("returns the model answer with the source of the rules it cited", async () => {
     mockAnswer(GROUNDED, { totalTokenCount: 120 });
     const res = await POST(post({ message: "Can I wear shorts at a temple?", lang: "en", history: [] }));
 
@@ -67,19 +78,32 @@ describe("POST /api/chat — grounded answers", () => {
     const json = await readBody(res);
     expect(json).toEqual({
       answer: GROUNDED.answer,
-      source: "Bali Governor Circular No. 7 of 2025",
-      grounded: true,
+      kind: "rule",
+      ruleIds: ["temple-attire"],
+      source: CIRCULAR,
     });
   });
 
-  it("sends the whole knowledge base and the anti-fabrication instruction in the system prompt", async () => {
+  it("sends the rules the question is about, the tier ladder and both fences", async () => {
     mockAnswer(GROUNDED);
     await POST(post({ message: "Can I fly a drone?", lang: "en", history: [] }));
 
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
-    expect(systemInstruction).toContain("ONLY using the RULES listed below");
-    expect(systemInstruction).toContain("Do not guess and do not fabricate a rule");
-    expect(systemInstruction).toContain("1. [Dress Code]");
+    // The rule that answers is there, addressable by id...
+    expect(systemInstruction).toContain("(id: drone-restriction)");
+    // ...and the twenty-six that have nothing to do with drones are not, which
+    // is the whole point: the prompt used to carry all of them.
+    expect(systemInstruction).not.toContain("(id: menstruation-entry)");
+    expect(systemInstruction).not.toContain("(id: money-exchange)");
+    // All four tiers offered, strongest first.
+    expect(systemInstruction).toContain('1. "rule"');
+    expect(systemInstruction).toContain('2. "context"');
+    expect(systemInstruction).toContain('3. "general"');
+    // The fence against fabricated grounding.
+    expect(systemInstruction).toContain("Never invent an id");
+    // The fence against facts that expire, and against recommending places.
+    expect(systemInstruction).toContain("changes with the date, the hour, the season, or the price");
+    expect(systemInstruction).toContain("Recommendations of specific businesses");
     expect(systemInstruction).toContain("Reply in the user's language: English");
   });
 
@@ -90,26 +114,59 @@ describe("POST /api/chat — grounded answers", () => {
     const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
     expect(systemInstruction).toContain("Indonesian (Bahasa Indonesia)");
     expect(systemInstruction).toContain("Tata Busana");
+    expect(systemInstruction).toContain("(id: temple-attire)");
   });
 });
 
 describe("POST /api/chat — grounding safety net (FR2.1)", () => {
-  it("replaces the answer with the fallback when the model reports grounded=false", async () => {
-    mockAnswer({ answer: "Sure, drones are totally fine!", source: "", grounded: false });
-    const res = await POST(post({ message: "What time is the football match?", lang: "en", history: [] }));
+  it("replaces the answer with the fallback when the model cites no rule", async () => {
+    mockAnswer({ answer: "Sure, drones are totally fine!", kind: "none", ruleIds: [] });
+    // Deliberately not a question about a time or a price: those get the other
+    // refusal now, which the volatility block below covers.
+    const res = await POST(post({ message: "Who won the World Cup?", lang: "en", history: [] }));
 
     const json = await readBody(res);
-    expect(json).toEqual({ answer: EN_FALLBACK, source: null, grounded: false });
+    expect(json).toMatchObject({ kind: "none", ruleIds: [], source: null });
+    expect(json.answer).toContain(EN_REFUSED);
   });
 
-  it("refuses a grounded=true answer that cites no source", async () => {
-    mockAnswer({ answer: "Rule 12 says you may climb shrines.", source: "", grounded: true });
+  // The heart of it: the model can claim grounding, but only the knowledge base
+  // can grant it. An id the KB does not know buys the answer nothing.
+  it("refuses an answer whose cited rule ids are invented", async () => {
+    mockAnswer({ answer: "Rule 12 says you may climb shrines.", kind: "rule", ruleIds: ["rule-12", "made-up"] });
     const res = await POST(post({ message: "Can I climb a shrine?", lang: "en", history: [] }));
 
     const json = await readBody(res);
-    expect(json.grounded).toBe(false);
+    expect(json.kind).toBe("none");
+    expect(json.ruleIds).toEqual([]);
     expect(json.source).toBeNull();
-    expect(json.answer).toBe(EN_FALLBACK);
+    expect(json.answer).toContain(EN_REFUSED);
+  });
+
+  // The bug this whole change exists to kill: a good answer used to be thrown
+  // away for missing a `source` string the schema never required it to write.
+  it("keeps a real answer that cites one real rule among invented ones", async () => {
+    mockAnswer({
+      answer: "Wear a kamen and sash.",
+      kind: "rule",
+      ruleIds: ["nope", "temple-attire", "also-nope"],
+    });
+    const res = await POST(post({ message: "What do I wear?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("rule");
+    expect(json.ruleIds).toEqual(["temple-attire"]);
+    expect(json.answer).toBe("Wear a kamen and sash.");
+  });
+
+  it("lists every distinct source when the answer stands on more than one", async () => {
+    // The question has to be one that actually retrieves both rules: since the
+    // prompt carries a selection, citing a rule that was not sent is refused.
+    mockAnswer({ answer: "Cover up and keep out of the inner court.", kind: "rule", ruleIds: ["temple-attire", "menstruation-entry"] });
+    const res = await POST(post({ message: "Aturan pakaian dan haid di pura?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.source).toBe(`${CIRCULAR} · Balinese Hindu custom (adat)`);
   });
 
   it("falls back when the model returns something that is not JSON", async () => {
@@ -118,7 +175,225 @@ describe("POST /api/chat — grounding safety net (FR2.1)", () => {
 
     expect(res.status).toBe(200);
     const json = await readBody(res);
-    expect(json).toEqual({ answer: ID_FALLBACK, source: null, grounded: false });
+    expect(json).toMatchObject({ kind: "none", ruleIds: [], source: null });
+    expect(json.answer).toContain(ID_REFUSED);
+  });
+
+  it("falls back when ruleIds is not an array", async () => {
+    mockAnswer({ answer: "Anything goes.", kind: "rule", ruleIds: "temple-attire" });
+    const res = await POST(post({ message: "Can I wear shorts?", lang: "en", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("none");
+  });
+});
+
+describe("POST /api/chat — answering tiers", () => {
+  it("passes a context answer through with no rule ids and no source", async () => {
+    mockAnswer({
+      answer: "Melasti is a purification procession to the sea before Nyepi.",
+      kind: "context",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Apa itu Melasti?", lang: "en", history: [] }));
+
+    expect(await readBody(res)).toEqual({
+      answer: "Melasti is a purification procession to the sea before Nyepi.",
+      kind: "context",
+      ruleIds: [],
+      source: null,
+    });
+  });
+
+  it("passes a general answer through", async () => {
+    mockAnswer({
+      answer: "Tanah Lot was founded by the priest Dang Hyang Nirartha in the 16th century.",
+      kind: "general",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Sejarah Tanah Lot?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("general");
+    expect(json.source).toBeNull();
+  });
+
+  // Server demotes, never promotes: an ungrounded tier that arrives carrying
+  // rule ids must not read as sourced to anything downstream.
+  it("strips rule ids from an ungrounded tier even when they are real", async () => {
+    mockAnswer({
+      answer: "Balinese dress is layered with meaning.",
+      kind: "context",
+      ruleIds: ["temple-attire"],
+    });
+    const res = await POST(post({ message: "Tell me about Balinese dress", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("context");
+    expect(json.ruleIds).toEqual([]);
+    expect(json.source).toBeNull();
+  });
+
+  it("refuses a kind it does not recognise", async () => {
+    mockAnswer({ answer: "Trust me.", kind: "definitely-fine", ruleIds: [] });
+    const res = await POST(post({ message: "hello", lang: "en", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("none");
+  });
+});
+
+describe("POST /api/chat — volatility fence", () => {
+  const volatile = [
+    ["opening hours in Indonesian", "Pura Tanah Lot jam buka 07:00 sampai 19:00."],
+    ["a ticket price", "Tiket masuk harganya Rp 60.000 per orang."],
+    ["an English opening time", "The temple opens at 7am every day."],
+    ["a ceremony timetable", "Jadwal upacara tahun ini jatuh pada bulan Maret."],
+  ];
+
+  it.each(volatile)("refuses a general answer that states %s", async (_label, answer) => {
+    mockAnswer({ answer, kind: "general", ruleIds: [] });
+    const res = await POST(post({ message: "Tanah Lot?", lang: "en", history: [] }));
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("none");
+    // Refused for stating something that expires, so the visitor is told that,
+    // and pointed at someone who does know, rather than being told there is no
+    // rule - which was never what they asked about.
+    expect(json.answer).toContain(EN_VOLATILE);
+    expect(json.answer).toContain(EN_ASK_THERE);
+  });
+
+  // The fence must not fire on the answers this app exists to give. "tutup"
+  // sits inside "menutupi", which is how you say "cover your shoulders".
+  it("leaves an ordinary custom answer alone", async () => {
+    mockAnswer({
+      answer: "Sebaiknya menutupi bahu dan lutut, dan tutup rambut jika diminta.",
+      kind: "context",
+      ruleIds: [],
+    });
+    const res = await POST(post({ message: "Pakaian di pura?", lang: "id", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("context");
+  });
+
+  it("does not run the fence over a grounded answer", async () => {
+    // The cited rule has to be one this question actually retrieves, now that
+    // the prompt carries a selection: a model naming a rule it was not shown is
+    // working from memory, and the citation check refuses it.
+    mockAnswer({
+      answer: "Aturan menyebut jam buka tidak diatur; ikuti petugas dan papan di pura.",
+      kind: "rule",
+      ruleIds: ["sacred-area-entry"],
+    });
+    const res = await POST(post({ message: "Kapan boleh masuk area suci?", lang: "id", history: [] }));
+
+    expect((await readBody(res)).kind).toBe("rule");
+  });
+});
+
+describe("POST /api/chat — nearby places from the map", () => {
+  const TANAH_LOT = {
+    id: "pura-tanah-lot",
+    name: "Pura Tanah Lot",
+    ruleIds: ["temple-attire"],
+    lat: -8.6212,
+    lng: 115.0868,
+  };
+
+  const overpass = (names: string[]) =>
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          elements: names.map((name, i) => ({
+            lat: -8.6212 + (i + 1) * 0.001,
+            lon: 115.0868,
+            tags: { name, tourism: "guest_house" },
+          })),
+        }),
+        { status: 200 },
+      ),
+    );
+
+  const ask = (message: string, site?: unknown) =>
+    POST(post({ message, lang: "id", history: [], ...(site ? { site } : {}) }));
+
+  it("puts the real map results in the prompt and answers from them", async () => {
+    overpass(["Guest House Melati", "Puri Bagus"]);
+    mockAnswer({
+      answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
+      kind: "places",
+      ruleIds: [],
+    });
+
+    const res = await ask("adakah penginapan terdekat di sekitar pura tanah lot?", TANAH_LOT);
+
+    const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
+    expect(systemInstruction).toContain("NEARBY PLACES");
+    expect(systemInstruction).toContain("Guest House Melati");
+    expect(systemInstruction).toContain("around Pura Tanah Lot");
+
+    expect(await readBody(res)).toEqual({
+      answer: "Ada Guest House Melati sekitar 110 m dan Puri Bagus sekitar 220 m.",
+      kind: "places",
+      ruleIds: [],
+      source: "OpenStreetMap contributors",
+    });
+  });
+
+  // Without somewhere to search from there is nothing to look up, and guessing
+  // the location as well as the answer is exactly what this tier exists to stop.
+  it("does not call the map when no Site is attached", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    mockAnswer({ answer: "Saya tidak tahu di mana Anda.", kind: "none", ruleIds: [] });
+
+    const res = await ask("adakah penginapan terdekat?");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect((await readBody(res)).kind).toBe("none");
+  });
+
+  it("does not call the map for an ordinary custom question", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+    mockAnswer({ answer: "Kenakan kamen dan selendang.", kind: "rule", ruleIds: ["temple-attire"] });
+
+    await ask("boleh pakai celana pendek di sini?", TANAH_LOT);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // The server knows whether it performed a lookup, so this claim is one of the
+  // few a model makes that can be checked outright.
+  it("refuses a places answer when no lookup was made", async () => {
+    mockAnswer({ answer: "Menginaplah di Hotel Karangan.", kind: "places", ruleIds: [] });
+
+    const res = await ask("apa itu canang?", TANAH_LOT);
+
+    const json = await readBody(res);
+    expect(json.kind).toBe("none");
+    expect(json.answer).toContain(ID_REFUSED);
+  });
+
+  it("still answers when Overpass is down, without an error card", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("ECONNREFUSED"));
+    mockAnswer({ answer: "Maaf, saya tidak punya datanya.", kind: "none", ruleIds: [] });
+
+    const res = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    expect(res.status).toBe(200);
+    expect((await readBody(res)).kind).toBe("none");
+  });
+
+  // Everything else here is derived from a knowledge base that changes when
+  // somebody edits it. This one describes the world, which changes on its own.
+  it("never caches a map answer", async () => {
+    overpass(["Guest House Melati"]);
+    mockAnswer({ answer: "Ada Guest House Melati.", kind: "places", ruleIds: [] });
+
+    const first = await ask("ada penginapan dekat sini?", TANAH_LOT);
+    const second = await ask("ada penginapan dekat sini?", TANAH_LOT);
+
+    expect(first.headers.get("x-cache")).toBe("MISS");
+    expect(second.headers.get("x-cache")).toBe("MISS");
+    expect(generateContent).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -216,10 +491,10 @@ describe("POST /api/chat — request validation", () => {
   });
 
   it("coerces an unknown lang to English", async () => {
-    mockAnswer({ answer: "x", source: "", grounded: false });
+    mockAnswer({ answer: "x", kind: "none", ruleIds: [] });
     const res = await POST(post({ message: "hello", lang: "fr", history: [] }));
 
-    expect((await readBody(res)).answer).toBe(EN_FALLBACK);
+    expect((await readBody(res)).answer).toContain(EN_REFUSED);
   });
 });
 
@@ -268,6 +543,28 @@ describe("POST /api/chat — first-turn answer cache", () => {
     expect(generateContent).toHaveBeenCalledTimes(2);
   });
 
+  // The point of normalising the key: the second visitor to ask the same thing
+  // in their own words pays nothing.
+  it("serves a differently worded version of the same question from cache", async () => {
+    mockAnswer(GROUNDED);
+    await ask("Apakah saya boleh pakai celana pendek?", "id");
+    const res = await ask("Bolehkah pakai celana pendek?", "id");
+
+    expect(res.headers.get("x-cache")).toBe("HIT");
+    expect(generateContent).toHaveBeenCalledTimes(1);
+  });
+
+  // Storing failures would let one unlucky call become the permanent answer to
+  // a question the app can perfectly well handle.
+  it("never stores a refusal", async () => {
+    mockAnswer({ answer: "Sure, whatever.", kind: "none", ruleIds: [] });
+    await ask("who won the world cup?");
+    const res = await ask("who won the world cup?");
+
+    expect(res.headers.get("x-cache")).toBe("MISS");
+    expect(generateContent).toHaveBeenCalledTimes(2);
+  });
+
   it("does not cache a failed call", async () => {
     generateContent.mockRejectedValueOnce(new Error("boom"));
     const failed = await ask("Can I wear shorts?");
@@ -299,7 +596,7 @@ describe("POST /api/chat — upstream failures", () => {
     const res = await POST(post({ message: "Can I wear shorts?", lang: "en", history: [] }));
 
     expect(res.status).toBe(200);
-    expect((await readBody(res)).grounded).toBe(true);
+    expect((await readBody(res)).kind).toBe("rule");
     expect(generateContent).toHaveBeenCalledTimes(2);
   });
 

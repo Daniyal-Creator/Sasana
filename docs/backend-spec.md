@@ -54,6 +54,15 @@
 
 ### 1.1 BFF (Backend-for-Frontend) with Next.js API Routes
 
+> **Superseded in part.** The backend became a standalone **Hono** service in
+> `backend/`, deployed as its own Vercel project and called cross-origin rather
+> than same-origin — which is why `ALLOWED_ORIGINS` exists. It also gained one
+> durable table, the answer cache
+> ([ADR-0016](adr/0016-persistent-answer-cache.md),
+> [ADR-0018](adr/0018-deploy-to-vercel-answer-cache-to-postgres.md)).
+> §8.6 is unaffected: the cache stores a normalised key and never a visitor's
+> words, so no user content is persisted.
+
 SASANA's backend is a thin **Backend-for-Frontend**: a set of Next.js App Router **Route Handlers** (`app/api/**/route.ts`) whose *only* client is SASANA's own UI. They run as Node.js serverless functions on Vercel, co-deployed and same-origin with the frontend. There is no database and no standalone server; the only durable data is the static `data/rules.json`.
 
 ```

@@ -1,14 +1,31 @@
 "use client";
 
-import { CircleCheck, CircleHelp, CircleX, RefreshCw, Sparkles, TriangleAlert, Camera } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  AudioLines,
+  Camera,
+  CircleCheck,
+  CircleHelp,
+  CircleX,
+  Plus,
+  RefreshCw,
+  Send,
+  Sparkles,
+  Square,
+  TriangleAlert,
+  type LucideIcon,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useLang } from "@/lib/language";
+import { useAssistant } from "@/lib/assistant-context";
 import { t, type CopyKey } from "@/lib/i18n";
+import type { PreparedImage } from "@/lib/image";
 import type { VisionResult, VisionStatus } from "@shared/contract";
 
 interface ResultCardProps {
   result: VisionResult;
+  image?: PreparedImage | null;
   onReset?: () => void;
 }
 
@@ -48,11 +65,87 @@ const statusConfig: Record<
   },
 };
 
-export function ResultCard({ result, onReset }: ResultCardProps) {
+export function ResultCard({ result, image, onReset }: ResultCardProps) {
+  const router = useRouter();
   const { lang } = useLang();
+  const { setHandoffPayload } = useAssistant();
   const config = statusConfig[result.status];
   const StatusIcon = config.icon;
   const isUnclear = result.status === "unclear";
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const startCheck = useRef<number | null>(null);
+
+  // The Web Speech API is missing from several in-app webviews, where every
+  // `window.speechSynthesis` call throws. The card only mounts after an
+  // analysis, never during SSR, so reading `window` here is safe.
+  const [ttsSupported] = useState(
+    () => typeof window !== "undefined" && Boolean(window.speechSynthesis),
+  );
+
+  // Cancel audio when the card is unmounted (e.g. user resets)
+  useEffect(() => {
+    return () => {
+      if (startCheck.current !== null) window.clearTimeout(startCheck.current);
+      if (ttsSupported) window.speechSynthesis.cancel();
+    };
+  }, [ttsSupported]);
+
+  function stopSpeaking() {
+    if (startCheck.current !== null) {
+      window.clearTimeout(startCheck.current);
+      startCheck.current = null;
+    }
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  }
+
+  function handleTts() {
+    if (!ttsSupported) return;
+
+    if (isSpeaking) {
+      stopSpeaking();
+      return;
+    }
+
+    const text = [result.reason, result.suggestion].filter(Boolean).join(". ");
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === "id" ? "id-ID" : "en-US";
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    window.speechSynthesis.cancel(); // clear any leftover queue
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+
+    // An utterance the engine refuses — no installed voice for the requested
+    // language, most often — fires neither `onend` nor `onerror` in some
+    // browsers, which would strand the button on "Stop" forever. Confirm
+    // playback actually started instead of trusting the callbacks alone.
+    if (startCheck.current !== null) window.clearTimeout(startCheck.current);
+    startCheck.current = window.setTimeout(() => {
+      startCheck.current = null;
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        setIsSpeaking(false);
+      }
+    }, 600);
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const question = inputValue.trim();
+    if (!question) return;
+
+    setHandoffPayload({
+      question,
+      imageUrl: image?.previewUrl ?? null,
+      image: image ?? null,
+      lang,
+      contextResult: result,
+    });
+
+    router.push("/assistant");
+  }
 
   return (
     <div
@@ -83,19 +176,56 @@ export function ResultCard({ result, onReset }: ResultCardProps) {
         )}
       </div>
 
-      {onReset && (
-        <div className="border-t border-border p-4">
-          {isUnclear ? (
-            <Button variant="primary" icon={Camera} onClick={onReset}>
-              {t(lang, "check.unclear.retake")}
-            </Button>
-          ) : (
-            <Button variant="secondary" icon={RefreshCw} onClick={onReset}>
-              {t(lang, "check.reset")}
+      <div className="space-y-3 border-t border-border p-4">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {ttsSupported && (
+            <Button
+              variant="secondary"
+              icon={isSpeaking ? Square : AudioLines}
+              onClick={handleTts}
+              aria-pressed={isSpeaking}
+              aria-label={isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
+            >
+              {isSpeaking ? t(lang, "check.tts.stop") : t(lang, "check.tts")}
             </Button>
           )}
+
+          {onReset && (
+            isUnclear ? (
+              <Button variant="primary" icon={Camera} onClick={onReset}>
+                {t(lang, "check.unclear.retake")}
+              </Button>
+            ) : (
+              <Button variant="secondary" icon={RefreshCw} onClick={onReset}>
+                {t(lang, "check.reset")}
+              </Button>
+            )
+          )}
         </div>
-      )}
+
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center gap-2 rounded-full border border-border bg-surface-sunken px-3 py-1.5 focus-within:border-border-strong focus-within:shadow-focus"
+        >
+          <Plus size={18} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder={t(lang, "check.followup.placeholder")}
+            aria-label={t(lang, "check.followup.placeholder")}
+            className="min-w-0 flex-1 bg-transparent text-sm text-text placeholder:text-text-muted focus:outline-none"
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim()}
+            aria-label={t(lang, "assistant.send")}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg transition-[background-color,transform] duration-150 hover:bg-primary-hover active:scale-[0.98] focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Send size={15} strokeWidth={1.75} aria-hidden />
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

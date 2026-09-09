@@ -1,6 +1,6 @@
 import { imageTooLarge, invalidInput, unsupportedMedia } from "@/lib/errors";
 import type { Lang } from "@shared/contract";
-import type { ChatMessage, VisionContext } from "@shared/contract";
+import type { ChatMessage, PhotoCoords, PhotoMeta, SiteContext, VisionContext } from "@shared/contract";
 
 export const MESSAGE_MAX_CHARS = 1000;
 export const HISTORY_LIMIT = 6;
@@ -32,10 +32,141 @@ export function sanitizeText(input: string, max = MESSAGE_MAX_CHARS): string {
     .slice(0, max);
 }
 
+export const SITE_NAME_MAX_CHARS = 120;
+export const SITE_ID_MAX_CHARS = 64;
+export const SITE_RULE_IDS_LIMIT = 32;
+
+// A malformed `site` is dropped rather than rejected, matching how `context` is
+// handled: losing the Site only costs the answer its specificity, and failing
+// a visitor's photo check over a bad optional field helps nobody. The values
+// that survive are still only *names* - the rule text always comes from the
+// server's own knowledge base (see SiteContext in shared/contract.ts).
+export function validateSiteContext(raw: unknown): SiteContext | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const s = raw as Record<string, unknown>;
+
+  if (typeof s.id !== "string" || typeof s.name !== "string") return undefined;
+  const id = sanitizeText(s.id, SITE_ID_MAX_CHARS);
+  const name = sanitizeText(s.name, SITE_NAME_MAX_CHARS);
+  if (!id || !name) return undefined;
+
+  if (!Array.isArray(s.ruleIds)) return undefined;
+  const ruleIds = [
+    ...new Set(
+      s.ruleIds
+        .filter((value): value is string => typeof value === "string")
+        .map((value) => sanitizeText(value, SITE_ID_MAX_CHARS))
+        .filter(Boolean),
+    ),
+  ].slice(0, SITE_RULE_IDS_LIMIT);
+
+  // A Site that names no rules carries no information the prompt can use, so it
+  // is the same as having no Site at all.
+  if (ruleIds.length === 0) return undefined;
+
+  const site: SiteContext = { id, name, ruleIds };
+
+  // Coordinates travel together or not at all: half a position is not a place
+  // to search around. A bad pair is dropped rather than rejected, like every
+  // other optional field here - the visitor loses the map lookup and keeps the
+  // Customs, which is the right way round.
+  const lat = typeof s.lat === "number" ? s.lat : NaN;
+  const lng = typeof s.lng === "number" ? s.lng : NaN;
+  if (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    Math.abs(lat) <= 90 &&
+    Math.abs(lng) <= 180 &&
+    !(lat === 0 && lng === 0)
+  ) {
+    site.lat = roundTo(lat, COORD_DECIMALS);
+    site.lng = roundTo(lng, COORD_DECIMALS);
+  }
+
+  return site;
+}
+
+// Local wall clock as `buildPhotoMeta` writes it. Seconds optional, no zone:
+// EXIF does not record one, so neither does the field.
+const PHOTO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
+// Kiritimati is UTC+14 and Baker Island UTC-12; anything outside that is noise.
+const MAX_TZ_OFFSET_MIN = 14 * 60;
+// Five decimal places is about a metre. Beyond that the digits describe the
+// receiver's noise rather than the visitor, and the prompt reads no better for
+// them.
+const COORD_DECIMALS = 5;
+const MAX_ACCURACY_M = 100_000;
+
+function roundTo(value: number, decimals: number): number {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
+}
+
+function validatePhotoCoords(raw: unknown): PhotoCoords | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const c = raw as Record<string, unknown>;
+
+  const lat = typeof c.lat === "number" ? c.lat : NaN;
+  const lng = typeof c.lng === "number" ? c.lng : NaN;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return undefined;
+  // 0,0 is what a receiver with no fix writes, not a place anyone photographs.
+  if (lat === 0 && lng === 0) return undefined;
+
+  const coords: PhotoCoords = {
+    lat: roundTo(lat, COORD_DECIMALS),
+    lng: roundTo(lng, COORD_DECIMALS),
+    source: c.source === "exif" ? "exif" : "device",
+  };
+
+  if (typeof c.accuracyM === "number" && Number.isFinite(c.accuracyM)) {
+    const accuracyM = Math.round(Math.abs(c.accuracyM));
+    if (accuracyM > 0 && accuracyM <= MAX_ACCURACY_M) coords.accuracyM = accuracyM;
+  }
+  return coords;
+}
+
+// Dropped rather than rejected, exactly like `site`: metadata makes an answer
+// sharper, and failing a visitor's photo check over a malformed optional field
+// helps nobody. Every field is filtered independently, so a bad timestamp does
+// not cost the request its coordinates.
+export function validatePhotoMeta(raw: unknown): PhotoMeta | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const p = raw as Record<string, unknown>;
+  if (p.source !== "camera" && p.source !== "upload") return undefined;
+
+  const meta: PhotoMeta = { source: p.source };
+
+  if (typeof p.takenAt === "string" && PHOTO_TIME.test(p.takenAt.trim())) {
+    const takenAt = p.takenAt.trim();
+    // Rejects 2026-13-45T99:99 - the pattern above only counts digits.
+    if (!Number.isNaN(Date.parse(`${takenAt.slice(0, 19).padEnd(19, ":00")}Z`))) {
+      meta.takenAt = takenAt;
+      if (p.timeSource === "exif" || p.timeSource === "file" || p.timeSource === "clock") {
+        meta.timeSource = p.timeSource;
+      }
+    }
+  }
+
+  if (
+    typeof p.timeZoneOffsetMin === "number" &&
+    Number.isFinite(p.timeZoneOffsetMin) &&
+    Math.abs(p.timeZoneOffsetMin) <= MAX_TZ_OFFSET_MIN
+  ) {
+    meta.timeZoneOffsetMin = Math.round(p.timeZoneOffsetMin);
+  }
+
+  const coords = validatePhotoCoords(p.coords);
+  if (coords) meta.coords = coords;
+
+  return meta;
+}
+
 export interface ValidatedChatRequest {
   message: string;
   lang: Lang;
   history: ChatMessage[];
+  site?: SiteContext;
 }
 
 export function validateChatRequest(body: Record<string, unknown>): ValidatedChatRequest {
@@ -54,6 +185,7 @@ export function validateChatRequest(body: Record<string, unknown>): ValidatedCha
     message,
     lang: body.lang === "id" ? "id" : "en",
     history: normalizeHistory(body.history),
+    site: validateSiteContext(body.site),
   };
 }
 
@@ -61,6 +193,8 @@ export interface ValidatedVisionRequest {
   image: string;
   context: VisionContext;
   lang: Lang;
+  site?: SiteContext;
+  photo?: PhotoMeta;
 }
 
 export function validateVisionRequest(body: Record<string, unknown>): ValidatedVisionRequest {
@@ -73,6 +207,8 @@ export function validateVisionRequest(body: Record<string, unknown>): ValidatedV
     // context only softens the prompt, it does not make the answer unsafe.
     context: body.context === "temple" ? "temple" : "general",
     lang: body.lang === "id" ? "id" : "en",
+    site: validateSiteContext(body.site),
+    photo: validatePhotoMeta(body.photo),
   };
 }
 

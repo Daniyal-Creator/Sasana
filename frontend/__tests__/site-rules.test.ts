@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SITES } from "@/data/sites";
 import { buildDummySites } from "@/data/dummy-sites";
 import { MEANINGS } from "@/data/meanings";
+import { siteContextFrom, siteContextNamed } from "@/lib/site-context";
 
 interface RuleRecord {
   id: string;
@@ -99,4 +100,35 @@ describe("data/meanings.ts agrees with backend rules.json", () => {
       });
     });
   }
+});
+
+describe("siteContextNamed", () => {
+  it("finds a Site the question names without the word Pura", () => {
+    const site = siteContextNamed("kalau saya ke tanah lot, ada penginapan dekat sana?");
+
+    expect(site?.id).toBe("pura-tanah-lot");
+    expect(site?.lat).toBeCloseTo(-8.6212, 3);
+    expect(site?.lng).toBeCloseTo(115.0868, 3);
+  });
+
+  it("finds one written with the full name, in either case", () => {
+    expect(siteContextNamed("Pura Besakih itu di mana?")?.id).toBe("pura-besakih");
+    expect(siteContextNamed("cerita soal ULUWATU dong")?.id).toBe("pura-luhur-uluwatu");
+  });
+
+  it("returns null when no Site is named", () => {
+    expect(siteContextNamed("boleh pakai celana pendek di pura?")).toBeNull();
+    expect(siteContextNamed("adakah penginapan terdekat?")).toBeNull();
+  });
+
+  // Every Site's coordinates have to travel, or the assistant has nowhere to
+  // search around when the question asks what is nearby.
+  it("carries coordinates for every real Site", () => {
+    for (const site of SITES) {
+      const context = siteContextFrom(site);
+      if (!context) continue; // a Dummy Site, which must never reach the backend
+      expect(typeof context.lat).toBe("number");
+      expect(typeof context.lng).toBe("number");
+    }
+  });
 });

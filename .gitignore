@@ -103,6 +103,14 @@ skills-lock.json
 !.scratch/dummy-sites/issues/
 .scratch/dummy-sites/issues/*
 !.scratch/dummy-sites/issues/*.md
+# Amenity crosses two areas — geofencing draws it, the assistant finds it — so
+# it gets its own directory rather than living inside either one's.
+!.scratch/amenity/
+.scratch/amenity/*
+!.scratch/amenity/*.md
+!.scratch/amenity/issues/
+.scratch/amenity/issues/*
+!.scratch/amenity/issues/*.md
 !.scratch/vision/
 .scratch/vision/*
 !.scratch/vision/*.md

@@ -120,20 +120,59 @@ export async function POST(req: Request): Promise<Response> {
     // selectRules.
     const sent = selectRules(rules, parsed.message, siteRules);
 
-    const { response: answer, totalTokens } = await askQuestion(
-      parsed.message,
-      parsed.history,
-      lang,
-      sent,
-      {
-        site: parsed.site,
-        siteRules,
-        places,
-        placesArea: anchor?.label,
-        unanchoredPlaceQuery: Boolean(category) && anchor === null,
-        allRules: rules,
-      },
-    );
+    const context = {
+      site: parsed.site,
+      siteRules,
+      places,
+      placesArea: anchor?.label,
+      unanchoredPlaceQuery: Boolean(category) && anchor === null,
+      allRules: rules,
+    };
+
+    const first = await askQuestion(parsed.message, parsed.history, lang, sent, context);
+
+    /**
+     * One second chance, and only where the server can tell the answer went
+     * wrong without reading it.
+     *
+     * The server knows it put a list of real places in front of the model. An
+     * answer that came back on any other tier did not use them, which in
+     * practice means the model obeyed the standing ban on recommending
+     * businesses over the exception written for exactly this question. Measured
+     * after the prompt was rewritten: four runs in five landed on `places`, the
+     * fifth still opened with "Maaf, saya tidak dapat memberikan rekomendasi".
+     *
+     * Asking again is the honest repair. The question does not change, the
+     * facts do not change, and nothing about the reply is rewritten - the
+     * second answer stands or falls on its own. If it declines too, that
+     * refusal is the answer.
+     */
+    const retry =
+      places.length > 0 && first.response.kind !== "places"
+        ? await askQuestion(parsed.message, parsed.history, lang, sent, context)
+        : null;
+
+    const useRetry = retry !== null && retry.response.kind === "places";
+    const answer = useRetry ? retry.response : first.response;
+    const totalTokens = (first.totalTokens ?? 0) + (retry?.totalTokens ?? 0);
+
+    // A question the map was read for is never stored, whatever tier came
+    // back.
+    //
+    // The old rule looked at the ANSWER: `places` and `none` were skipped and
+    // everything else kept. That let the worst case through. Asked "bisakah
+    // anda berikan rekomendasi penginapan di ubud", the model sometimes reads
+    // the standing ban on recommending businesses, ignores the map list it was
+    // handed, and answers at the `rule` tier with "I cannot recommend
+    // accommodation" - which is storable, so it was stored, and from then on
+    // every visitor asking that question got the refusal without the map ever
+    // being consulted again. Measured: `x-cache: HIT` on a question whose whole
+    // point is that a lookup happens.
+    //
+    // The question is the thing that describes the world here, not just the
+    // answer, so the lookup is what decides. ADR-0015 arrived at the same rule
+    // from the other side.
+    const lookedUp = Boolean(category && anchor);
 
     // Two kinds are deliberately never stored.
     //
@@ -145,7 +184,7 @@ export async function POST(req: Request): Promise<Response> {
     // `none` is a refusal. Storing failures would let one unlucky model call
     // become the permanent answer to a question the app can perfectly well
     // handle - which is the shape of the bug this whole effort started from.
-    const storable = answer.kind !== "places" && answer.kind !== "none";
+    const storable = answer.kind !== "places" && answer.kind !== "none" && !lookedUp;
     if (cacheable && storable) await answerCache.set(key, answer, totalTokens ?? 0, kbHash);
 
     logInfo({
@@ -158,6 +197,11 @@ export async function POST(req: Request): Promise<Response> {
       siteRules: siteRules.length,
       placeQuery: category ?? undefined,
       placeArea: anchor?.label,
+      lookedUp,
+      // Worth seeing in the logs: how often the model has to be asked twice
+      // before it uses the map it was handed.
+      retried: retry !== null,
+      retryUsed: useRetry,
       places: places.length,
       rulesSent: sent.length,
       rulesTotal: rules.length,

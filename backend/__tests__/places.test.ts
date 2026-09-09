@@ -153,10 +153,43 @@ describe("findNearbyPlaces", () => {
     expect(query).toContain("way["); // a resort is a building outline
   });
 
+  // The main instance fails often enough to be the difference between a working
+  // feature and a broken one: measured from the live container,
+  // `"places":0,"durationMs":14140` on a question a mirror answered in 2.5 s.
+  it("falls back to the mirror when the first endpoint fails", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("busy", { status: 429 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ elements: [node("Puri Melati", TANAH_LOT.lat + 0.001, TANAH_LOT.lng)] }),
+          { status: 200 },
+        ),
+      );
+
+    const places = await findNearbyPlaces(TANAH_LOT.lat, TANAH_LOT.lng, "lodging");
+
+    expect(places.map((p) => p.name)).toEqual(["Puri Melati"]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    // The mirror is second, so the load stays where the project intends it.
+    expect(String(fetchMock.mock.calls[0][0])).toContain("overpass-api.de");
+    expect(String(fetchMock.mock.calls[1][0])).not.toContain("overpass-api.de");
+  });
+
+  it("does not ask the mirror when the first endpoint answers", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(JSON.stringify({ elements: [] }), { status: 200 }));
+
+    await findNearbyPlaces(TANAH_LOT.lat, TANAH_LOT.lng, "lodging");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   // Overpass is a free shared service with no availability promise. A visitor
-  // asking about a temple should not see an error card because a volunteer
-  // server in Germany is busy.
-  it("returns nothing rather than throwing when Overpass fails", async () => {
+  // asking about a temple should not see an error card because every volunteer
+  // server it knows about is busy.
+  it("returns nothing rather than throwing when every endpoint fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("busy", { status: 429 }));
     await expect(findNearbyPlaces(TANAH_LOT.lat, TANAH_LOT.lng, "lodging")).resolves.toEqual([]);
   });

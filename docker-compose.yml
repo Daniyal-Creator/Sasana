@@ -25,9 +25,16 @@ services:
     env_file: ./backend/.env
     environment:
       PORT: 3001
-      # Where the Next.js dev server runs. Add a deployed domain here, comma
-      # separated, when the frontend is hosted somewhere else.
-      ALLOWED_ORIGINS: http://localhost:3000
+      # ALLOWED_ORIGINS is deliberately NOT set here. It used to be, pinned to
+      # http://localhost:3000, and that was a trap: Compose's `environment:`
+      # overrides `env_file:`, so setting the variable in backend/.env — the file
+      # backend/.env.example tells you to set it in — had no effect at all. The
+      # deployed API allowed only localhost while its own frontend was refused,
+      # and nothing on the server said why.
+      #
+      # Left unset, the value comes from backend/.env like every other setting,
+      # and src/app.ts falls back to http://localhost:3000 when that is empty —
+      # so a laptop still needs no configuration.
       # Interpolated so the answer cache can be turned off for one run without
       # editing this file:
       #

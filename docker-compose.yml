@@ -43,6 +43,38 @@ services:
       # Misses are still counted with it off, which is what makes a cold run and
       # a warm run comparable. See docs/adr/0016.
       CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      # Turn off Happy Eyeballs. Without this the backend cannot reach Gemini
+      # from a container that has no IPv6 address, which is every container this
+      # compose file starts.
+      #
+      # Node races an IPv4 and an IPv6 connection and takes whichever answers
+      # first, giving each family 250ms before moving on. The race is fair only
+      # when both families can run it. Here the container holds no IPv6 address
+      # at all, so an IPv6 attempt cannot win — it can only take the turn that
+      # IPv4 needed:
+      #
+      #   Supabase   IPv4 connect  86ms  -> under 250ms, IPv4 wins, works
+      #   Google AI  IPv4 connect 323ms  -> over 250ms, abandoned for IPv6, ETIMEDOUT
+      #   KoboiLLM   IPv4 connect 1044ms -> over 250ms, same, ETIMEDOUT
+      #
+      # Which is why only the AI providers broke while the database kept
+      # working, and why the log said `TypeError: fetch failed` with nothing
+      # after it.
+      #
+      # How far the evidence actually goes, since this file will outlive the
+      # incident: the measurements are the affected server's own, and on that
+      # server connecting by name failed while the same connection with
+      # autoSelectFamily off succeeded. That is measured, not argued. What is
+      # NOT proven is the same thing through `fetch` — undici has its own
+      # connector, the server was never asked that question, and an attempt to
+      # reproduce the failure on a laptop by shrinking the window did not
+      # replicate. Applying this is the test.
+      #
+      # Raising the window instead of switching the race off would mean picking
+      # a number larger than the slowest connect anyone will ever make - 1044ms
+      # was merely the slowest seen. There is nothing to trade away here: a
+      # host with no IPv6 loses nothing by not racing for it.
+      NODE_OPTIONS: --no-network-family-autoselection
     ports:
       - "3001:3001"
     # Source is mounted so `tsx watch` picks up edits without rebuilding the

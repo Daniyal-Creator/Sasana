@@ -131,6 +131,27 @@ const SITE_ZOOM = 14;
 // point, and at 14 it is a dot in a field.
 const DESTINATION_ZOOM = 16;
 
+/**
+ * Where a route leads. An Amenity and a Site are both just a point to the
+ * router, but the panels need to know which of them owns the answer.
+ */
+interface RouteTarget {
+  kind: "amenity" | "site";
+  id: string;
+  lat: number;
+  lng: number;
+}
+
+/**
+ * An Amenity has no id of its own: it is read off OpenStreetMap for one
+ * question and never stored, so nothing ever needed to name it twice. Its
+ * position does the job, and two guest houses at the same point are one guest
+ * house mapped twice.
+ */
+function amenityKey(amenity: Amenity): string {
+  return `${amenity.name}@${amenity.lat},${amenity.lng}`;
+}
+
 function metresNorthOf(site: Site, metres: number): LatLng {
   return {
     lat: site.lat + (metres / EARTH_RADIUS_M) * (180 / Math.PI),
@@ -376,8 +397,27 @@ function ExploreInner() {
    */
   const [destination, setDestination] = useState<Amenity | null>(null);
 
-  /** What the destination card is saying about the way there. */
+  /** What the panel is saying about the way to wherever the route leads. */
   const [routeView, setRouteView] = useState<RouteView>({ status: "idle" });
+
+  /**
+   * What the current route leads to: an Amenity, or a Site.
+   *
+   * One route at a time, and this is what enforces it. Each panel is handed
+   * the live `routeView` only when the target is its own and `idle` otherwise,
+   * so no panel has to know the others exist and two of them can never both be
+   * showing directions.
+   */
+  const [routeTarget, setRouteTarget] = useState<RouteTarget | null>(null);
+
+  /**
+   * Which request the answer is allowed to come from.
+   *
+   * Two routes asked for in quick succession finish in whatever order the
+   * network decides, and without this the slower first answer overwrites the
+   * faster second one, leaving the panel describing a journey nobody asked for.
+   */
+  const routeRequest = useRef(0);
 
   /**
    * Where the route was asked from, held rather than read live.
@@ -906,16 +946,20 @@ function ExploreInner() {
   }, []);
 
   const hideRoute = useCallback(() => {
+    routeRequest.current += 1;
     setRouteView({ status: "idle" });
     setRouteFrom(null);
+    setRouteTarget(null);
   }, []);
 
   const clearDestination = useCallback(() => {
     writeAmenityDestination(null);
     setDestination(null);
     cameraOnDestination.current = false;
-    hideRoute();
-  }, [hideRoute]);
+    // Only if the route was going there. A visitor routing to a temple should
+    // not lose it because they tidied an Amenity off the panel.
+    if (routeTarget?.kind === "amenity") hideRoute();
+  }, [hideRoute, routeTarget]);
 
   /**
    * Ask for directions, and take whatever comes back.
@@ -924,18 +968,30 @@ function ExploreInner() {
    * every way this can go wrong into "no route", and no route is answered with
    * the straight line and a sentence saying that is what it is.
    */
-  const requestRoute = useCallback(async () => {
-    if (!position || !destination) return;
-    const from = position;
-    setRouteFrom(from);
-    setRouteView({ status: "loading" });
+  const requestRoute = useCallback(
+    async (target: RouteTarget) => {
+      if (!position) return;
+      const from = position;
+      const request = (routeRequest.current += 1);
 
-    const { route, straightM } = await fetchRoute(from, {
-      lat: destination.lat,
-      lng: destination.lng,
-    });
-    setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
-  }, [position, destination]);
+      setRouteFrom(from);
+      setRouteTarget(target);
+      setRouteView({ status: "loading" });
+
+      const { route, straightM } = await fetchRoute(from, { lat: target.lat, lng: target.lng });
+      // A later request, or a hidden route, has already moved on.
+      if (routeRequest.current !== request) return;
+      setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
+    },
+    [position],
+  );
+
+  /** The route state a panel is allowed to show: its own, or nothing. */
+  const routeFor = useCallback(
+    (kind: RouteTarget["kind"], id: string): RouteView =>
+      routeTarget?.kind === kind && routeTarget.id === id ? routeView : { status: "idle" },
+    [routeTarget, routeView],
+  );
 
   /**
    * The chosen destination, shown at the top of the panel in every view.
@@ -948,29 +1004,45 @@ function ExploreInner() {
     <DestinationPanel
       amenity={destination}
       onClear={clearDestination}
-      route={routeView}
-      onRoute={requestRoute}
+      route={routeFor("amenity", amenityKey(destination))}
+      onRoute={() =>
+        requestRoute({
+          kind: "amenity",
+          id: amenityKey(destination),
+          lat: destination.lat,
+          lng: destination.lng,
+        })
+      }
       onHideRoute={hideRoute}
       from={position}
     />
   ) : null;
+
+  /** The route props a Site panel needs, wired to that Site. */
+  const routePropsFor = (target: Site) => ({
+    route: routeFor("site", target.id),
+    onRoute: () =>
+      requestRoute({ kind: "site", id: target.id, lat: target.lat, lng: target.lng }),
+    onHideRoute: hideRoute,
+    from: position,
+  });
 
   /** The line to draw, or nothing. Stable across position updates. */
   const routeLine = useMemo(() => {
     if (routeView.status === "ready") {
       return { points: routeView.route.points, straight: false };
     }
-    if (routeView.status === "straight" && routeFrom && destination) {
+    if (routeView.status === "straight" && routeFrom && routeTarget) {
       return {
         points: [
           [routeFrom.lat, routeFrom.lng],
-          [destination.lat, destination.lng],
+          [routeTarget.lat, routeTarget.lng],
         ] as [number, number][],
         straight: true,
       };
     }
     return null;
-  }, [routeView, routeFrom, destination]);
+  }, [routeView, routeFrom, routeTarget]);
 
   /**
    * Re-anchoring reuses the same five ids at new coordinates, so the memory of
@@ -1119,6 +1191,7 @@ function ExploreInner() {
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              {...routePropsFor(panelSite)}
             />
           ) : (
             <>
@@ -1243,6 +1316,7 @@ function ExploreInner() {
             // they need; only from there does it leave for the list. Sending
             // them straight out would drop the notice on the way past.
             onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
+            {...routePropsFor(sheetSite)}
             backLabel={
               detourSite
                 ? tExplore(lang, "explore.panel.backToApproach", {
@@ -1287,6 +1361,7 @@ function ExploreInner() {
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              {...routePropsFor(panelSite)}
             />
           ) : (
             <>

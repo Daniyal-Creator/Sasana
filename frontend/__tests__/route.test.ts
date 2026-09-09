@@ -165,6 +165,16 @@ describe("the way out to Google Maps", () => {
   });
 });
 
+describe("arriving", () => {
+  // A route to where somebody is already standing is not a direction. The
+  // panel says so once and drops the button.
+  it.each(["en", "id"] as const)("says so rather than offering a route, in %s", (lang) => {
+    const text = tExplore(lang, "explore.route.alreadyHere");
+    expect(text.length).toBeGreaterThan(0);
+    expect(text).not.toContain("—");
+  });
+});
+
 describe("the straight-line wording", () => {
   // The label is the feature. A line across Bali crosses rice terraces and
   // ravines, and without the sentence it is a lie about how far away something

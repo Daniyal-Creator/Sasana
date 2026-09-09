@@ -155,6 +155,17 @@ Tiga hal berubah setelah fiturnya dijalankan dengan lokasi sungguhan di Bali.
 Pintu keluar ke Google Maps ditambahkan berdampingan dengan rute sendiri,
 bukan menggantikannya. Alasannya di [ADR-0022](../../docs/adr/0022-a-door-out-to-google-maps.md).
 
+**Rute juga berlaku ke Site, bukan cuma ke Amenity.** Panel inspect pura punya
+tombol yang sama, dan bagian rutenya diekstrak jadi satu komponen bersama:
+kalimat garis lurus itu load-bearing (ADR-0021), dan salinan keduanya adalah
+tempat kedua bagi seseorang untuk memendekkannya jadi kebohongan soal jarak.
+
+Dua aturan yang menyertainya. **Satu rute pada satu waktu**, dijaga oleh target
+rute yang dicatat — tiap panel hanya menerima state rute kalau targetnya miliknya
+sendiri, jadi tidak ada panel yang perlu tahu panel lain ada. Dan **di dalam Zone
+tombolnya hilang**: rute ke tempat yang sedang Anda pijak bukan petunjuk arah,
+jadi panel mengatakannya sekali dan berhenti menawarkan.
+
 ---
 
 ## Yang diterima sadar

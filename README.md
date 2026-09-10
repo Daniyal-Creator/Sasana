@@ -247,13 +247,10 @@ resolves, and it serves nothing.
 ### How nginx must serve the frontend export
 
 `out/` is a static export with **no server behind it**, so how nginx resolves a
-path is the whole of the frontend's routing. `next.config.mjs` leaves
-`trailingSlash` at its default, so the build writes `out/check.html` — not
-`out/check/index.html`. A request for `/check` therefore matches no file on
-disk, and nginx has to be told to try the `.html` before it gives up.
+path is the whole of the frontend's routing.
 
-**What is running now does not.** Measured from outside the machine on
-2026-09-10:
+**What was running on 2026-09-10 resolved almost nothing.** Measured from
+outside the machine that day:
 
 | Request | Response |
 | --- | --- |
@@ -263,27 +260,34 @@ disk, and nginx has to be told to try the `.html` before it gives up.
 | `/definitely-not-a-real-path-xyz123` | `200`, 82122 bytes |
 | `/check.html` | `200`, 23054 bytes — the real page |
 
-Four different paths return a byte-identical document: `out/index.html`, the
-landing page, under a `200`. Anything that is not a file on disk falls back to
-it. So **every route except `/` is broken on reload, on a shared link, and on
-anything arriving from search** — the visitor lands on the landing page while
-the address bar still reads `/check`, and the console carries React error #418,
+Four different paths returned a byte-identical document: `out/index.html`, the
+landing page, under a `200`. Anything that was not a file on disk fell back to
+it. So **every route except `/` was broken on reload, on a shared link, and on
+anything arriving from search** — the visitor landed on the landing page while
+the address bar still read `/check`, and the console carried React error #418,
 because `Header` renders one tree for `/` and a different one everywhere else
-and the two cannot be reconciled. Clicking back into the page does nothing: the
-router already believes it is there. Navigating from the landing page works,
+and the two cannot be reconciled. Clicking back into the page did nothing: the
+router already believed it was there. Navigating from the landing page worked,
 which is why this survived — the client router never asks the server.
 
-The block that serves the export must be:
+**The export no longer depends on that being fixed.** `trailingSlash: true` in
+`next.config.mjs` makes the build write `out/check/index.html` rather than
+`out/check.html`, and a directory with an `index.html` in it is something the
+host already resolves — that is how it served the directory listings below. A
+deploy of the current `out/` is enough to make the routes work again.
+
+The block is still what the server should be, and two of its lines fix things
+the export cannot reach:
 
 ```nginx
 server {
     server_name sasana.smkwikrama.sch.id;
     root /path/to/out;                        # wherever the export is copied
 
-    autoindex off;                            # currently on — see below
+    autoindex off;                            # was on — see below
 
     location / {
-        try_files $uri $uri.html $uri/ =404;  # currently falls back to /index.html
+        try_files $uri $uri.html $uri/ =404;  # was a fallback to /index.html
     }
 
     error_page 404 /404.html;                 # out/404.html ships and is never served
@@ -291,26 +295,28 @@ server {
 ```
 
 Nothing in the app needs a catch-all. Every route is pre-rendered to its own
-file, `/explore/[siteId]` included, so `$uri.html` covers all of them and a path
-that matches nothing genuinely is a 404.
+file, `/explore/[siteId]` included, so a path that matches nothing genuinely is
+a 404 — and with the fallback gone it says so, instead of quietly serving the
+landing page. `$uri.html` is belt and braces: it keeps a flat export working if
+`trailingSlash` is ever turned back off.
 
-`autoindex` is on today: `/sites/`, `/explore/` and `/_next/` return directory
+`autoindex` was on: `/sites/`, `/explore/` and `/_next/` returned directory
 listings, including files like `sites/README.md` that were never meant to be
-served. Turning it off is part of the same edit.
+served. That one no rebuild can fix, only the server.
 
-**Not verified:** the directives above describe the behaviour measured from
-outside, not a config file anybody has read. Whoever performs this edit should
-write the real `location` block and the real document root into this section,
-and correct it if the running config reaches the same result another way.
+**Not verified:** the directives above describe behaviour measured from outside,
+not a config file anybody has read. Whoever performs this edit should write the
+real `location` block and the real document root into this section, and correct
+it if the running config reaches the same result another way.
 
-Check it landed:
+Check the routes landed:
 
 ```bash
-curl -s -o /dev/null -w '%{http_code} %{size_download}\n' https://sasana.smkwikrama.sch.id/check
+curl -sL https://sasana.smkwikrama.sch.id/check | grep -q heroBg.webp && echo BROKEN || echo OK
 ```
 
-`200 82122` is the broken fallback. `200 23054` is the check page. A path that
-exists nowhere must answer `404`.
+`heroBg.webp` belongs to the landing page and to nothing else, so finding it
+under `/check` means the fallback is still answering.
 
 ### Every deploy
 

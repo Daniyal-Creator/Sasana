@@ -223,6 +223,18 @@ export function validatePhotoMeta(raw: unknown): PhotoMeta | undefined {
 
 export interface ValidatedChatRequest {
   message: string;
+  /**
+   * The words the visitor actually typed, when `message` is not them.
+   *
+   * A follow-up to a photo check sends `message` as the vision result plus the
+   * question stitched together, so the model can answer without the image
+   * being re-uploaded. That block is prose the server wrote in the photo
+   * check's own language, and it outweighs a short question by word count -
+   * asked in Indonesian after an English photo check, the reply followed the
+   * photo check instead of the question. `question` is only ever the
+   * visitor's own words, which is what deciding the reply's language needs.
+   */
+  question?: string;
   lang: Lang;
   history: ChatMessage[];
   site?: SiteContext;
@@ -241,8 +253,12 @@ export function validateChatRequest(body: Record<string, unknown>): ValidatedCha
     throw invalidInput("`message` must not be empty");
   }
 
+  const question =
+    typeof body.question === "string" ? sanitizeText(body.question) : "";
+
   return {
     message,
+    question: question.length > 0 ? question : undefined,
     lang: body.lang === "id" ? "id" : "en",
     history: normalizeHistory(body.history),
     site: validateSiteContext(body.site),

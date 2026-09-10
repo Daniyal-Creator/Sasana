@@ -81,6 +81,12 @@ export default function AssistantPage() {
           // If an enriched message with Vision context was provided, send that
           // to the API instead. The user's bubble still shows the original text.
           message: opts?.apiMessage ?? question,
+          // The visitor's own words, sent alongside an enriched `message` so
+          // the server can tell the two apart. A photo-check follow-up's
+          // `message` is mostly the check's own English prose; answering in
+          // the language of that prose rather than of this question is
+          // exactly the bug this field exists to avoid.
+          ...(opts?.apiMessage ? { question } : {}),
           lang,
           history: history.map(({ role, content }) => ({ role, content })),
           // Read per send, not once on mount: a visitor can pick a different

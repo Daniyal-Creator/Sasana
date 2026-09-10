@@ -116,6 +116,40 @@ describe("POST /api/chat — grounded answers", () => {
     expect(systemInstruction).toContain("Tata Busana");
     expect(systemInstruction).toContain("(id: temple-attire)");
   });
+
+  // The bug this guards: a photo-check follow-up's `message` is the check's
+  // own English prose (`reason`/`suggestion`) with the visitor's question
+  // stitched onto the end, so that prose used to outvote a short Indonesian
+  // question and the reply came back in English regardless of what was asked.
+  // `question` carries the visitor's own words separately so the language
+  // vote is read from those, not from the server's own English sentences.
+  it("replies in the visitor's language, not the photo check's, on a follow-up", async () => {
+    mockAnswer(GROUNDED);
+    const visionMessage =
+      '[Photo analysis context — status: compliant; reason: "Everyone in the group is wearing proper traditional Balinese temple attire, including kamens and selendangs, with shoulders and knees covered during a temple visit."; suggestion: "Wonderful job following Balinese custom! Enjoy your peaceful time at the temple."]\n\nFollow-up question: apakah saya boleh menggunakan topi?';
+
+    await POST(
+      post({
+        message: visionMessage,
+        question: "apakah saya boleh menggunakan topi?",
+        lang: "en",
+        history: [],
+      }),
+    );
+
+    const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
+    expect(systemInstruction).toContain("Indonesian (Bahasa Indonesia)");
+  });
+
+  // Without `question` the old behaviour holds: an ordinary message with no
+  // photo-check prose ahead of it is its own signal.
+  it("falls back to reading `message` when no `question` is sent", async () => {
+    mockAnswer(GROUNDED);
+    await POST(post({ message: "Boleh pakai celana pendek?", lang: "en", history: [] }));
+
+    const systemInstruction = generateContent.mock.calls[0][0].config.systemInstruction as string;
+    expect(systemInstruction).toContain("Indonesian (Bahasa Indonesia)");
+  });
 });
 
 describe("POST /api/chat — grounding safety net (FR2.1)", () => {

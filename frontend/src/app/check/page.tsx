@@ -136,8 +136,8 @@ export default function CheckPage() {
               />
             )}
 
-            <div className="mt-3 flex items-start gap-2.5 text-xs text-text-secondary leading-relaxed">
-              <Shield size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0 text-text-muted" />
+            <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
+              <Shield size={14} strokeWidth={1.75} aria-hidden className="shrink-0" />
               <p>{t(lang, "check.privacy")}</p>
             </div>
 

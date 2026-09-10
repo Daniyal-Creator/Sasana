@@ -383,8 +383,8 @@ const dict = {
   "check.meta.locationAdd": { en: "Allow location", id: "Izinkan lokasi" },
   "check.meta.device": { en: "Taken on {device}", id: "Diambil dengan {device}" },
   "check.privacy": {
-    en: "Your photo is analyzed once and never stored. The time it was taken travels with it, and the location too when you allow it. On the free AI tier, Google may use submitted data to improve its products.",
-    id: "Foto Anda dianalisis sekali saja dan tidak pernah disimpan. Waktu pengambilan ikut terkirim, begitu juga lokasi bila Anda mengizinkannya. Pada layanan AI gratis, Google dapat memakai data yang dikirim untuk meningkatkan produknya.",
+    en: "Your photo is analyzed once and never stored.",
+    id: "Foto Anda dianalisis sekali dan tidak pernah disimpan.",
   },
   "check.analyze": { en: "Analyze photo", id: "Analisis foto" },
   "check.loading": { en: "Analyzing your photo…", id: "Menganalisis foto Anda…" },

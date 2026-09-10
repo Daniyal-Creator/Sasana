@@ -9,6 +9,7 @@ import {
   hasExitedApproach,
   haversineMeters,
   isInsideZone,
+  proximityTo,
 } from "@/lib/geo";
 
 // Fixtures rather than the real SITES: these tests are about the geometry, and
@@ -185,5 +186,45 @@ describe("formatDistance", () => {
   it("never prints miles", () => {
     const samples = [400, 975, 4100, 18_000].map((m) => formatDistance(m, "en"));
     expect(samples.every((s) => s.endsWith(" m") || s.endsWith(" km"))).toBe(true);
+  });
+});
+
+describe("proximityTo", () => {
+  const site = siteWithRadius(400);
+
+  it("reports the Zone from inside the Zone", () => {
+    expect(proximityTo(northOf(site, 100), 20, site).state).toBe("zone");
+  });
+
+  it("reports the Approach between the two circles", () => {
+    expect(proximityTo(northOf(site, 600), 20, site).state).toBe("approach");
+  });
+
+  it("reports outside beyond the Approach", () => {
+    expect(proximityTo(northOf(site, 900), 20, site).state).toBe("outside");
+  });
+
+  // Probed either side of each line rather than exactly on it. `northOf` lands
+  // within a rounding error of the metre asked for, and a test that turns on
+  // that error would be testing floating point rather than the boundary.
+  it("puts each line where the Zone and the Approach put it", () => {
+    expect(proximityTo(northOf(site, 399), 20, site).state).toBe("zone");
+    expect(proximityTo(northOf(site, 401), 20, site).state).toBe("approach");
+    expect(proximityTo(northOf(site, approachRadiusM(site) - 1), 20, site).state).toBe("approach");
+    expect(proximityTo(northOf(site, approachRadiusM(site) + 1), 20, site).state).toBe("outside");
+  });
+
+  // The notice is accuracy-gated because it interrupts somebody who asked for
+  // nothing. This is not: the visitor pressed a button about a Site already on
+  // screen, so a poor fix must not silently downgrade them to "outside" - it
+  // travels as a number the answer can hedge with instead.
+  it("does not let a poor fix change the state", () => {
+    const vague = proximityTo(northOf(site, 600), 1500, site);
+    expect(vague.state).toBe("approach");
+    expect(vague.accuracyM).toBe(1500);
+  });
+
+  it("carries the measured distance, not a rounded one", () => {
+    expect(proximityTo(northOf(site, 640), 20, site).distanceM).toBeCloseTo(640, 5);
   });
 });

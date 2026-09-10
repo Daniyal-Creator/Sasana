@@ -4,6 +4,8 @@ import {
   readHandoff,
   writeHandoff,
   consumeHandoff,
+  freshProximity,
+  PROXIMITY_TTL_MS,
   type AssistantHandoffPayload,
 } from "@/lib/assistant-handoff";
 
@@ -113,5 +115,72 @@ describe("Assistant Handoff Storage (production logic)", () => {
     expect(() => writeHandoff(samplePayload)).not.toThrow();
     expect(() => writeHandoff(null)).not.toThrow();
     expect(consumeHandoff()).toBeNull();
+  });
+});
+
+describe("freshProximity", () => {
+  const fix = { state: "approach", distanceM: 640, accuracyM: 25 } as const;
+  const at = 1_000_000;
+
+  it("returns the fix while it is inside the window", () => {
+    expect(freshProximity({ fix, at }, at + 1)).toEqual(fix);
+    expect(freshProximity({ fix, at }, at + PROXIMITY_TTL_MS)).toEqual(fix);
+  });
+
+  it("drops the fix once the window has passed", () => {
+    expect(freshProximity({ fix, at }, at + PROXIMITY_TTL_MS + 1)).toBeNull();
+  });
+
+  // A visitor can press "ask", pocket the phone, and walk into the courtyard.
+  // Quoting the crossing distance back at them there is the failure this window
+  // exists to prevent.
+  it("drops a fix that is minutes old", () => {
+    expect(freshProximity({ fix, at }, at + 10 * 60_000)).toBeNull();
+  });
+
+  it("treats a backwards clock as stale rather than as fresh", () => {
+    expect(freshProximity({ fix, at }, at - 1)).toBeNull();
+  });
+
+  it("is null when nothing was carried", () => {
+    expect(freshProximity(null)).toBeNull();
+    expect(freshProximity(undefined)).toBeNull();
+  });
+
+  describe("through storage, which is how it actually arrives", () => {
+    beforeEach(() => {
+      mockStorage.clear();
+      // @ts-expect-error stubbing window for node environment
+      globalThis.window = { sessionStorage: mockStorage };
+    });
+
+    afterEach(() => {
+      globalThis.window = originalWindow;
+    });
+
+    it("survives the JSON round trip intact", () => {
+      const payload: AssistantHandoffPayload = {
+        question: "",
+        lang: "id",
+        proximity: { fix, at },
+      };
+      writeHandoff(payload);
+      expect(freshProximity(consumeHandoff()?.proximity, at + 1)).toEqual(fix);
+    });
+
+    // The button Explore uses carries a place and no sentence. A payload that
+    // only survived when it had a question would drop the position for exactly
+    // the visitor it was measured for.
+    it("survives with no question attached", () => {
+      writeHandoff({ question: "", lang: "id", proximity: { fix, at } });
+      const back = consumeHandoff();
+      expect(back?.question).toBe("");
+      expect(freshProximity(back?.proximity, at + 1)).toEqual(fix);
+    });
+
+    it("is absent, not undefined-shaped, for a payload that never had one", () => {
+      writeHandoff({ question: "hi", lang: "en" });
+      expect(freshProximity(consumeHandoff()?.proximity)).toBeNull();
+    });
   });
 });

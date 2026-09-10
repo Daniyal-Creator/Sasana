@@ -111,6 +111,15 @@ skills-lock.json
 !.scratch/amenity/issues/
 .scratch/amenity/issues/*
 !.scratch/amenity/issues/*.md
+# Pariwisata crosses three areas — geofencing opens the Site page, the
+# assistant reads the position, and the content itself is neither — so like
+# amenity it gets its own directory rather than living inside one of them.
+!.scratch/pariwisata/
+.scratch/pariwisata/*
+!.scratch/pariwisata/*.md
+!.scratch/pariwisata/issues/
+.scratch/pariwisata/issues/*
+!.scratch/pariwisata/issues/*.md
 !.scratch/vision/
 .scratch/vision/*
 !.scratch/vision/*.md

@@ -7,7 +7,6 @@ import {
   CircleCheck,
   CircleHelp,
   CircleX,
-  Plus,
   RefreshCw,
   Send,
   Sparkles,
@@ -205,9 +204,8 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
 
         <form
           onSubmit={handleSubmit}
-          className="flex items-center gap-2 rounded-full border border-border bg-surface-sunken px-3 py-1.5 focus-within:border-border-strong focus-within:shadow-focus"
+          className="flex items-center gap-2 rounded-full border border-border bg-surface-sunken pl-4 pr-1.5 py-1.5 transition-[border-color,background-color,box-shadow] duration-200 ease-out-quart hover:border-border-strong hover:bg-surface focus-within:border-primary focus-within:bg-surface focus-within:shadow-focus"
         >
-          <Plus size={18} strokeWidth={1.75} aria-hidden className="shrink-0 text-text-muted" />
           <input
             type="text"
             value={inputValue}
@@ -220,7 +218,7 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
             type="submit"
             disabled={!inputValue.trim()}
             aria-label={t(lang, "assistant.send")}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg transition-[background-color,transform] duration-150 hover:bg-primary-hover active:scale-[0.98] focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg transition-[background-color,transform,opacity] duration-150 ease-out-quart hover:bg-primary-hover active:scale-95 focus-visible:shadow-focus disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send size={15} strokeWidth={1.75} aria-hidden />
           </button>

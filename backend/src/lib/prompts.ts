@@ -2,7 +2,7 @@ import { formatRulesForPrompt, searchRules } from "@/lib/knowledge";
 import { formatPlacesForPrompt } from "@/lib/places";
 import type { Place } from "@/lib/places";
 import type { Rule } from "@/lib/types";
-import type { Lang, PhotoMeta, SiteContext, VisionContext } from "@shared/contract";
+import type { Lang, PhotoMeta, Proximity, SiteContext, VisionContext } from "@shared/contract";
 
 const LANG_NAME: Record<Lang, string> = {
   en: "English",
@@ -148,6 +148,49 @@ export interface ChatPromptContext {
    * and lets them see it was somewhere else.
    */
   placesArea?: string;
+  /**
+   * Where the visitor is standing relative to `site`, measured by their own
+   * device just before they asked. Only ever read alongside a Site: a distance
+   * with no place is a number with nothing to be a distance from.
+   */
+  proximity?: Proximity;
+}
+
+/**
+ * The sentence the prompt gets about how close the visitor is.
+ *
+ * The hedging is decided here rather than asked of the model. When the fix is
+ * no better than the distance itself - a phone in a street reporting 500 m of
+ * uncertainty about a 400 m gap - the number is arithmetic rather than
+ * information, and the honest prompt is the one that never shows it. Leaving
+ * that judgement to the model means it holds most of the time and quietly
+ * fails the rest.
+ */
+function proximityLine(site: SiteContext, { state, distanceM, accuracyM }: Proximity): string {
+  const where =
+    state === "zone"
+      ? `already inside the sacred area of ${site.name}, where its customs apply`
+      : state === "approach"
+        ? `close to ${site.name} and still outside it`
+        : `some way from ${site.name}, outside it`;
+
+  const vague = accuracyM >= distanceM;
+  const measured = vague
+    ? `Their device is not sure enough of its position to give a distance, so do NOT state one, and do not imply one with words like "just" or "a few steps".`
+    : `They are roughly ${distanceM} m away, measured to about plus or minus ${accuracyM} m. Quote it as approximate - "about ${distanceM} m" - and never more precisely than that.`;
+
+  return `
+
+HOW CLOSE THEY ARE: they are ${where}. ${measured}
+
+Use this for WHEN, not for WHAT. The customs above are the same wherever they stand; what changes is whether there is still time to act before they arrive.
+${
+  state === "zone"
+    ? `- They are already inside. Do not tell them to get ready before arriving; tell them what applies now, and if something should have been done at the entrance say how to put it right from here.`
+    : `- They have not arrived yet. Anything done before entering - putting on a kamen and selendang, leaving a drone behind, turning a phone down - is still possible, so lead with it.`
+}
+Say nothing this does not tell you. Not how long the walk takes, not which direction to go, not what is between them and the entrance, not whether the place is busy or open. You know a distance and nothing else about the ground.
+Where they are does not change which rules exist, which ids you cite, or which tier the answer belongs to. Give the same "kind" you would have given without it.`;
 }
 
 // Context stuffing: the whole KB goes into the system prompt (PRD §12,
@@ -160,7 +203,7 @@ export interface ChatPromptContext {
 export function buildChatSystemPrompt(
   rules: Rule[],
   lang: Lang,
-  { site, siteRules = [], places = [], placesArea }: ChatPromptContext = {},
+  { site, siteRules = [], places = [], placesArea, proximity }: ChatPromptContext = {},
 ): string {
   // RULES carries the selection `selectRules` made for this question, not the
   // whole knowledge base. It used to carry everything, on the reasoning that
@@ -176,7 +219,7 @@ export function buildChatSystemPrompt(
 WHERE THE VISITOR IS: ${site.name}.
 Words like "here", "this temple", or "this place" refer to ${site.name}. These of the RULES below apply there:
 ${formatRulesForPrompt(siteRules, lang, { withIds: true })}
-When the question is about where they are, answer from these first. The full RULES list still governs everything else, and the tiers still apply: if no rule covers the question, drop to "context" or "general" rather than stretching one to fit.`
+When the question is about where they are, answer from these first. The full RULES list still governs everything else, and the tiers still apply: if no rule covers the question, drop to "context" or "general" rather than stretching one to fit.${proximity ? proximityLine(site, proximity) : ""}`
       : "";
 
   // Only present when the question asked for nearby places AND the lookup

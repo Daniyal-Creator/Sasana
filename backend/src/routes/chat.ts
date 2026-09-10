@@ -85,7 +85,18 @@ export async function POST(req: Request): Promise<Response> {
     const kbHash = rulesHash();
     const key = answerKey(normalizeQuestion(parsed.message), lang, parsed.site?.id);
 
-    if (cacheable) {
+    /**
+     * The request said where the visitor is standing, and there is a Site for
+     * that to be a distance from.
+     *
+     * Decided from what the server RECEIVED, never from what the answer says -
+     * the lesson `lookedUp` below records the hard way. A position with no Site
+     * attached is not situated: it is a number with nothing to be a distance
+     * from, and the prompt never sees it.
+     */
+    const situated = Boolean(parsed.proximity && parsed.site);
+
+    if (cacheable && !situated) {
       const hit = await answerCache.get(key, kbHash);
       if (hit) {
         logInfo({
@@ -131,6 +142,7 @@ export async function POST(req: Request): Promise<Response> {
       placesArea: anchor?.label,
       unanchoredPlaceQuery: Boolean(category) && anchor === null,
       allRules: rules,
+      proximity: situated ? parsed.proximity : undefined,
     };
 
     const first = await askQuestion(parsed.message, parsed.history, lang, sent, context);
@@ -188,7 +200,15 @@ export async function POST(req: Request): Promise<Response> {
     // `none` is a refusal. Storing failures would let one unlucky model call
     // become the permanent answer to a question the app can perfectly well
     // handle - which is the shape of the bug this whole effort started from.
-    const storable = answer.kind !== "places" && answer.kind !== "none" && !lookedUp;
+    // A situated answer is never stored, and never served, for the same reason
+    // in both directions: "you are about 250 m from the gate, still outside"
+    // is true for one person for about a minute. Storing it would hand that
+    // sentence to somebody standing in the courtyard; serving a stored generic
+    // answer for the same words would quietly undo the feature at exactly the
+    // question it exists for - "apa yang harus saya siapkan?" is the phrasing
+    // most likely to already be in the cache.
+    const storable =
+      answer.kind !== "places" && answer.kind !== "none" && !lookedUp && !situated;
     if (cacheable && storable) await answerCache.set(key, answer, totalTokens ?? 0, kbHash);
 
     logInfo({
@@ -202,6 +222,8 @@ export async function POST(req: Request): Promise<Response> {
       placeQuery: category ?? undefined,
       placeArea: anchor?.label,
       lookedUp,
+      situated,
+      proximityState: parsed.proximity?.state,
       // Worth seeing in the logs: how often the model has to be asked twice
       // before it uses the map it was handed.
       retried: retry !== null,

@@ -16,5 +16,6 @@ f:I[4431,[],"MetadataBoundary"]
 8:E{"digest":"NEXT_REDIRECT;replace;/explore?site=pura-ulun-danu-beratan;307;"}
 e:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#F6F1E9"}]]
 a:null
-c:{"metadata":[["$","title","0",{"children":"SASANA"}],["$","meta","1",{"name":"description","content":"Understand and respect Balinese customs, before you enter."}]],"error":null,"digest":"$undefined"}
+13:I[622,[],"IconMark"]
+c:{"metadata":[["$","title","0",{"children":"SASANA"}],["$","meta","1",{"name":"description","content":"Understand and respect Balinese customs, before you enter."}],["$","link","2",{"rel":"icon","href":"/favicon.ico","sizes":"16x16 32x32 48x48"}],["$","link","3",{"rel":"icon","href":"/sasana-logo.png","type":"image/png","sizes":"256x256"}],["$","link","4",{"rel":"apple-touch-icon","href":"/apple-icon.png","type":"image/png","sizes":"180x180"}],["$","$L13","5",{}]],"error":null,"digest":"$undefined"}
 11:"$c:metadata"

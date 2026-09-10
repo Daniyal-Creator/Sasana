@@ -383,8 +383,8 @@ const dict = {
   "check.meta.locationAdd": { en: "Allow location", id: "Izinkan lokasi" },
   "check.meta.device": { en: "Taken on {device}", id: "Diambil dengan {device}" },
   "check.privacy": {
-    en: "Your photo is analyzed once and never stored.",
-    id: "Foto Anda dianalisis sekali dan tidak pernah disimpan.",
+    en: "Your photo is analyzed privately and never stored on any server. Data is processed temporarily to protect your visit privacy.",
+    id: "Foto Anda dianalisis secara privat dan tidak pernah disimpan di server. Data hanya diproses sementara demi menjaga privasi kunjungan Anda.",
   },
   "check.analyze": { en: "Analyze photo", id: "Analisis foto" },
   "check.loading": { en: "Analyzing your photo…", id: "Menganalisis foto Anda…" },

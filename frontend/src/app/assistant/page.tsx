@@ -17,6 +17,7 @@ import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
 import { readActiveSite, siteContextNamed } from "@/lib/site-context";
+import { freshProximity, type TimedProximity } from "@/lib/assistant-handoff";
 import { t } from "@/lib/i18n";
 import type { ChatMessage, ChatResponse } from "@shared/contract";
 
@@ -33,6 +34,12 @@ export default function AssistantPage() {
   const [failed, setFailed] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const handoffCheckedRef = useRef(false);
+  /**
+   * Where the visitor stood when they left Explore, with the moment it was
+   * measured. Never written to storage from here: it arrived through a payload
+   * that is read once and cleared, and it expires on its own timestamp.
+   */
+  const carriedProximity = useRef<TimedProximity | null>(null);
 
   const chips = [
     t(lang, "assistant.chip.shorts"),
@@ -69,7 +76,14 @@ export default function AssistantPage() {
           // "here" has to mean here. Omitted entirely when neither applies.
           ...(() => {
             const site = readActiveSite() ?? siteContextNamed(question);
-            return site ? { site } : {};
+            if (!site) return {};
+            // A position with no place attached is a number with nothing to be
+            // a distance from, so it only travels when the Site does. And it is
+            // re-checked on every send rather than once on arrival: a visitor
+            // can sit on this page, and a fix that was true when they crossed
+            // the Approach is not evidence of where they are ten minutes later.
+            const fix = freshProximity(carriedProximity.current);
+            return fix ? { site, proximity: fix } : { site };
           })(),
         }),
       });
@@ -98,7 +112,18 @@ export default function AssistantPage() {
     handoffCheckedRef.current = true;
 
     const payload = consumeHandoffPayload();
-    if (payload && payload.question) {
+    if (!payload) return;
+
+    // Kept before the question is looked at, because the two arrive together
+    // but are not the same errand: Explore's "ask about this place" button
+    // carries a position and no question at all, and reading it only on the
+    // question's branch would throw the position away for exactly the visitor
+    // it was measured for. Held in a ref rather than state: nothing renders
+    // from it, and `send` needs the current value without waiting for a
+    // re-render.
+    carriedProximity.current = payload.proximity ?? null;
+
+    if (payload.question) {
       // Build an enriched message that includes the Vision analysis context
       // so the LLM can answer follow-up questions about the photo result,
       // without re-sending the actual image (no extra image token cost).

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, ShieldCheck, Camera, Compass, Bell, ChevronDown } from "lucide-react";
+import { MapPin, ShieldCheck, Camera, Compass, Bell, ChevronDown, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomIcon } from "@/components/explore/CustomIcon";
 import { CustomVisual } from "@/components/explore/CustomVisual";
@@ -77,6 +77,15 @@ interface SiteBriefProps {
   onHideRoute?: () => void;
   /** Where the visitor is. Null when there is no fix to start from. */
   from?: LatLng | null;
+  /**
+   * Takes the question to the Assistant, carrying where the visitor is standing
+   * with it. Omitted where there is no Explore behind the panel to measure that,
+   * and the button then does not appear at all rather than appearing inert.
+   *
+   * Not an `href`: `Button` drops `onClick` on its link branch, and the position
+   * has to be written before the navigation, not after it.
+   */
+  onAsk?: () => void;
 }
 
 /**
@@ -97,6 +106,7 @@ export function SiteBrief({
   onRoute,
   onHideRoute,
   from = null,
+  onAsk,
 }: SiteBriefProps) {
   const { lang } = useLang();
   const searchParams = useSearchParams();
@@ -317,6 +327,11 @@ export function SiteBrief({
         <Button icon={Camera} href="/check" className="w-full">
           {tExplore(lang, "explore.detail.checkPhoto")}
         </Button>
+        {onAsk && (
+          <Button variant="secondary" icon={MessageCircle} onClick={onAsk} className="w-full">
+            {tExplore(lang, "explore.detail.ask")}
+          </Button>
+        )}
         {/* Same route, different query: the walk starts in place rather than
             reloading the map the visitor is already looking at. */}
         <Button

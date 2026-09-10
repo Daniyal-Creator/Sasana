@@ -1256,6 +1256,7 @@ function ExploreInner() {
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
               onAsk={() => askAbout(panelSite)}
+              forceOdalan={searchParams.get("odalan") === "1"}
               {...routePropsFor(panelSite)}
             />
           ) : (
@@ -1382,6 +1383,7 @@ function ExploreInner() {
             // them straight out would drop the notice on the way past.
             onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
             onAsk={() => askAbout(sheetSite)}
+            forceOdalan={searchParams.get("odalan") === "1"}
             {...routePropsFor(sheetSite)}
             backLabel={
               detourSite
@@ -1428,6 +1430,7 @@ function ExploreInner() {
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
               onAsk={() => askAbout(panelSite)}
+              forceOdalan={searchParams.get("odalan") === "1"}
               {...routePropsFor(panelSite)}
             />
           ) : (

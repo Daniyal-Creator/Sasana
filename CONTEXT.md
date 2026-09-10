@@ -34,6 +34,10 @@ the one kind of place here that is not sacred, and the word exists to keep that
 line visible in the code as well as on the screen.
 _Avoid_: POI, destination, Site, tempat wisata, attraction
 
+**Significance**:
+What a Site is and what people do there, told to a visitor who may never have heard of the place. Always carries its own source, and never a date: a ceremony date belongs to Odalan, which holds the calendar anchor that makes one safe to state. A Site with no Significance shows none, and that is a normal state rather than an unfinished one.
+_Avoid_: Daya tarik, keunggulan, highlight, atraksi, destinasi, description
+
 **Odalan**:
 A Site's own anniversary ceremony. While it is happening the Site is busier and more restricted than usual. A recorded Odalan date always travels with the calendar anchor it came from and a source; a date without one does not exist.
 

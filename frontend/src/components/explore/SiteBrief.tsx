@@ -17,6 +17,7 @@ import type { Lang } from "@/lib/i18n";
 import type { Site, Odalan } from "@/data/sites";
 import { isDummySite } from "@/data/dummy-sites";
 import { MEANINGS } from "@/data/meanings";
+import { SIGNIFICANCE } from "@/data/significance";
 
 const ODALAN_WINDOW_DAYS = 7;
 
@@ -145,6 +146,7 @@ export function SiteBrief({
   // button rather than offering a journey of nought metres.
   const insideZone = distanceM !== null && distanceM <= site.radiusM;
   const odalan = upcomingOdalan(site, forceOdalan);
+  const significance = SIGNIFICANCE[site.id];
   const [expandedCustoms, setExpandedCustoms] = useState<Record<string, boolean>>({});
 
   function toggleCustom(id: string) {
@@ -187,6 +189,32 @@ export function SiteBrief({
           <p className="mt-0.5 text-sm text-text-secondary">{site.areaLabel[lang]}</p>
         </div>
       </div>
+
+      {/* Before the Customs, not after. This answers "what is this place",
+          and the Customs answer "what is expected of me here" - a visitor who
+          reads the second without the first is being handed rules for somewhere
+          they have not been told about. Absent for most Sites, and absence is a
+          normal state rather than a gap: an entry appears when a source has
+          been read (`data/significance.ts`). */}
+      {significance && (
+        <section className="mt-4 rounded-lg border border-border bg-surface-sunken p-4">
+          <p className="text-sm leading-relaxed text-text">{significance.text[lang]}</p>
+          <p className="mt-2 text-xs text-text-muted">
+            {significance.sourceUrl ? (
+              <a
+                href={significance.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-border-strong underline-offset-2 hover:text-text-secondary focus-visible:shadow-focus"
+              >
+                {tExplore(lang, "explore.detail.source", { source: significance.source })}
+              </a>
+            ) : (
+              tExplore(lang, "explore.detail.source", { source: significance.source })
+            )}
+          </p>
+        </section>
+      )}
 
       <ZoneDiagram site={site} />
 

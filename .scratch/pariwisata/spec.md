@@ -1,5 +1,18 @@
 # Spec — Pariwisata: posisi yang sadar, dan tempat yang bisa dijelaskan
 
+> **Dihentikan 2026-09-10, atas keputusan pemilik.** Gelombang ini tidak jadi
+> dikerjakan. Tiket 01 (halaman Site) sempat tayang lalu dicabut; tiket 02
+> (`Significance`) ditutup sebelum di-merge. Sisa dokumen ini dibiarkan utuh dan
+> **tidak** dihapus, karena isinya bukan rencana melainkan pertimbangan: kenapa
+> daftar tempat wisata ditolak, kenapa suara brosur ditolak, dan apa yang akan
+> menggantikannya. Menghapusnya berarti orang berikutnya menurunkan ulang
+> seluruh argumen itu dari nol, termasuk bagian yang sudah kita tolak. Repo ini
+> sudah membayar harga kesalahan itu sekali: ADR-0018 membuang
+> `docker-compose.prod.yml` karena dianggap usang, dan itulah sebabnya tidak ada
+> yang tahu cara men-deploy backend (ADR-0023).
+>
+> Kalau suatu saat dibuka lagi, mulai dari sini, bukan dari halaman kosong.
+
 **Owner:** Daniyal · **Branch prefix:** `pariwisata/`, `geofencing/`, `assistant/`
 **Ditetapkan:** 2026-09-10, lewat sesi grilling
 

@@ -950,6 +950,13 @@ function ExploreInner() {
     return () => clearTimeout(id);
   }, [bannerSite]);
 
+  const hideRoute = useCallback(() => {
+    routeRequest.current += 1;
+    setRouteView({ status: "idle" });
+    setRouteFrom(null);
+    setRouteTarget(null);
+  }, []);
+
   /**
    * One Site, chosen. The marker on the map and the row in the list are two
    * doors into the same thing, so they do the same thing: the camera goes
@@ -957,6 +964,9 @@ function ExploreInner() {
    */
   const selectSite = useCallback((siteId: string) => {
     siteChosenByHand.current = true;
+    if (routeTarget?.kind === "site" && routeTarget.id !== siteId) {
+      hideRoute();
+    }
     setSelectedSiteId(siteId);
     setPanelSiteId(siteId);
     // Read by the Approach view, ignored everywhere else. Set unconditionally
@@ -969,7 +979,7 @@ function ExploreInner() {
     const site = allSites.find((s) => s.id === siteId);
     if (site) setFocus({ center: { lat: site.lat, lng: site.lng }, zoom: SITE_ZOOM });
     setSheetStage("full");
-  }, [allSites]);
+  }, [allSites, hideRoute, routeTarget]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
 
@@ -1002,13 +1012,6 @@ function ExploreInner() {
     setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
   }, []);
 
-  const hideRoute = useCallback(() => {
-    routeRequest.current += 1;
-    setRouteView({ status: "idle" });
-    setRouteFrom(null);
-    setRouteTarget(null);
-  }, []);
-
   const clearDestination = useCallback(() => {
     writeAmenityDestination(null);
     setDestination(null);
@@ -1034,11 +1037,14 @@ function ExploreInner() {
       setRouteFrom(from);
       setRouteTarget(target);
       setRouteView({ status: "loading" });
+      setFollow(false);
+      setFocus(null);
 
       const { route, straightM } = await fetchRoute(from, { lat: target.lat, lng: target.lng });
       // A later request, or a hidden route, has already moved on.
       if (routeRequest.current !== request) return;
       setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
+      setSheetStage("peek");
     },
     [position],
   );
@@ -1186,6 +1192,7 @@ function ExploreInner() {
         bottomInset={isDesktop ? 0 : sheetInset}
         leftInset={isDesktop ? panelInset : 0}
         focus={focus}
+        bounds={routeLine ? routeLine.points : null}
         onUserPan={() => setFollow(false)}
         onRecenter={() => setFollow(true)}
         onTileError={() => setTilesFailed(true)}

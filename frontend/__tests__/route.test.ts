@@ -193,3 +193,32 @@ describe("the straight-line wording", () => {
     expect(label).toMatch(lang === "id" ? /berkendara/ : /driving/);
   });
 });
+
+describe("camera framing for navigation polylines", () => {
+  it("encompasses all points of a route in its bounding envelope", () => {
+    const lats = ROUTE.points.map(([lat]) => lat);
+    const lngs = ROUTE.points.map(([, lng]) => lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+
+    for (const [lat, lng] of ROUTE.points) {
+      expect(lat).toBeGreaterThanOrEqual(minLat);
+      expect(lat).toBeLessThanOrEqual(maxLat);
+      expect(lng).toBeGreaterThanOrEqual(minLng);
+      expect(lng).toBeLessThanOrEqual(maxLng);
+    }
+  });
+
+  it("produces a valid bounding box for straight fallback lines", () => {
+    const straightPoints: [number, number][] = [
+      [TANAH_LOT.lat, TANAH_LOT.lng],
+      [UBUD.lat, UBUD.lng],
+    ];
+    expect(straightPoints).toHaveLength(2);
+    expect(straightPoints[0][0]).not.toBe(straightPoints[1][0]);
+    expect(straightPoints[0][1]).not.toBe(straightPoints[1][1]);
+  });
+});
+

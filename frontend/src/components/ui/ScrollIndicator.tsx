@@ -16,6 +16,11 @@ export function ScrollIndicator() {
   const [visible, setVisible] = useState(false);
 
   const update = useCallback(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setVisible(false);
+      return;
+    }
+
     const { scrollHeight } = document.documentElement;
     const viewportH = window.innerHeight;
     const scrolled = window.scrollY;
@@ -68,7 +73,7 @@ export function ScrollIndicator() {
       onClick={scrollDown}
       aria-label={t(lang, "check.scrollDown")}
       className={[
-        "fixed bottom-6 left-1/2 z-50 flex h-11 w-11 -translate-x-1/2 items-center justify-center",
+        "fixed bottom-6 left-1/2 z-50 flex h-11 w-11 -translate-x-1/2 items-center justify-center lg:hidden",
         "rounded-full bg-primary shadow-md hover:bg-primary-hover active:scale-95",
         "transition-[opacity,transform,background-color] duration-200 ease-out-quart",
         visible ? "opacity-100" : "pointer-events-none opacity-0",

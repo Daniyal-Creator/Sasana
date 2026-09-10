@@ -76,7 +76,11 @@ export async function POST(req: Request): Promise<Response> {
     // The reply follows what the visitor typed, not the site's language
     // toggle: `parsed.lang` only breaks the tie when the question itself
     // carries no signal either way (a bare place name, a one-word answer).
-    lang = detectLang(parsed.message, parsed.lang);
+    // Read off `question` rather than `message` where the two differ - a
+    // photo-check follow-up's `message` carries the check's own English
+    // prose ahead of the visitor's Indonesian question, and that prose is
+    // long enough to decide the vote on its own.
+    lang = detectLang(parsed.question ?? parsed.message, parsed.lang);
 
     // Only first-turn questions are cached. A follow-up depends on its own
     // history, so a cached answer keyed on the question alone could land in the

@@ -244,6 +244,74 @@ slow way, and the two things still not written down, are in
 `sasana-be.smkwikrama.sch.id` appears in older documents and is a dead name: it
 resolves, and it serves nothing.
 
+### How nginx must serve the frontend export
+
+`out/` is a static export with **no server behind it**, so how nginx resolves a
+path is the whole of the frontend's routing. `next.config.mjs` leaves
+`trailingSlash` at its default, so the build writes `out/check.html` — not
+`out/check/index.html`. A request for `/check` therefore matches no file on
+disk, and nginx has to be told to try the `.html` before it gives up.
+
+**What is running now does not.** Measured from outside the machine on
+2026-09-10:
+
+| Request | Response |
+| --- | --- |
+| `/check` | `200`, 82122 bytes |
+| `/about` | `200`, 82122 bytes |
+| `/favicon.ico` | `200`, 82122 bytes |
+| `/definitely-not-a-real-path-xyz123` | `200`, 82122 bytes |
+| `/check.html` | `200`, 23054 bytes — the real page |
+
+Four different paths return a byte-identical document: `out/index.html`, the
+landing page, under a `200`. Anything that is not a file on disk falls back to
+it. So **every route except `/` is broken on reload, on a shared link, and on
+anything arriving from search** — the visitor lands on the landing page while
+the address bar still reads `/check`, and the console carries React error #418,
+because `Header` renders one tree for `/` and a different one everywhere else
+and the two cannot be reconciled. Clicking back into the page does nothing: the
+router already believes it is there. Navigating from the landing page works,
+which is why this survived — the client router never asks the server.
+
+The block that serves the export must be:
+
+```nginx
+server {
+    server_name sasana.smkwikrama.sch.id;
+    root /path/to/out;                        # wherever the export is copied
+
+    autoindex off;                            # currently on — see below
+
+    location / {
+        try_files $uri $uri.html $uri/ =404;  # currently falls back to /index.html
+    }
+
+    error_page 404 /404.html;                 # out/404.html ships and is never served
+}
+```
+
+Nothing in the app needs a catch-all. Every route is pre-rendered to its own
+file, `/explore/[siteId]` included, so `$uri.html` covers all of them and a path
+that matches nothing genuinely is a 404.
+
+`autoindex` is on today: `/sites/`, `/explore/` and `/_next/` return directory
+listings, including files like `sites/README.md` that were never meant to be
+served. Turning it off is part of the same edit.
+
+**Not verified:** the directives above describe the behaviour measured from
+outside, not a config file anybody has read. Whoever performs this edit should
+write the real `location` block and the real document root into this section,
+and correct it if the running config reaches the same result another way.
+
+Check it landed:
+
+```bash
+curl -s -o /dev/null -w '%{http_code} %{size_download}\n' https://sasana.smkwikrama.sch.id/check
+```
+
+`200 82122` is the broken fallback. `200 23054` is the check page. A path that
+exists nowhere must answer `404`.
+
 ### Every deploy
 
 Merge to `main`, then **ask for the deploy**. It does not happen by itself.

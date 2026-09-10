@@ -226,59 +226,63 @@ every place on both sides that has to follow.
 
 ## Deployment
 
-**Vercel for both services, Supabase for the answer cache.** The reasoning, and
-what the choice costs, is [ADR-0018](docs/adr/0018-deploy-to-vercel-answer-cache-to-postgres.md).
-There is no VPS and no container in production; `docker-compose.yml` is for
-laptops only.
+**One school server, `103.139.192.14`, behind nginx.** All three subdomains
+point at it. Deploys are performed by hand on that machine by the project
+supervisor or the school's IT; merging to `main` publishes nothing on its own.
 
 ```
-frontend/  ──▶  Vercel project  ──▶  sasana.smkwikrama.sch.id
-backend/   ──▶  Vercel project  ──▶  sasana-be.smkwikrama.sch.id
-                     │
-                     └────────────▶  Supabase Postgres (answer cache)
+frontend/  ──▶  sasana.smkwikrama.sch.id      ┐
+backend/   ──▶  sasana-api.smkwikrama.sch.id  ┘ 103.139.192.14, nginx
 ```
 
-### First time
+This section used to describe two Vercel projects and a Supabase database, and
+that deployment was never carried out. What it costs to have found that out the
+slow way, and the two things still not written down, are in
+[ADR-0023](docs/adr/0023-production-is-one-school-server-behind-nginx.md).
+`docker-compose.yml` is for laptops only and is not how that server runs.
 
-**1. Supabase.** Create a project, then apply the migration in
-`supabase/migrations/` — either `supabase db push` with the CLI, or by pasting
-the file into the dashboard's SQL editor. Copy the **transaction pooler**
-connection string (Connect → Transaction pooler, port **6543**). The direct
-connection on 5432 will run out of connections under serverless.
+`sasana-be.smkwikrama.sch.id` appears in older documents and is a dead name: it
+resolves, and it serves nothing.
 
-**2. Two Vercel projects, both importing this repository**, differing only in
-Root Directory:
+### Every deploy
 
-| Project | Root Directory | Framework | Environment |
-| --- | --- | --- | --- |
-| frontend | `frontend/` | Next.js (detected) | `NEXT_PUBLIC_API_URL` = the backend's URL |
-| backend | `backend/` | Hono (detected) | `GEMINI_API_KEY`, `DATABASE_URL`, `ALLOWED_ORIGINS` |
+Merge to `main`, then **ask for the deploy**. It does not happen by itself.
 
-`ALLOWED_ORIGINS` must contain the frontend's own origin or every request is
-refused by CORS, with the failure visible only in the visitor's console.
+The frontend is the exception in one direction only: `out/` is committed
+(ADR-0019), so rebuilding and merging it is what publishes the site. The backend
+has no equivalent, which is why the two can drift apart — a merged frontend
+change and an unmerged-to-the-server backend change look, from the outside, like
+a broken feature rather than a missing deploy.
 
-`NEXT_PUBLIC_API_URL` is inlined into the browser bundle at build time, not read
-at run time. Changing it needs a redeploy of the frontend, not a restart.
+Nothing else is needed for an ordinary backend change: no new dependencies, no
+new environment variables, no migration. A change under `supabase/migrations/`
+is the one exception, and it must be applied **before** the code that reads it
+goes live.
 
-**3. Point the subdomains** at Vercel with a CNAME each, and add both as domains
-on their respective projects. TLS is issued automatically.
+### Checking a deploy landed
 
-### Every deploy after that
+Run this from anywhere. It distinguishes old code from new by the response
+alone, so the person who performs the deploy does not have to have read the
+change:
 
-Merge to `main`. Vercel builds and promotes both projects on its own; there is
-nothing to run by hand.
+```bash
+curl -s -D - -X POST https://sasana-api.smkwikrama.sch.id/api/chat -H "content-type: application/json" -d '{"message":"apa yang harus saya siapkan sebelum masuk?","lang":"id","site":{"id":"pura-tirta-empul","name":"Pura Tirta Empul","ruleIds":["temple-attire"],"lat":-8.4156,"lng":115.3153},"proximity":{"state":"approach","distanceM":640,"accuracyM":25}}'
+```
 
-The exception is a change under `supabase/migrations/`: **apply the migration
-before the code that needs it goes live**, or the first request will look for a
-table that does not exist yet.
+A situated question must never be served from the cache. `x-cache: HIT`, or an
+answer that names no distance, means the running code predates
+[#50](https://github.com/Daniyal-Creator/Sasana/pull/50).
 
 ### Secrets
 
 `.env` files are never deployed and never committed — they are git-ignored and
-local to your machine. Production values live in each Vercel project's
-environment settings. `DATABASE_URL` and `GEMINI_API_KEY` belong to the backend
-project only; anything named `NEXT_PUBLIC_*` is compiled into the browser bundle
-and is readable by every visitor, so nothing secret may ever be given that name.
+local to your machine. Production values live on the server. `DATABASE_URL` and
+`GEMINI_API_KEY` belong to the backend only; anything named `NEXT_PUBLIC_*` is
+compiled into the browser bundle and is readable by every visitor, so nothing
+secret may ever be given that name.
+
+Do not run `docker compose config` on a machine that holds real values: it
+prints every interpolated secret to the terminal.
 
 ---
 

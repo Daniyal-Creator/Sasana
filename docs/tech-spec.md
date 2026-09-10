@@ -315,6 +315,13 @@ Each choice is evaluated against the project's hard constraints: **Rp 0 budget**
 
 ### 3.4 Vercel (hosting)
 
+> **Not what happened.** This section records the hosting chosen during
+> planning. Production is one school server behind nginx; see
+> [ADR-0023](adr/0023-production-is-one-school-server-behind-nginx.md). Kept as
+> written because the reasoning below is why Vercel was picked at the time, and
+> that is worth reading before anybody proposes it again.
+
+
 **Why chosen.** Vercel is built by the makers of Next.js: **git-push-to-deploy**, automatic serverless execution of our API Routes (so the BFF "just works"), a **free Hobby tier** (PRD §8), a **live public URL** for judges (PRD §3 "Website live & accessible"), and **first-class env-var management** so `GEMINI_API_KEY` is set in the dashboard and injected server-side only (§9, PRD §14 step 5). Global CDN + image optimization support the mobile-first performance goals (§8).
 
 **Trade-offs considered.** Vendor lock-in to Vercel-specific features is a theoretical risk, but SASANA uses only standard Next.js + standard env vars, so it remains portable. Free-tier serverless has cold starts (first request after idle is slower) — acceptable against the 8 s budget, and warm during a live demo.

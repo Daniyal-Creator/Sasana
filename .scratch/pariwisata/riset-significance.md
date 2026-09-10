@@ -1,5 +1,13 @@
 # Riset — data yang dibutuhkan untuk `Significance` (tiket 02, 03, 04)
 
+> **Dihentikan 2026-09-10, atas keputusan pemilik.** Riset ini tidak jadi
+> dipakai; gelombang pariwisata dihentikan. Dibiarkan utuh karena isinya masih
+> berguna terlepas dari gelombangnya: standar sumber yang repo ini tegakkan,
+> daftar sumber yang diterima dan ditolak, dan catatan arsip mana yang bisa
+> dijangkau dan mana yang mati. Bagian **"Yang sudah dicoba agen"** khususnya
+> menghemat waktu siapa pun yang nanti perlu menyumberkan klaim budaya apa pun
+> di aplikasi ini, bukan hanya `Significance`.
+
 **Untuk:** Daniyal · **Disiapkan:** 2026-09-10
 **Kenapa ada:** agen mencoba menyumber sendiri dan gagal menjangkau arsipnya.
 Hasil percobaannya ada di bagian terakhir. Pencarian dari Indonesia kemungkinan

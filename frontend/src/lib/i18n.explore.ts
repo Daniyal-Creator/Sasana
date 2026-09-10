@@ -307,10 +307,6 @@ const dict = {
   // asking about *here*, and "Ask the assistant" would send them to a screen
   // that does not obviously know that.
   "explore.detail.ask": { en: "Ask about this place", id: "Tanya tentang tempat ini" },
-  // The way back into the map from a Site's own page. Named as the map rather
-  // than as "back", because arriving here from a search result is not going
-  // back to anywhere.
-  "explore.detail.openMap": { en: "See it on the map", id: "Lihat di peta" },
   "explore.detail.simulate": {
     en: "View as if I am here",
     id: "Lihat seolah-olah saya di sini",

@@ -9,6 +9,7 @@ import { PanelBack } from "@/components/explore/PanelBack";
 import { SiteThumb } from "@/components/explore/SiteThumb";
 import { ZoneDiagram } from "@/components/explore/ZoneDiagram";
 import { RouteActions } from "@/components/explore/RouteActions";
+import { useSearchParams } from "next/navigation";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { formatDistance, type LatLng } from "@/lib/geo";
@@ -85,31 +86,6 @@ interface SiteBriefProps {
    * has to be written before the navigation, not after it.
    */
   onAsk?: () => void;
-  /**
-   * The heading level the Site's name is rendered at.
-   *
-   * `h2` inside the map sheet, where the page already owns its `h1`. `h1` on the
-   * Site's own page, where this name IS the page. Guardrail T6 asks for one `h1`
-   * per page and no skipped levels, and the alternative - a visually hidden
-   * `h1` above a visible `h2` saying the same words - reads the name twice to
-   * anybody using a screen reader.
-   */
-  titleAs?: "h1" | "h2";
-  /**
-   * Show the nearest recorded ceremony whatever its date, for demonstrating the
-   * notice without waiting for a real one.
-   *
-   * A prop rather than a read of `?odalan=1` from inside here, which is what it
-   * used to be. That read made this component depend on the URL, and a
-   * component that calls `useSearchParams` cannot be prerendered: dropped onto
-   * the Site's own page it failed the export outright, and the fix that merely
-   * silences the error - a Suspense boundary - would have exported every Site
-   * page as an empty fallback. A page whose entire purpose is being readable by
-   * a search engine cannot be the page that ships no content.
-   *
-   * The caller that has the URL passes it in. `/explore` still does.
-   */
-  forceOdalan?: boolean;
 }
 
 /**
@@ -131,20 +107,15 @@ export function SiteBrief({
   onHideRoute,
   from = null,
   onAsk,
-  titleAs: Title = "h2",
-  forceOdalan = false,
 }: SiteBriefProps) {
-  // The section heading moves with the title rather than being pinned, so the
-  // levels stay one apart in both homes. Pinned at `h3` it read h1 then h3 on
-  // the Site's own page, which is the skip T6 forbids.
-  const SectionTitle = Title === "h1" ? "h2" : "h3";
   const { lang } = useLang();
+  const searchParams = useSearchParams();
 
   // Inside the Zone the visitor has arrived, and a route to where somebody is
   // already standing is not a direction. The panel says so and drops the
   // button rather than offering a journey of nought metres.
   const insideZone = distanceM !== null && distanceM <= site.radiusM;
-  const odalan = upcomingOdalan(site, forceOdalan);
+  const odalan = upcomingOdalan(site, searchParams.get("odalan") === "1");
   const [expandedCustoms, setExpandedCustoms] = useState<Record<string, boolean>>({});
 
   function toggleCustom(id: string) {
@@ -167,9 +138,9 @@ export function SiteBrief({
       <div className="flex items-start gap-3">
         <SiteThumb size={56} className="mt-0.5" />
         <div className="min-w-0 flex-1">
-          <Title className="font-display text-h3 font-semibold leading-tight text-text">
+          <h2 className="font-display text-h3 font-semibold leading-tight text-text">
             {site.name}
-          </Title>
+          </h2>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-text-secondary">
             <span className="inline-flex items-center gap-1.5">
               <MapPin size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-primary" />
@@ -204,9 +175,9 @@ export function SiteBrief({
         </div>
       )}
 
-      <SectionTitle className="mt-6 text-xs font-medium uppercase tracking-wide text-text-muted">
+      <h3 className="mt-6 text-xs font-medium uppercase tracking-wide text-text-muted">
         {tExplore(lang, "explore.detail.customsTitle")}
-      </SectionTitle>
+      </h3>
 
       {/* Deliberately not a list of cards. Each Custom is a rule and a reason,
           separated by a hairline: the rhythm carries the grouping, and a card

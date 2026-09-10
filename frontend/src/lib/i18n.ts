@@ -442,6 +442,56 @@ const dict = {
     en: "Is it okay to take photos inside?",
     id: "Boleh memotret di dalam?",
   },
+  // The context a visitor carries in from Explore, said on screen. Until this
+  // existed the Site and the position travelled invisibly: the answer knew
+  // where somebody was standing and the screen gave no sign of it, so nobody
+  // thought to ask "here".
+  "assistant.context.about": { en: "About {site}", id: "Tentang {site}" },
+  "assistant.context.explain": {
+    en: "Answers will be about this place.",
+    id: "Jawaban akan mengacu ke tempat ini.",
+  },
+  "assistant.context.inside": {
+    en: "You are inside this area.",
+    id: "Anda berada di dalam kawasan ini.",
+  },
+  "assistant.context.approaching": {
+    en: "You are about {distance} away, not inside yet.",
+    id: "Anda sekitar {distance} dari sini, belum masuk kawasannya.",
+  },
+  "assistant.context.away": { en: "You are about {distance} away.", id: "Anda sekitar {distance} dari sini." },
+  // Shown instead of a distance when the fix is no better than the distance
+  // itself. The same rule the prompt follows: a number the device was never
+  // sure of is arithmetic, not information.
+  "assistant.context.unsure": {
+    en: "Your position is not certain enough to give a distance.",
+    id: "Posisi Anda belum cukup pasti untuk disebutkan jaraknya.",
+  },
+  "assistant.context.clear": { en: "Clear this place", id: "Lepaskan tempat ini" },
+  "assistant.suggested.here": { en: "Ask about this place", id: "Tanya tentang tempat ini" },
+  // One question per Custom the Site actually carries, named so the answer
+  // lands on that Site's own rules. Never a question about something the Site
+  // has no Custom for.
+  "assistant.here.dress": {
+    en: "What should I wear at {site}?",
+    id: "Apa yang sebaiknya saya kenakan di {site}?",
+  },
+  "assistant.here.photography": {
+    en: "Can I take photos at {site}?",
+    id: "Boleh memotret di {site}?",
+  },
+  "assistant.here.offerings": {
+    en: "What should I do about the offerings at {site}?",
+    id: "Bagaimana menyikapi sesaji di {site}?",
+  },
+  "assistant.here.drones": {
+    en: "Can I fly a drone at {site}?",
+    id: "Boleh menerbangkan drone di {site}?",
+  },
+  "assistant.here.quiet": {
+    en: "How quiet should I be at {site}?",
+    id: "Seberapa tenang saya harus bersikap di {site}?",
+  },
   "assistant.input.placeholder": { en: "Ask about a custom…", id: "Tanya tentang adat…" },
   "assistant.send": { en: "Send", id: "Kirim" },
   // These four lines used to promise that every answer came from an official

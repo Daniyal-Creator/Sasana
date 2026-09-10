@@ -380,7 +380,7 @@ const dict = {
     en: "Location unavailable.",
     id: "Lokasi tidak tersedia.",
   },
-  "check.meta.locationAdd": { en: "Add location", id: "Tambahkan lokasi" },
+  "check.meta.locationAdd": { en: "Allow location", id: "Izinkan lokasi" },
   "check.meta.device": { en: "Taken on {device}", id: "Diambil dengan {device}" },
   "check.privacy": {
     en: "Your photo is analyzed once and never stored. The time it was taken travels with it, and the location too when you allow it. On the free AI tier, Google may use submitted data to improve its products.",

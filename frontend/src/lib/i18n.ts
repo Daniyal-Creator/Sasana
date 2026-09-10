@@ -23,8 +23,11 @@ const dict = {
   "nav.benefits": { en: "Benefits", id: "Manfaat" },
   "nav.how": { en: "How it works", id: "Cara kerja" },
   "nav.about": { en: "About", id: "Tentang" },
-  "nav.about_sasana": { en: "About SASANA", id: "About SASANA" },
-  "nav.about_us": { en: "About Us", id: "About Us" },
+  "nav.about_sasana": { en: "About SASANA", id: "Tentang SASANA" },
+  "nav.about_us": { en: "About Us", id: "Tentang Kami" },
+  "nav.check": { en: "Situation Check", id: "Cek Situasi" },
+  "nav.assistant": { en: "Ask Assistant", id: "Tanya Asisten" },
+  "nav.explore": { en: "Explore Locations", id: "Jelajahi Lokasi" },
   "lang.label": { en: "Language", id: "Bahasa" },
   "cta.badge.ai_vision": { en: "AI VISION", id: "AI VISION" },
   "cta.badge.chatbot": { en: "CHATBOT", id: "CHATBOT" },
@@ -72,23 +75,56 @@ const dict = {
   "about_section.tag.vision": { en: "AI Vision", id: "AI Vision" },
   "about_section.tag.assistant": { en: "Chatbot", id: "Chatbot" },
   "about_section.tag.zones": { en: "Geofence", id: "Geofence" },
-  "about_section.action.check": { en: "Check Outfit & Surroundings", id: "Cek Pakaian & Situasi" },
-  "about_section.action.assistant": { en: "Ask Custom Assistant", id: "Tanya Asisten Adat" },
-  "about_section.action.explore": { en: "Explore Sacred Sites", id: "Jelajahi Situs Suci" },
+  "about_section.action.check": { en: "Check Situation →", id: "Cek Situasi →" },
+  "about_section.action.assistant": { en: "Ask Assistant →", id: "Tanya Asisten →" },
+  "about_section.action.explore": { en: "Explore Map →", id: "Jelajahi Peta →" },
   "about_section.check.title": { en: "Situation Check", id: "Cek Situasi" },
+  "about_section.check.tagline": { en: "See • Check • Understand", id: "Lihat • Cek • Pahami" },
   "about_section.check.desc": {
     en: "Photograph your outfit or surroundings and learn whether they match the customs of the site you are visiting.",
     id: "Foto pakaian atau lingkungan Anda dan ketahui apakah sudah sesuai dengan adat di tempat yang Anda kunjungi.",
   },
   "about_section.assistant.title": { en: "Assistant", id: "Asisten" },
+  "about_section.assistant.tagline": {
+    en: "Ask about customs, etiquette and meaning.",
+    id: "Tanyakan seputar adat, etika, dan maknanya.",
+  },
   "about_section.assistant.desc": {
     en: "Ask any question about Balinese customs. Answers are drawn from the Governor Circular No.\u00a07/2025, not opinions.",
     id: "Tanyakan apa saja tentang adat Bali. Jawaban berasal dari Surat Edaran Gubernur No.\u00a07/2025, bukan opini.",
   },
   "about_section.zones.title": { en: "Zones and Notices", id: "Zona dan Pemberitahuan" },
+  "about_section.zones.tagline": {
+    en: "Get notified about sacred areas, dress codes & events.",
+    id: "Dapatkan info area suci, tata busana & upacara.",
+  },
   "about_section.zones.desc": {
     en: "Receive a notice when you approach a sacred site, so you know the customs before you arrive.",
     id: "Terima pemberitahuan saat Anda mendekati tempat suci, agar Anda mengetahui adatnya sebelum tiba.",
+  },
+  "about_section.dialog.user": {
+    en: "Can I wear a yellow sash to the temple?",
+    id: "Bolehkah memakai selendang kuning ke pura?",
+  },
+  "about_section.dialog.bot": {
+    en: "Yes. Sashes (umpal) can be yellow, white, or red, tied at the left waist.",
+    id: "Boleh. Selendang (umpal) dapat berwarna kuning, putih, atau merah, diikat di pinggang kiri.",
+  },
+  "about_section.dialog.source": {
+    en: "Circular No. 7/2025 · Clause 3.2",
+    id: "Surat Edaran No. 7/2025 · Poin 3.2",
+  },
+  "about_section.zones.outer_label": {
+    en: "Approach · 500m (Notices triggered)",
+    id: "Pendekatan · 500m (Notifikasi)",
+  },
+  "about_section.zones.inner_label": {
+    en: "Sacred Zone · 100m (Customs active)",
+    id: "Zona Sakral · 100m (Aturan Aktif)",
+  },
+  "about_section.zones.status_badge": {
+    en: "Live Proximity Active",
+    id: "Deteksi Jarak Aktif",
   },
 
   "sites_section.title": {
@@ -641,7 +677,7 @@ const dict = {
   },
   "about.meta": { en: "SASANA \u00b7 Cultural Guide", id: "SASANA \u00b7 Cultural Guide" },
   "about.nav.about": { en: "About", id: "Tentang" },
-  "about.nav.story": { en: "Story", id: "Cerita" },
+  "about.nav.story": { en: "Story", id: "Linimasa" },
   "about.nav.principles": { en: "Principles", id: "Prinsip" },
   "about.nav.source": { en: "Charter", id: "Piagam" },
   "about.nav.team": { en: "Team", id: "Tim" },
@@ -844,6 +880,34 @@ const dict = {
     id: "Tata krama dan pedoman perilaku bagi wisatawan di Bali, menegaskan pelindungan kawasan pura dan etika busana adat.",
   },
   "about.rules.link": { en: "Bali Provincial Government Portal", id: "Portal Resmi Pemprov Bali" },
+  "about.rules.view_doc": {
+    en: "Read Official SE No. 7/2025 Document",
+    id: "Baca Dokumen Resmi SE No. 7/2025",
+  },
+  "about.modal.doc_title": {
+    en: "Bali Governor Circular No. 7/2025",
+    id: "Surat Edaran Gubernur Bali No. 7 Tahun 2025",
+  },
+  "about.modal.doc_subtitle": {
+    en: "SASANA Team's Analytical Review of Bali Governor Circular No. 7/2025",
+    id: "Hasil Analisis & Telaah Tim SASANA terhadap SE Gubernur Bali No. 7/2025",
+  },
+  "about.modal.open_new_tab": {
+    en: "Open in New Tab / Download",
+    id: "Buka Tab Baru / Unduh PDF",
+  },
+  "about.modal.visit_portal": {
+    en: "Bali Gov Portal",
+    id: "Portal Pemprov Bali",
+  },
+  "about.modal.close": {
+    en: "Close document",
+    id: "Tutup dokumen",
+  },
+  "about.modal.mobile_hint": {
+    en: "If the PDF preview is limited on your mobile device, use the button above to open or download the full document.",
+    id: "Jika tampilan PDF terbatas di perangkat Anda, gunakan tombol di atas untuk membuka atau mengunduh dokumen lengkap.",
+  },
 
   "about.privacy.eyebrow": { en: "DATA INTEGRITY", id: "INTEGRITAS DATA" },
   "about.privacy.title": { en: "100% On-Device Photo Privacy", id: "Privasi Foto 100% On-Device" },

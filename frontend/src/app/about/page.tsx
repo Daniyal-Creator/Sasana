@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Compass,
   ExternalLink,
+  FileText,
   Lock,
   MapPin,
   ShieldCheck,
@@ -19,57 +20,22 @@ import {
 import { Button } from "@/components/ui/Button";
 import { SectionDivider } from "@/components/ui/SectionDivider";
 import { Footer } from "@/components/layout/Footer";
+import { DocumentViewerModal } from "@/components/about/DocumentViewerModal";
 import { getLenis } from "@/components/providers/SmoothScroll";
 import { useLang } from "@/lib/language";
 import { t, type CopyKey } from "@/lib/i18n";
 import { useScrollFadeUp } from "@/lib/useScrollFadeUp";
 import { SITES, type Site } from "@/data/sites";
+import { TEAM, type TeamMember } from "@/data/team";
 import {
   HeroBottomSkyline,
   StoryBottomWatermark,
   PrinciplesBottomWatermark,
   CharterBottomWatermark,
   TeamBottomWatermark,
-  ClosingBottomSkyline,
 } from "@/components/about/BalineseWatermarks";
 
 /* ─── Data Types & Definitions ───────────────────────────────────────────── */
-
-interface TeamMember {
-  name: string;
-  initials: string;
-  roleKey: CopyKey;
-  focusKey: CopyKey;
-  descKey: CopyKey;
-  tag: string;
-}
-
-const TEAM: TeamMember[] = [
-  {
-    name: "Daniyal Hafidz Prasetyo",
-    initials: "DH",
-    roleKey: "about.team.member1.role",
-    focusKey: "about.team.member1.focus",
-    descKey: "about.team.member1.desc",
-    tag: "Lead & Architecture",
-  },
-  {
-    name: "Manu Caimpiyana Bhimasena",
-    initials: "MC",
-    roleKey: "about.team.member2.role",
-    focusKey: "about.team.member2.focus",
-    descKey: "about.team.member2.desc",
-    tag: "Frontend & Design",
-  },
-  {
-    name: "Rafli Halomoan",
-    initials: "RH",
-    roleKey: "about.team.member3.role",
-    focusKey: "about.team.member3.focus",
-    descKey: "about.team.member3.desc",
-    tag: "Knowledge Base & QA",
-  },
-];
 
 interface PrincipleItem {
   num: string;
@@ -207,6 +173,9 @@ function StarIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
     </svg>
   );
 }
+
+
+
 
 
 
@@ -735,9 +704,8 @@ function StackedTimelineDeck() {
 export default function AboutPage() {
   const { lang } = useLang();
 
-  // Mobile navigation active tracking
-  const [activeNav, setActiveNav] = useState<string>("hero");
   const [activePrincipleIndex, setActivePrincipleIndex] = useState<number>(0);
+  const [isDocModalOpen, setIsDocModalOpen] = useState(false);
   const principlesTrackRef = useRef<HTMLDivElement>(null);
 
   // Scroll animations per section (M1-M5 compliant)
@@ -788,30 +756,8 @@ export default function AboutPage() {
     duration: 0.35,
   });
 
-  const closingRef = useScrollFadeUp<HTMLElement>({
-    selector: ".closing-animate",
-    stagger: 0.06,
-    y: 12,
-    duration: 0.35,
-  });
 
-  // Track active section for mobile sticky navigation
-  useEffect(() => {
-    const sectionIds = ["hero", "story", "principles", "source", "team"];
-    const handleScroll = () => {
-      const scrollPos = window.scrollY + 140;
-      for (let i = sectionIds.length - 1; i >= 0; i--) {
-        const el = document.getElementById(sectionIds[i]);
-        if (el && el.offsetTop <= scrollPos) {
-          setActiveNav(sectionIds[i]);
-          break;
-        }
-      }
-    };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   // Handle URL hash navigation (e.g. /about#source from footer)
   useEffect(() => {
@@ -832,7 +778,6 @@ export default function AboutPage() {
             const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
             window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
           }
-          setActiveNav(targetId);
         }, 150);
       }
     };
@@ -859,59 +804,12 @@ export default function AboutPage() {
     setActivePrincipleIndex(index);
   };
 
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const yOffset = -90;
-    const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-    const lenis = getLenis();
-    if (lenis) {
-      lenis.scrollTo(y);
-    } else {
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
-    }
-    setActiveNav(id);
-  };
 
-  const navItems = [
-    { id: "hero", label: t(lang, "about.nav.about") },
-    { id: "story", label: t(lang, "about.nav.story") },
-    { id: "principles", label: t(lang, "about.nav.principles") },
-    { id: "source", label: t(lang, "about.nav.source") },
-    { id: "team", label: t(lang, "about.nav.team") },
-  ];
 
   return (
     <>
       <div className="relative flex-1 overflow-x-hidden bg-bg">
-        {/* ── Mobile Sticky Sub-Nav (Pocket Guide Menu) ───────────── */}
-        <div className="sticky top-14 z-20 border-b border-border bg-bg/95 backdrop-blur-none md:hidden">
-          <nav
-            aria-label="About page sections"
-            className="no-scrollbar flex items-center gap-1 overflow-x-auto px-4 py-2"
-          >
-            {navItems.map((item) => {
-              const isActive = activeNav === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.id)}
-                  className={`relative shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
-                    isActive
-                      ? "font-semibold text-accent-strong"
-                      : "text-text-muted hover:text-text"
-                  }`}
-                >
-                  {item.label}
-                  {isActive && (
-                    <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-full bg-accent" />
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+
 
         <main className="mx-auto w-full max-w-container px-4 sm:px-6 lg:px-8">
 
@@ -1212,15 +1110,59 @@ export default function AboutPage() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t border-border/80">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      icon={ExternalLink}
-                      iconPosition="trailing"
-                      href="https://www.baliprov.go.id"
-                    >
-                      {t(lang, "about.rules.link")}
-                    </Button>
+                    {/* Desktop: triggers DocumentViewerModal with Paras Cream & Prada Gold Button */}
+                    <div className="hidden md:block">
+                      <button
+                        type="button"
+                        aria-haspopup="dialog"
+                        onClick={() => setIsDocModalOpen(true)}
+                        className="group inline-flex items-center gap-2.5 rounded-xl border border-accent/40 bg-surface px-5 py-3 text-sm font-semibold text-text shadow-sm transition-all duration-200 ease-out hover:border-accent hover:text-accent-strong hover:shadow-md active:scale-[0.98] focus-visible:shadow-focus cursor-pointer select-none"
+                      >
+                        <FileText size={18} strokeWidth={2} className="text-accent shrink-0 transition-colors duration-200 group-hover:text-accent-strong" aria-hidden />
+                        <span className="font-display tracking-wide">{t(lang, "about.rules.view_doc")}</span>
+                        <ArrowRight
+                          size={16}
+                          strokeWidth={2}
+                          className="text-accent shrink-0 transition-all duration-200 ease-out group-hover:text-accent-strong group-hover:translate-x-1"
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
+
+                    {/* Mobile: opens native PDF reader directly, with government portal link neatly beneath */}
+                    <div className="flex flex-col items-start gap-3 md:hidden w-full">
+                      <a
+                        href="/docs/SE_Gubernur_Bali_No_7_Tahun_2025.pdf"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group inline-flex w-full items-center justify-between gap-3 rounded-xl border border-accent/40 bg-surface px-4 py-3 text-sm font-semibold text-text shadow-sm transition-all duration-200 ease-out hover:border-accent hover:text-accent-strong hover:shadow-md active:scale-[0.98] focus-visible:shadow-focus select-none"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <FileText size={18} strokeWidth={2} className="text-accent shrink-0 transition-colors duration-200 group-hover:text-accent-strong" aria-hidden />
+                          <span className="font-display tracking-wide truncate">
+                            {t(lang, "about.rules.view_doc")}
+                          </span>
+                        </div>
+                        <ArrowRight
+                          size={16}
+                          strokeWidth={2}
+                          className="text-accent shrink-0 transition-all duration-200 ease-out group-hover:text-accent-strong group-hover:translate-x-1"
+                          aria-hidden
+                        />
+                      </a>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={ExternalLink}
+                        iconPosition="trailing"
+                        href="https://www.baliprov.go.id"
+                        external
+                        className="text-text-secondary hover:text-primary px-1 text-xs"
+                      >
+                        {t(lang, "about.rules.link")}
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
@@ -1298,24 +1240,34 @@ export default function AboutPage() {
             </div>
 
             {/* 3-Column Structured Dossier Profile Cards */}
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-3">
               {TEAM.map((member) => (
                 <div
                   key={member.name}
-                  className="team-animate group flex flex-col justify-between rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:border-accent/50 hover:shadow-md"
+                  className="team-animate group relative flex flex-col justify-between rounded-xl border border-border bg-surface p-6 shadow-sm transition-all duration-200 hover:border-accent/50 hover:shadow-md"
                 >
                   <div>
-                    {/* Header: Monogram Avatar & Role Tag */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full border border-accent/40 bg-surface-sunken font-display text-sm font-bold text-accent-strong shadow-inner transition-colors group-hover:bg-accent group-hover:text-surface">
-                        {member.initials}
-                      </div>
-                      <span className="rounded-full border border-border bg-surface-sunken px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        {member.tag}
-                      </span>
+                    {/* Role Tag (Top-right absolute) */}
+                    <span className="absolute top-6 right-6 rounded-full border border-border bg-surface-sunken px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                      {member.tag}
+                    </span>
+
+                    {/* Monogram Avatar / Photo */}
+                    <div className="relative flex h-[105px] w-[105px] shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-accent/40 bg-surface-sunken font-display text-2xl font-bold text-accent-strong shadow-sm transition-all duration-300 group-hover:border-accent group-hover:shadow-md">
+                      {member.image ? (
+                        <Image
+                          src={member.image}
+                          alt={member.name}
+                          width={105}
+                          height={105}
+                          className="h-full w-full object-cover object-top scale-105 transition-transform duration-300 group-hover:scale-110"
+                        />
+                      ) : (
+                        member.initials
+                      )}
                     </div>
 
-                    <h3 className="mt-4 font-display text-base font-semibold text-text transition-colors group-hover:text-primary sm:text-lg">
+                    <h3 className="mt-4 font-display text-lg font-semibold text-text transition-colors group-hover:text-primary sm:text-xl">
                       {member.name}
                     </h3>
                     <p className="text-xs font-semibold text-primary">
@@ -1339,73 +1291,14 @@ export default function AboutPage() {
             <TeamBottomWatermark />
           </section>
 
-          <SectionDivider />
 
-          {/* ── 6. Closing: Editorial Sign-off & Navigation Handoff ─── */}
-          <section
-            ref={closingRef}
-            aria-label="Closing statement"
-            className="relative overflow-hidden pt-10 pb-20 text-center sm:pt-14 sm:pb-24 lg:pt-20 lg:pb-28"
-          >
-            <div className="closing-animate relative z-10 mx-auto max-w-2xl rounded-2xl border border-border bg-surface p-8 shadow-sm sm:p-12">
-              <div className="mx-auto mb-3 flex items-center justify-center text-accent-strong">
-                <StarIcon className="h-4 w-4" />
-              </div>
-
-              <span className="text-[11px] font-bold uppercase tracking-widest text-accent-strong">
-                {t(lang, "about.closing.eyebrow")}
-              </span>
-
-              <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-text sm:text-h2">
-                {t(lang, "about.closing.title")}
-              </h2>
-
-              <p className="mt-4 font-display text-lg font-medium leading-snug text-text sm:text-xl">
-                {t(lang, "about.closing.line1")}
-                <br />
-                <span className="text-text-secondary">
-                  {t(lang, "about.closing.line2")}
-                </span>
-              </p>
-
-              <p className="mx-auto mt-3 max-w-lg text-xs leading-relaxed text-text-secondary sm:text-sm">
-                {t(lang, "about.closing.body")}
-              </p>
-
-              {/* Navigation Action Buttons */}
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button
-                  variant="primary"
-                  size="md"
-                  icon={Compass}
-                  iconPosition="leading"
-                  href="/explore"
-                >
-                  {t(lang, "about.closing.cta_explore")}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="md"
-                  icon={Camera}
-                  iconPosition="leading"
-                  href="/check"
-                >
-                  {t(lang, "about.closing.cta_check")}
-                </Button>
-              </div>
-
-              <div className="mt-8 border-t border-border pt-4 text-xs text-text-muted">
-                <span>{t(lang, "about.team.org")}</span>
-                <span className="mx-2" aria-hidden="true">·</span>
-                <span>{t(lang, "about.version")}</span>
-              </div>
-            </div>
-
-            <ClosingBottomSkyline />
-          </section>
 
         </main>
       </div>
+      <DocumentViewerModal
+        isOpen={isDocModalOpen}
+        onClose={() => setIsDocModalOpen(false)}
+      />
       <Footer />
     </>
   );

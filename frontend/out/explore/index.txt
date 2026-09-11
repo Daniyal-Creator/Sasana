@@ -6,7 +6,7 @@
 6:I[1212,["778","static/chunks/app/template-20ca0031fc1b879a.js"],"default"]
 7:I[8924,[],""]
 8:I[1959,[],"ClientPageRoot"]
-9:I[7814,["796","static/chunks/796-7b6c0d7f97a6fd30.js","424","static/chunks/424-fdacadc3d3cba7e2.js","23","static/chunks/23-5ef9eaffef889c13.js","235","static/chunks/235-2ae761510a906f7e.js","314","static/chunks/app/explore/page-0f0d0f6e724bfaa9.js"],"default"]
+9:I[7814,["796","static/chunks/796-7b6c0d7f97a6fd30.js","424","static/chunks/424-fdacadc3d3cba7e2.js","23","static/chunks/23-5ef9eaffef889c13.js","235","static/chunks/235-ecbc0500b41fc408.js","314","static/chunks/app/explore/page-adf71f634e134d08.js"],"default"]
 c:I[4431,[],"OutletBoundary"]
 e:I[5278,[],"AsyncMetadataOutlet"]
 10:I[4431,[],"ViewportBoundary"]

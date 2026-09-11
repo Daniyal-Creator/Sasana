@@ -9,10 +9,8 @@ import { ChipRow } from "@/components/ui/ChipRow";
 import { ErrorFallback } from "@/components/ui/ErrorFallback";
 import { DecorativeBackground } from "@/components/assistant/DecorativeBackground";
 import { ChatLayout } from "@/components/assistant/ChatLayout";
-import { GuideSidebar } from "@/components/assistant/GuideSidebar";
 import { TopicExplorer } from "@/components/assistant/TopicExplorer";
 import { SuggestedQuestions } from "@/components/assistant/SuggestedQuestions";
-import { MobileTopicChips } from "@/components/assistant/MobileTopicChips";
 import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
@@ -238,12 +236,7 @@ export default function AssistantPage() {
     <div className="relative flex min-h-0 flex-1 flex-col">
       <DecorativeBackground />
 
-      {/* Mobile topic chips — below header, above chat */}
-      <div className="relative z-[1] px-4 pt-3 sm:px-6 lg:hidden">
-        <MobileTopicChips onSelect={send} disabled={sending} />
-      </div>
-
-      <ChatLayout sidebar={<GuideSidebar onTopicSelect={send} disabled={sending} />}>
+      <ChatLayout>
         {/* Above the fork on purpose: the screen a visitor lands on from
             Explore is the empty one, and that is the screen that used to say
             nothing about where they had come from. It sits in the same place

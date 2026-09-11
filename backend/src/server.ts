@@ -1,8 +1,9 @@
 // The Node entry point: the same app as a long-lived process.
 //
 // This is what `npm run dev`, `npm run start` and the development container
-// run. Vercel runs `src/index.ts` instead, which only re-exports the app
-// (ADR-0018).
+// run. The other entry, `src/index.ts`, only re-exports the app for a
+// serverless host to invoke per request (ADR-0018); nothing this repository
+// describes deploys it that way any more (ADR-0023).
 
 import { serve } from "@hono/node-server";
 

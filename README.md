@@ -19,11 +19,125 @@ and Rafli Halomoan.
 
 | Route | Feature | What it does |
 | --- | --- | --- |
-| `/check` | **Situation Check** | Analyzes a photo and returns a compliance verdict, the reason, and a polite suggestion. Answers `unclear` and asks for a better photo rather than guessing. |
-| `/assistant` | **Custom Assistant** | Answers free-form questions about Balinese customs, grounded in a curated knowledge base. If no rule covers the question, it says so instead of inventing one. |
-| `/about` | About | Mission and the reference to Governor Circular No. 7 of 2025. |
+| `/` | Landing | The three doors — Situation Check, Assistant, Explore — and what the app is for. |
+| `/check` | **Situation Check** | Reads the visitor's own photo and says how it stands against custom: a verdict, the reason behind it, and what to do instead. |
+| `/assistant` | **Custom Assistant** | Answers free-form questions about Balinese custom, and shows what each answer stands on. |
+| `/explore` | **Explore** | A map of the Sites and their Zones, and the notice that rises when a visitor crosses an Approach. |
+| `/explore/<site-id>` | Site link | Opens the map on one Site — `/explore/pura-tirta-empul` is a link you can hand to somebody. |
+| `/about` | About | The mission, the team, and the Circular the Rules cite. |
+| `/stats` | Cache readings | What the answer cache has saved. A maintenance screen, deliberately not in the header. |
 
-Both features work in **Indonesian and English**.
+Everything works in **Indonesian and English** — the interface, the answers, the
+written directions, and the refusals.
+
+### Situation Check — `/check`
+
+A visitor photographs the thing they are unsure about — what they are wearing at
+a gate, where they are standing, what they are about to fly — and gets an answer
+before they act.
+
+- **The photo never leaves the device whole.** It is decoded in the browser,
+  scaled to 1024 px on its longest edge and re-encoded at quality 0.85 before
+  the request is built. JPG or PNG, up to 5 MB in.
+- **Two contexts:** _At a temple_ and _General_. It changes what the model is
+  asked to look for, not how strictly it judges.
+- **Four verdicts,** each with a reason, a suggestion and a reference:
+  `compliant`, `needs_attention`, `not_compliant`, and `unclear`. `unclear` is a
+  real answer rather than a failure — a dark or cropped photo is told to come
+  back better, not guessed at.
+- **The photo's own knowledge is used when it has any.** EXIF capture time and
+  coordinates travel with it, or a live fix if the visitor taps to add one; the
+  time is what tells the model the light to expect. Coordinates that land inside
+  a Site's Zone name the Site, and its Customs join the question — as Rule ids
+  the server resolves against its own knowledge base, never as text the browser
+  supplied.
+- **The result hands itself on.** One tap carries the verdict and the photo into
+  the Assistant as a follow-up question, so "why is that not allowed?" does not
+  have to be typed from scratch.
+- **Nothing is kept.** The image is held in memory for the length of one request
+  and never written to disk, cached, or logged; only its byte size reaches a log
+  line.
+
+### Custom Assistant — `/assistant`
+
+Free-form questions, typed or tapped. The answer always says what it is standing
+on, because an unsourced answer that looks official is worse than no answer.
+
+| Tier | What it means |
+| --- | --- |
+| `rule` | Cites Rules the server resolved in its own knowledge base, and carries their attribution. The only tier with official weight. |
+| `context` | Balinese custom, or what something means, with no Rule behind it. Answered, never dressed as official guidance. |
+| `general` | Bali more broadly — history, culture, geography. The model's own knowledge, labelled as such. |
+| `places` | Real Amenities near a Site, read from OpenStreetMap at request time. Every name, category and distance comes from the map; the model only writes the sentence. |
+| `none` | Nothing covers the question, so the answer says so. |
+
+Each tier is drawn with its own icon and its own line beneath the answer, so the
+difference reaches the visitor rather than living in the JSON.
+
+- **35 Rules** in `backend/src/data/rules.json`, each with its own source. A test
+  enforces that every Custom shown to a visitor traces back to one.
+- **A volatility fence.** An answer may say what something means and what has
+  happened, never what is happening: opening hours, ticket prices, whether a
+  place is open right now, the date of the next ceremony. The prompt is the
+  fence and a pattern net behind it catches the misses, because an answer that
+  will go stale gets stored and replayed to somebody else next week.
+- **It knows where the visitor is, when Explore has established it.** The Site
+  travels as ids; the position travels beside it carrying its own accuracy, and
+  expires two minutes after it was measured — a phone on a road reports 300–1500
+  m of error while a Zone is 250–500 m, so a distance quoted without it would
+  read as a precision the device never had.
+- **Follow-up chips.** Three questions under an answer, chosen from what it
+  cited and always the same three for the same conversation. Each one names its
+  own subject, so it can be sent with no history behind it and be answered from
+  the cache.
+- **An answer cache that measures itself.** A first-turn question's answer is
+  stored and served again when somebody asks the same thing in different words.
+  A situated answer, a `places` answer and a refusal are never stored — see
+  [Measuring what the answer cache saves](#measuring-what-the-answer-cache-saves).
+
+### Explore — `/explore`
+
+A map of Bali's sacred Sites that tells a visitor what a place expects of them
+while there is still time to act on it.
+
+- **The Guide comes first.** Before the map, a screen that asks for location by
+  showing what the app will do with it rather than promising.
+- **Two ways in.** _Live Mode_ finds the Site you are near from the device's own
+  position; _Explore Mode_ is picking one by hand, from anywhere in the world.
+- **Six Sites,** each with its own Zone: Pura Tanah Lot, Pura Luhur Uluwatu,
+  Pura Besakih, Pura Batu Bolong, Pura Tirta Empul and Pura Ulun Danu Beratan.
+  Zone radii run 250–500 m and are the Site's own; the **Approach** is one
+  global 400 m ring outside it, because nothing available justifies why one Site
+  would warn earlier than another.
+- **Crossing the Approach raises the notice** — the Customs of the place you are
+  walking towards, with a soft two-tone chime synthesised in the browser rather
+  than shipped as a sound file. The Zone is where the Customs take effect; the
+  Approach is where you are told, which is the whole point of the distinction.
+- **A Site brief** for every Site: its Customs with the reason behind each one,
+  its area, and its Zone drawn to scale.
+- **Amenities and directions.** A place to eat or stay found through the
+  Assistant can be sent to the map and kept as a destination, and
+  `GET /api/route` returns the line to draw plus the written turns — named as a
+  driving route, because that is what the public router actually returns for
+  every profile.
+- **No background anything.** The notice exists only while Explore is open on
+  screen: no service worker, no push. See
+  [Trying Explore without being in Bali](#trying-explore-without-being-in-bali).
+
+### About — `/about`
+
+The mission, how the project came about, the principles it holds to, the team,
+and the **Governor Circular No. 7 of 2025** that most Rules cite.
+
+### What the backend serves
+
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/chat` | One assistant turn: the answer, its tier, the Rule ids behind it, and any Amenities. |
+| `POST /api/vision` | One Situation Check: verdict, reason, suggestion, reference. |
+| `GET /api/route` | Directions to a chosen Amenity. Spends no Gemini quota. |
+| `GET /api/stats` | Answer-cache aggregates. Spends no Gemini quota, so it is safe to poll during a demo. |
+| `GET /health` | Liveness. Confirms the server is up without spending quota. |
 
 ---
 
@@ -44,79 +158,6 @@ bundled across the folder boundary and no build configuration is needed. Change
 a type here and TypeScript reports the mismatch on both sides immediately.
 
 The Gemini API key lives **only** in the backend. The browser never receives it.
-
----
-
-## Getting started
-
-**Requirements:** Node.js 24 or newer, npm, and Docker Desktop.
-
-> Node 24 is what both Dockerfiles ship and what CI now runs. The floor used to
-> be 20.18; the answer cache raised it, because it stores its table through
-> `node:sqlite`, which Node did not carry before 22.5.
-
-**1. Give the backend a key.** Copy the example file and fill in your own Gemini
-API key. Get one free (no credit card) at <https://aistudio.google.com/apikey>:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Only `GEMINI_API_KEY` is required — everything else has a working default.
-
-**2. Start the backend** (first terminal, from the repository root):
-
-```bash
-docker compose up backend
-```
-
-**3. Start the frontend** (second terminal):
-
-```bash
-cd frontend && npm install && npm run dev
-```
-
-Open <http://localhost:3000>.
-
-The frontend calls the backend at <http://localhost:3001>, which is the built-in
-default — `frontend/.env` only matters when the backend runs somewhere else.
-
-> The backend refuses to start, with a clear message, if `GEMINI_API_KEY` is
-> missing. That is deliberate: a misconfigured deploy should break loudly, not
-> silently return errors to users.
-
-**Prefer not to use Docker?** `cd backend && npm install && npm run dev` runs the
-same server directly on your machine.
-
----
-
-## Scripts
-
-Run these from inside `frontend/` or `backend/` — there is no root package.
-
-**`frontend/`**
-
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Next.js dev server on port 3000 |
-| `npm run build` | Production build |
-| `npm start` | Serve the production build |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run tests in watch mode |
-| `npm run test:run` | Run tests once (CI-style) |
-
-**`backend/`**
-
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the API on port 3001, reloading on change |
-| `npm start` | Start the API without the watcher |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Run tests in watch mode |
-| `npm run test:run` | Run tests once (CI-style) |
-
-Tests mock the Gemini SDK, so they need no API key, no network, and consume no
-quota.
 
 ---
 
@@ -200,14 +241,15 @@ frontend/            Next.js app - everything the browser runs
 
 backend/             Hono API - everything that touches Gemini
   src/app.ts           The Hono app: routes and CORS, binds no port
-  src/index.ts         Vercel entry - default-exports the app
+  src/index.ts         Serverless entry (ADR-0018) - default-exports the app
   src/server.ts        Node entry - `npm run dev` / `start`, the dev container
-  src/routes/          POST /api/chat, POST /api/vision, GET /api/stats
+  src/routes/          POST /api/chat, POST /api/vision, GET /api/route, GET /api/stats
   src/lib/             Gemini client, knowledge base, prompts, validation,
                        errors, caching, logging
   src/data/            rules.json - the knowledge base
   __tests__/           Vitest suites
-  Dockerfile           Development container only; production is Vercel
+  Dockerfile           Development container. How the school server runs the
+                       backend is not recorded - see Deployment.
 
 shared/              contract.ts - the API types both sides share (types only)
 supabase/migrations/ The answer cache's schema. Apply before the code that

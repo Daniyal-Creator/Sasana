@@ -1,6 +1,7 @@
-// Single-line JSON to stdout/stderr; Vercel captures these as structured,
-// searchable logs (backend-spec §4.6). Log context, never content: no message
-// text, no image bytes, no keys.
+// Single-line JSON to stdout/stderr, so whatever collects the process's output
+// - a platform's log viewer, `docker logs`, journald - gets structured,
+// searchable records rather than prose (backend-spec §4.6). Log context, never
+// content: no message text, no image bytes, no keys.
 
 type LogFields = Record<string, unknown>;
 

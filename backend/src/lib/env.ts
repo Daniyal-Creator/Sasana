@@ -66,9 +66,9 @@ export const env = {
   // chat lands at 1.2-1.4s every time, vision ranges 2.1s to 16.9s (the slowest
   // runs are the first after a cold process).
   //
-  // A single 9s cap used to serve both. That number was chosen to stay under
-  // Vercel's serverless function ceiling - a constraint that disappeared when
-  // the backend became its own container - and it rejected roughly a fifth of
+  // A single 9s cap used to serve both. That number was chosen to stay under a
+  // serverless function's execution ceiling - a constraint that went away with
+  // the serverless deploy itself (ADR-0023) - and it rejected roughly a fifth of
   // vision calls that would otherwise have succeeded, surfacing as a 504 the
   // user could only answer by retrying and waiting again.
   GEMINI_VISION_TIMEOUT_MS: optNumber("GEMINI_VISION_TIMEOUT_MS", 30000),
@@ -100,11 +100,15 @@ export const env = {
   // Unset is the right default and not merely a convenience: `npm run dev` and
   // `npm run test:run` then need no database, no credentials and no network,
   // so somebody working on the landing page can run the whole suite without a
-  // Supabase account. Production sets it in the Vercel project's environment.
+  // Supabase account. A deployment that wants the hosted table sets it in that
+  // server's own environment; whether production does is not recorded, and the
+  // `cache_store` line `answer-cache.ts` logs at startup is what says so on a
+  // machine you can read (ADR-0023).
   //
   // Use the TRANSACTION POOLER string (port 6543), not the direct connection.
-  // Serverless opens and drops connections constantly, which is what the
-  // pooler exists for; the direct port will exhaust its connection limit.
+  // It is the safe default either way: a host that opens and drops connections
+  // constantly is exactly what the pooler exists for, and the direct port will
+  // exhaust its connection limit.
   DATABASE_URL: process.env.DATABASE_URL?.trim() || "",
   // Where the SQLite answer cache keeps its table, when that is the store in
   // use. Relative to the working directory, which is /app/backend in the

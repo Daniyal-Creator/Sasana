@@ -347,10 +347,14 @@ Legend: `[ ]` container/box · `(btn)` button · `<< >>` full-width · `▸` ico
 │  sites. I answer from the     │
 │  official rules.              │
 │                               │
+│  Explore a topic:             │
+│  [ Etiquette ] [ Customs  ]   │  ← TopicExplorer, 2x2 cards
+│  [ Sites     ] [ Photos   ]   │
+│                               │
 │  Try asking:                  │
-│  ( Can I wear shorts? )       │  ← QuickChips (3–5), pill, wrap
-│  ( Drone at Tanah Lot? )      │
-│  ( What is a canang? )        │
+│  ▸ Can I wear shorts?       › │  ← SuggestedQuestions, list rows
+│  ▸ Drone at Tanah Lot?      › │
+│  ▸ What is a canang?        › │
 │                               │
 │                               │
 │                        (grows)│  ← message list scroll area
@@ -381,10 +385,12 @@ Legend: `[ ]` container/box · `(btn)` button · `<< >>` full-width · `▸` ico
 
 - **Message list:** user bubbles right-aligned (`--color-primary` fill, `--color-primary-fg` text, `radius-lg` with the bottom-right corner squared to a tail); assistant bubbles left-aligned (`--color-surface`, `--color-text`, 1px `--color-border`, bottom-left corner squared) with a small circular **avatar** (prada mark on segara) preceding the first assistant bubble in a turn.
 - **SourceReference:** a divider + `Source: …` line inside assistant bubbles when `grounded === true` (FR2.2). When `grounded === false`, the bubble instead shows a subtle "No official rule found for this" note (FR2.1) and omits a source.
-- **QuickChips:** 3–5 example questions (FR2.5) shown in the empty state and again above the input once the chat is short; tapping fills + sends. They collapse (hide) once the conversation has several turns to save space.
+- **TopicExplorer:** a 2x2 grid of topic cards (Etiquette, Customs, Sites, Photos) at the top of the welcome state; tapping one sends that topic's prompt (FR2.5). Welcome state only — it goes away once the conversation starts.
+- **SuggestedQuestions:** a short list of example questions below the cards; tapping a row sends it (FR2.5). When the visitor arrived carrying a Site the questions are about that Site instead of temples in general. Welcome state only.
 - **Typing indicator:** three-dot pulse in an assistant-styled bubble while awaiting `/api/chat`.
 - **Error state:** an assistant-side `ErrorFallback` bubble: "I couldn't reach the assistant just now." + `(Try again)` re-sends the last message.
-- **Components:** `EmptyState`, `ChatBubble` (user/assistant), `SourceReference`, `QuickChip` (via `QuickChips`), `Button` (Send/icon), typing `LoadingSpinner` variant, `ErrorFallback`, `Header`, `LanguageSwitcher`.
+- **Follow-up strip:** a `ChipRow` (§5.14) sits directly above the composer, offering up to three questions to ask next about the answer above it. Hidden while a reply is in flight — the chips belong to the message that is about to be replaced. Which questions appear, and when the strip retires, is specified in TS §5.4.
+- **Components:** `EmptyState`, `ChatBubble` (user/assistant), `SourceReference`, `TopicExplorer`, `SuggestedQuestions`, `ChipRow`, `Button` (Send/icon), typing `LoadingSpinner` variant, `ErrorFallback`, `Header`, `LanguageSwitcher`.
 - **Responsive:** input bar is sticky bottom on mobile; at `md+` max-width 600px centered, input bar pinned to the bottom of the centered column. Avatar hidden below `sm` only if space-constrained (keep by default).
 
 ### 4.4 About (`/about`) — Server Component (TS §6)
@@ -503,6 +509,7 @@ interface ResultCardProps {
 | `unclear` | `CircleHelp` | I can't tell from this photo | `--status-unknown-*` |
 
 - **`unclear` extra:** hides `reference` (usually empty), shows a prominent **Retake photo** primary button wired to `onReset` (FR1.5).
+- **Follow-up:** below the actions, a `ChipRow` (§5.14) of questions chosen by `status` — the card hands the result to the assistant with the question, so a chip here may point at "this result". `unclear` shows none: the retake above is the only move that helps.
 - **States:** static once rendered; the reset button follows Button states. Entrance animation §9.4.
 - **A11y:** card `role="status"` + `aria-live="polite"` so screen readers announce the result on render (§8). Status label is real text, not color-only. Icon `aria-hidden` (label conveys meaning).
 - **Motion:** entrance fade+rise (§9.4); no motion on the semantic content itself.
@@ -557,21 +564,22 @@ interface ChatBubbleProps {
 - **A11y:** list of bubbles in a `<ul role="log" aria-live="polite" aria-relevant="additions">` so new messages are announced; each bubble labels its role for SR ("You said…", "Assistant said…") via SR-only text.
 - **Motion:** fade+rise in on mount (§9.5); reduced-motion → fade only.
 
-### 5.7 QuickChip — `components/assistant/QuickChips.tsx` (item within `QuickChips`)
+### 5.7 Welcome-screen prompts — `components/assistant/TopicExplorer.tsx` and `components/assistant/SuggestedQuestions.tsx`
 
 ```ts
-interface QuickChipProps {
-  label: string;
-  onSelect: (label: string) => void;
+interface TopicExplorerProps { onSelect: (prompt: string) => void; disabled?: boolean; }
+interface SuggestedQuestionsProps {
+  onSelect: (question: string) => void;
   disabled?: boolean;
+  site?: SiteContext | null;   // the place the visitor arrived with
 }
-interface QuickChipsProps { chips: string[]; onPick: (q: string) => void; disabled?: boolean; }
 ```
 
-- **Visual:** pill (`radius-full`), bg `--color-surface`, 1px `--color-border-strong`, `text-sm`, `--color-primary` label. Hover → bg `--color-primary-tint`. Height 40px (44px hit area with padding).
-- **States:** rest / hover / active (`scale .98`) / disabled (muted, while a request is in flight).
-- **A11y:** real `<button>`; group wrapped with `aria-label="Example questions"`; keyboard: Tab between chips, Enter/Space activates.
-- **Motion:** `transition-colors duration-150 ease-out`.
+- **TopicExplorer visual:** 2x2 grid of cards, `radius-lg`, bg `--color-surface`, 1px `--color-border`, `shadow-sm`; each card stacks a 20px `--color-primary` icon, a `text-sm` medium label, and a `text-xs --color-text-secondary` description. Hover → lifts 2px, border `--color-accent`, `shadow-md`.
+- **SuggestedQuestions visual:** one bordered `radius-lg` block of full-width rows divided by 1px `--color-border`; each row is a 16px `--color-primary` icon, the question in `text-sm`, and a muted chevron. Hover → bg `--color-primary-tint`.
+- **States:** rest / hover / active (`scale .98`) / disabled (`opacity-60`, while a request is in flight).
+- **A11y:** real `<button>`s; each group wrapped with an `aria-label` matching its heading; icons `aria-hidden`; keyboard: Tab between items, Enter/Space activates.
+- **Motion:** cards stagger in on mount (§9.10); colour transitions `duration-150 ease-out`. Reduced-motion → fade only.
 
 ### 5.8 SourceReference — `components/assistant/SourceReference.tsx`
 
@@ -650,13 +658,72 @@ interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description?: string;
-  children?: React.ReactNode;   // e.g. QuickChips or a CTA
+  children?: React.ReactNode;   // e.g. SuggestedQuestions or a CTA
 }
 ```
 
 - **Visual:** centered, generous vertical padding (`space-12`), muted icon (32), `text-h3` title, `text-base --color-text-secondary` description, optional actions below. Used for the assistant welcome and any "nothing yet" slot.
 - **A11y:** headings use real heading levels; decorative icon `aria-hidden`.
 - **Motion:** gentle fade in on mount.
+
+---
+
+### 5.14 ChipRow — `components/ui/ChipRow.tsx`
+
+```ts
+interface Chip {
+  id: string;         // stable across renders
+  label: string;      // what it says — short, the answer is right above it
+  question: string;   // what it sends — carries its own subject
+}
+interface ChipRowProps {
+  chips: Chip[];
+  onPick: (chip: Chip) => void;
+  disabled?: boolean;
+  label: string;      // names the group for screen readers; no visible heading
+}
+```
+
+A row of follow-up questions offered directly above a composer. Used in two
+places: the assistant's composer, under the newest answer, and `ResultCard`,
+under a Situation Check result. Which chips appear is decided by
+`lib/follow-up.ts` (TS §5.4); this component only draws them. An empty list
+renders nothing at all — no heading, no empty box.
+
+- **Not the welcome screen's card or row.** Those mean "here is somewhere to
+  start"; this means "here is something to say back". Two meanings in the same
+  clothes is how an interface stops being read, so this one is **recessed rather
+  than raised**: `--color-surface-sunken` against the page with secondary ink,
+  sitting under a composer that is `--color-surface` with a shadow. The eye
+  takes the composer as the thing on offer and these as context.
+- **Visual:** 36px pill, `radius-full`, 1px `--color-border`, bg
+  `--color-surface-sunken`, `text-sm --color-text-secondary`, 14px
+  `corner-down-left` glyph before the label. The glyph carries the meaning the
+  colour cannot — the same redundancy the status bands use (DL8): never colour
+  alone.
+- **⚠️ Open: touch target.** As built the chip is 36px tall with no padded hit
+  area, short of the **≥44×44px** convention this section opens with (P5, §8).
+  Recorded here as what ships today, not as a sanctioned exception — it needs
+  either a padded hit area or an ADR.
+- **States:** hover lifts a chip into `--color-primary` with
+  `--color-primary-tint` behind it and a `--color-border-strong` edge, which is
+  the only moment it competes with the composer; active `scale .98`; disabled
+  `opacity-60` while a request is in flight; focus shows `shadow-focus`.
+- **Responsive:** below `sm` the row scrolls horizontally rather than wrapping —
+  the composer is sticky to the bottom of a 375px screen, and a second line
+  would push the message being replied to off the top of it. A chip carries a
+  whole question, so the row is always wider than the screen and the last chip
+  is always cut; a right-edge fade keeps that from reading as a rendering fault.
+  It is a `mask-image`, not a painted background — no colour at all — which is
+  the scroll-edge mask named by DL1 and Guardrails §2.2, applied horizontally.
+  From `sm` up the row wraps and the fade is dropped, because nothing is
+  clipped.
+- **A11y:** `role="group"` with `aria-label` from `label` — there is no visible
+  heading on purpose. Each chip is a real `<button>` whose `aria-label` is the
+  **full question**, not the short label: somebody who cannot see the answer
+  above the row has none of the context that makes "Kenapa begitu?" mean
+  anything. The glyph is `aria-hidden`.
+- **Motion:** chips stagger in 50ms apart (§9.10). Reduced-motion → fade only.
 
 ---
 
@@ -693,8 +760,8 @@ interface EmptyStateProps {
  Landing (/)
    │ tap "Ask the Assistant"
    ▼
- /assistant ── empty (welcome + QuickChips)
-   │ type a question  ─or─  tap a QuickChip (auto-fills + sends)   (FR2.5)
+ /assistant ── empty (welcome + TopicExplorer + SuggestedQuestions)
+   │ type a question  ─or─  tap a topic card or suggested question (sends)  (FR2.5)
    ▼ Send
  typing indicator ── POST /api/chat (retrieve rules → grounded prompt, TS §5.2)
    │
@@ -786,6 +853,7 @@ Global: gutters `px-4 → sm:px-6 → lg:px-8`; type steps up one notch at `sm`;
 | **9.7 Skeleton shimmer** | loading | `background-position` sweep 1.4s linear loop | keyframe `shimmer`; off under reduced-motion |
 | **9.8 Upload drag-over** | file drag | well bg → `--color-primary-tint`, border solid, 150ms | `transition-colors` |
 | **9.9 Spinner** | any load | ring rotate 0.8s linear | `animate-spin` |
+| **9.10 Stagger in** | a small group mounts together | fade + 8px rise, 300ms `ease-out-quart`, each item starting after the one before | keyframe `staggerIn`; delay by index — 80ms steps for topic cards (`.stagger-delay-1..3`), 50ms for follow-up chips (inline) |
 
 **Keyframe stubs (globals.css):**
 
@@ -793,6 +861,7 @@ Global: gutters `px-4 → sm:px-6 → lg:px-8`; type steps up one notch at `sm`;
 @keyframes fadeUp   { from { opacity:0; transform:translateY(8px);  } to { opacity:1; transform:none; } }
 @keyframes resultIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
 @keyframes msgIn    { from { opacity:0; transform:translateY(8px);  } to { opacity:1; transform:none; } }
+@keyframes staggerIn{ from { opacity:0; transform:translateY(8px);  } to { opacity:1; transform:none; } }
 @keyframes dotPulse { 0%,100%{opacity:.3} 50%{opacity:1} }
 @keyframes shimmer  { from{background-position:-200% 0} to{background-position:200% 0} }
 @media (prefers-reduced-motion: reduce) {

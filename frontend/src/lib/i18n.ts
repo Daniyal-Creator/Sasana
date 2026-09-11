@@ -431,6 +431,61 @@ const dict = {
     en: "Ask about this result…",
     id: "Tanyakan tentang hasil ini…",
   },
+  // Follow-up chips under a photo check. Unlike the assistant's, these carry
+  // the check's own result with them, so they are allowed to point at it: "this
+  // result" means something here that it would not mean in a fresh chat.
+  //
+  // Three per outcome, because what a visitor needs next depends entirely on
+  // what they were just told. `unclear` gets none: the card already offers
+  // "Retake photo", and inviting questions about a result the system itself
+  // could not read would be answering from nothing.
+  "check.followup.compliant.1": {
+    en: "Is there anything else I should prepare?",
+    id: "Ada lagi yang perlu saya siapkan?",
+  },
+  "check.followup.compliant.2": {
+    en: "What should I avoid once I am inside?",
+    id: "Apa yang sebaiknya saya hindari setelah berada di dalam?",
+  },
+  "check.followup.compliant.3": {
+    en: "Where does this rule come from?",
+    id: "Aturan ini berasal dari mana?",
+  },
+  "check.followup.needs_attention.1": {
+    en: "What exactly should I fix?",
+    id: "Apa persisnya yang perlu saya perbaiki?",
+  },
+  "check.followup.needs_attention.2": {
+    en: "Can I still enter like this?",
+    id: "Apakah saya masih boleh masuk dengan kondisi ini?",
+  },
+  "check.followup.needs_attention.3": {
+    en: "Why does this matter at a temple?",
+    id: "Kenapa hal ini penting di pura?",
+  },
+  "check.followup.not_compliant.1": {
+    en: "What should I wear instead?",
+    id: "Lalu sebaiknya saya kenakan apa?",
+  },
+  "check.followup.not_compliant.2": {
+    en: "Can I rent or borrow what I am missing?",
+    id: "Bisakah saya menyewa atau meminjam yang kurang?",
+  },
+  "check.followup.not_compliant.3": {
+    en: "Why is this taken seriously at a temple?",
+    id: "Kenapa hal ini dianggap serius di pura?",
+  },
+  // The chip text for the same nine, short enough to sit three-across inside a
+  // result card. The question each one sends is above.
+  "check.followup.compliant.1.short": { en: "Anything else?", id: "Ada lagi?" },
+  "check.followup.compliant.2.short": { en: "What should I avoid?", id: "Yang harus dihindari?" },
+  "check.followup.compliant.3.short": { en: "Where is this from?", id: "Sumbernya?" },
+  "check.followup.needs_attention.1.short": { en: "What do I fix?", id: "Perbaiki apa?" },
+  "check.followup.needs_attention.2.short": { en: "Can I still enter?", id: "Masih boleh masuk?" },
+  "check.followup.needs_attention.3.short": { en: "Why does it matter?", id: "Kenapa penting?" },
+  "check.followup.not_compliant.1.short": { en: "What should I wear?", id: "Sebaiknya pakai apa?" },
+  "check.followup.not_compliant.2.short": { en: "Can I rent one?", id: "Bisa sewa?" },
+  "check.followup.not_compliant.3.short": { en: "Why is that?", id: "Kenapa begitu?" },
   "check.unclear.retake": { en: "Retake photo", id: "Ambil ulang foto" },
   "check.source": { en: "Reference: {source}", id: "Rujukan: {source}" },
   "check.error": {
@@ -474,6 +529,9 @@ const dict = {
     id: "Boleh terbangkan drone di Tanah Lot?",
   },
   "assistant.chip.canang": { en: "What is a canang offering?", id: "Apa itu canang?" },
+  "assistant.chip.shorts.short": { en: "Shorts?", id: "Celana pendek?" },
+  "assistant.chip.drone.short": { en: "Drones?", id: "Soal drone?" },
+  "assistant.chip.canang.short": { en: "What is canang?", id: "Apa itu canang?" },
   "assistant.chip.photo": {
     en: "Is it okay to take photos inside?",
     id: "Boleh memotret di dalam?",
@@ -528,6 +586,129 @@ const dict = {
     en: "How quiet should I be at {site}?",
     id: "Seberapa tenang saya harus bersikap di {site}?",
   },
+  // Follow-up chips, offered under an answer rather than under an empty screen.
+  //
+  // Every one of them is a whole question. That is not a style choice: a chip
+  // is sent with no history so that the answer cache can serve it (chat.ts only
+  // stores first-turn questions), and a question that leans on the previous
+  // turn - "why is that?", "what about here?" - would be answered without the
+  // turn it leans on. Whatever a chip asks, it asks in full.
+  //
+  // One per category, so the wording is shared by every Rule filed under it and
+  // the cache warms on eleven keys instead of thirty-five.
+  "assistant.followup.dress-code": {
+    en: "What should I wear to enter a temple?",
+    id: "Apa yang harus saya kenakan untuk masuk ke pura?",
+  },
+  "assistant.followup.access": {
+    en: "Which parts of a temple may visitors enter?",
+    id: "Bagian pura mana saja yang boleh dimasuki pengunjung?",
+  },
+  "assistant.followup.sacred-behavior": {
+    en: "How should I behave inside a temple?",
+    id: "Bagaimana sebaiknya saya bersikap di dalam pura?",
+  },
+  "assistant.followup.offerings": {
+    en: "How should I treat offerings left on the ground?",
+    id: "Bagaimana menyikapi sesaji yang diletakkan di tanah?",
+  },
+  "assistant.followup.photography": {
+    en: "What are the rules for taking photos at sacred places?",
+    id: "Apa aturan memotret di tempat suci?",
+  },
+  "assistant.followup.ritual-purity": {
+    en: "Are there conditions that keep someone from entering a temple?",
+    id: "Adakah kondisi yang membuat seseorang tidak boleh masuk pura?",
+  },
+  "assistant.followup.general-conduct": {
+    en: "How should I behave respectfully around Balinese people?",
+    id: "Bagaimana bersikap sopan terhadap masyarakat Bali?",
+  },
+  "assistant.followup.environment": {
+    en: "What should I know about protecting Bali's environment?",
+    id: "Apa yang perlu saya tahu soal menjaga lingkungan Bali?",
+  },
+  "assistant.followup.visitor-obligations": {
+    en: "What is required of tourists visiting Bali?",
+    id: "Apa saja kewajiban wisatawan selama berada di Bali?",
+  },
+  "assistant.followup.getting-around": {
+    en: "What are the rules for driving or renting a vehicle in Bali?",
+    id: "Apa aturan berkendara atau menyewa kendaraan di Bali?",
+  },
+  "assistant.followup.nyepi": {
+    en: "What happens on Nyepi, and what am I expected to do?",
+    id: "Apa yang terjadi saat Nyepi, dan apa yang harus saya lakukan?",
+  },
+  // The reason behind a category, asked in full for the same reason as above.
+  // Each names the Custom it is about rather than pointing at one: the subject
+  // has to survive being read on its own. What they ask about is always
+  // something rules.json already holds, so the answer has somewhere to stand.
+  "assistant.why.dress-code": {
+    en: "Why must a kamen and sash be worn at a temple?",
+    id: "Kenapa kamen dan selendang harus dikenakan di pura?",
+  },
+  "assistant.why.access": {
+    en: "Why are parts of a temple closed to visitors?",
+    id: "Kenapa sebagian area pura tertutup bagi pengunjung?",
+  },
+  "assistant.why.sacred-behavior": {
+    en: "Why does conduct matter so much inside a temple?",
+    id: "Kenapa sikap di dalam pura sangat diperhatikan?",
+  },
+  "assistant.why.offerings": {
+    en: "Why is a canang left where it lies on the ground?",
+    id: "Kenapa canang dibiarkan tergeletak di tanah?",
+  },
+  "assistant.why.photography": {
+    en: "Why is photography restricted at sacred places?",
+    id: "Kenapa memotret dibatasi di tempat suci?",
+  },
+  "assistant.why.ritual-purity": {
+    en: "Why does ritual purity decide who may enter a temple?",
+    id: "Kenapa kesucian ritual menentukan siapa yang boleh masuk pura?",
+  },
+  "assistant.why.general-conduct": {
+    en: "Why does respecting adat matter so much in Bali?",
+    id: "Kenapa menghormati adat begitu penting di Bali?",
+  },
+  "assistant.why.environment": {
+    en: "Why does Bali protect its water and natural sites?",
+    id: "Kenapa Bali menjaga air dan situs alamnya?",
+  },
+  "assistant.why.visitor-obligations": {
+    en: "Why does Bali ask visitors to pay a tourist levy?",
+    id: "Kenapa Bali menetapkan pungutan bagi wisatawan?",
+  },
+  "assistant.why.getting-around": {
+    en: "Why must visitors hold a valid licence to ride in Bali?",
+    id: "Kenapa wisatawan wajib memiliki SIM yang sah untuk berkendara di Bali?",
+  },
+  "assistant.why.nyepi": {
+    en: "Why does Bali fall completely silent on Nyepi?",
+    id: "Kenapa Bali sunyi total saat Nyepi?",
+  },
+  // What a chip SAYS, as opposed to what it sends.
+  //
+  // The two are allowed to differ, and the difference is the point. A chip sits
+  // directly under the answer it belongs to, so it can be as short as speech is:
+  // "Kenapa begitu?" is unambiguous with the answer above it. What travels to
+  // the server has no answer above it - it is sent with no history so the cache
+  // can serve it - so that one stays a whole question. Short where it is read,
+  // complete where it is understood.
+  "assistant.why.short": { en: "Why is that?", id: "Kenapa begitu?" },
+  "assistant.followup.dress-code.short": { en: "What do I wear?", id: "Harus pakai apa?" },
+  "assistant.followup.access.short": { en: "Where can I go?", id: "Boleh masuk ke mana?" },
+  "assistant.followup.sacred-behavior.short": { en: "How should I act?", id: "Bagaimana bersikap?" },
+  "assistant.followup.offerings.short": { en: "What about offerings?", id: "Sesaji bagaimana?" },
+  "assistant.followup.photography.short": { en: "Can I take photos?", id: "Boleh memotret?" },
+  "assistant.followup.ritual-purity.short": { en: "Who may enter?", id: "Siapa yang boleh masuk?" },
+  "assistant.followup.general-conduct.short": { en: "How do I show respect?", id: "Bagaimana bersikap sopan?" },
+  "assistant.followup.environment.short": { en: "What about the environment?", id: "Soal lingkungan?" },
+  "assistant.followup.visitor-obligations.short": { en: "What is required of me?", id: "Apa kewajiban saya?" },
+  "assistant.followup.getting-around.short": { en: "What about driving?", id: "Soal berkendara?" },
+  "assistant.followup.nyepi.short": { en: "What about Nyepi?", id: "Saat Nyepi bagaimana?" },
+  "assistant.followup.group": { en: "Follow-up questions", id: "Pertanyaan lanjutan" },
   "assistant.input.placeholder": { en: "Ask about a custom…", id: "Tanya tentang adat…" },
   "assistant.send": { en: "Send", id: "Kirim" },
   // These four lines used to promise that every answer came from an official
@@ -618,13 +799,6 @@ const dict = {
   "assistant.suggested.heading": {
     en: "Suggested questions",
     id: "Pertanyaan yang disarankan",
-  },
-  "assistant.sidebar.title": { en: "Sasana Guide", id: "Panduan Sasana" },
-  "assistant.sidebar.explore": { en: "Explore", id: "Jelajahi" },
-  "assistant.sidebar.about.title": { en: "About sources", id: "Tentang sumber" },
-  "assistant.sidebar.about.body": {
-    en: "Official rules cite their source. Cultural background and history do not, and are marked as such.",
-    id: "Aturan resmi mengutip sumbernya. Penjelasan budaya dan sejarah tidak, dan ditandai begitu.",
   },
   "assistant.input.placeholder.long": {
     en: "Ask Sasana about Balinese customs\u2026",

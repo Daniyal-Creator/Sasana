@@ -12,9 +12,12 @@
 // This file holds the SQLite implementation, which is what local development
 // and the test suite run on: `node:sqlite` is Node's own module, so it costs no
 // dependency and needs no credentials, and `:memory:` gives every test its own
-// clean store. Production runs the Postgres implementation in
-// `cache-postgres.ts` instead, because Vercel has no disk that survives between
-// requests (ADR-0018). `answer-cache.ts` is what picks between them.
+// clean store. The other store is the Postgres implementation in
+// `cache-postgres.ts`, chosen for a serverless host with no disk that survives
+// between requests (ADR-0018) and used by any deployment that sets
+// DATABASE_URL. `answer-cache.ts` is what picks between them, and logs which
+// one it picked - production's answer is not recorded here, because nobody has
+// read it off that server (ADR-0023).
 //
 // PRIVACY: what is stored is the NORMALISED key - content words, sorted - never
 // the sentence a visitor typed. `celana|pakai|pendek` is still readable enough

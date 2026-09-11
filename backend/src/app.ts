@@ -4,9 +4,11 @@
 // two different entry points import it and only one of them is allowed to
 // listen (ADR-0018):
 //
-//   src/index.ts   default-exports this app. Vercel imports it and calls it
-//                  per request; a `serve()` here would try to open a socket
-//                  inside a serverless function.
+//   src/index.ts   default-exports this app, for a serverless host that calls
+//                  it per request; a `serve()` here would try to open a socket
+//                  inside a serverless invocation. Nothing deploys it that way
+//                  today - see ADR-0023 - but the constraint is what keeps this
+//                  file free of side effects, so it still holds.
 //   src/server.ts  imports it and calls `serve()`. This is what `npm run dev`,
 //                  `npm run start` and the development container run.
 //

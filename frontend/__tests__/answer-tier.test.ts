@@ -78,7 +78,10 @@ describe("tier copy", () => {
     },
   );
 
-  it.each(["assistant.helper", "assistant.trust", "assistant.chatheader.subtitle", "assistant.sidebar.about.body", "assistant.tier.context", "assistant.tier.general"] as const)(
+  // `assistant.sidebar.about.body` used to be guarded here too. It went with
+  // the sidebar: the hero and the line under the composer already made the same
+  // promise, and they are still checked below.
+  it.each(["assistant.helper", "assistant.trust", "assistant.chatheader.subtitle", "assistant.tier.context", "assistant.tier.general"] as const)(
     "W1, no em dashes in %s",
     (key) => {
       for (const lang of LANGS) {

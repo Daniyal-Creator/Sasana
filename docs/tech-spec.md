@@ -140,6 +140,7 @@ sasana/
 │   ├── ui/                           # Design-system primitives
 │   │   ├── Button.tsx                # Variant/size button (client-safe)
 │   │   ├── Card.tsx                  # Generic surface container
+│   │   ├── ChipRow.tsx               # Follow-up question chips above a composer
 │   │   ├── LoadingSpinner.tsx        # Inline spinner / skeleton
 │   │   └── ErrorFallback.tsx         # Friendly error + retry (NFR reliability, PRD §7)
 │   ├── layout/
@@ -154,7 +155,8 @@ sasana/
 │   │   └── ResultCard.tsx            # Status-variant result (compliant/needs_attention/not_compliant/unclear)
 │   └── assistant/
 │       ├── ChatBubble.tsx            # user | assistant message bubble
-│       ├── QuickChips.tsx            # Example-question chips (FR2.5)
+│       ├── TopicExplorer.tsx         # 2x2 topic cards on the welcome screen (FR2.5)
+│       ├── SuggestedQuestions.tsx    # Example-question rows below the cards (FR2.5)
 │       └── SourceReference.tsx       # Renders the cited rule source (FR2.2)
 │
 ├── lib/                              # Server-side logic & shared helpers (no React)
@@ -162,9 +164,11 @@ sasana/
 │   ├── knowledge.ts                  # Load rules.json + keyword retrieval + prompt formatting
 │   ├── prompts.ts                    # System-prompt templates for F1 and F2 (PRD §13)
 │   ├── validation.ts                 # Image size/MIME checks, message length/sanitization
+│   ├── follow-up.ts                  # Which follow-up chips to offer, by Rule category
 │   └── i18n.ts                       # UI string dictionaries (id/en) + t() helper
 │
 ├── data/
+│   ├── rule-categories.ts            # Rule id -> category, mirrored from rules.json (test-enforced)
 │   └── rules.json                    # Knowledge base — array of rule objects (PRD §12)
 │
 ├── types/
@@ -216,7 +220,7 @@ sasana/
 - `page.tsx` (`/`) — Landing page: short intro + the two large CTAs and the language switcher (PRD §6 "Supporting Features"). Pure presentation → **Server Component**.
 - `globals.css` — The three `@tailwind` directives plus CSS custom properties for the status palette (`--status-compliant` green, `--status-attention` yellow, `--status-danger` red — PRD §6/F1).
 - `check/page.tsx` — Situation Check screen. Orchestrates `CameraUploader` → `ContextSelector` → submit → `ResultCard`. Owns the F1 request state machine. **Client Component** (needs file input, camera, `useState`).
-- `assistant/page.tsx` — Chat screen. Owns message history and the F2 request lifecycle; renders `ChatBubble`s, `QuickChips`, input box. **Client Component**.
+- `assistant/page.tsx` — Chat screen. Owns message history and the F2 request lifecycle; renders `ChatBubble`s, the welcome-screen `TopicExplorer` and `SuggestedQuestions`, input box. **Client Component**.
 - `about/page.tsx` — Static mission + explicit reference to Governor Circular No. 7/2025 for credibility (PRD §6, §2). **Server Component**.
 - `api/vision/route.ts` — Exports `async function POST(req)`. Parses `{ image, context }` (PRD §11), validates (FR1.1), calls `lib/gemini.ts#analyzeImage`, returns `VisionResult` JSON.
 - `api/chat/route.ts` — Exports `async function POST(req)`. Parses `{ message, lang, history }`, calls `lib/knowledge.ts#retrieveRules`, builds grounded prompt, calls `lib/gemini.ts#answerQuestion`, returns `ChatResponse` JSON.
@@ -373,15 +377,18 @@ RootLayout  (app/layout.tsx) ─ Server
 │   ├── CameraUploader ..................... Client  (file/camera input, resize)
 │   ├── LoadingSpinner ..................... Client  (while POST /api/vision)
 │   ├── ResultCard ......................... Client  (status variants)
-│   │     └─ variants: compliant | needs_attention | not_compliant | unclear
+│   │     ├─ variants: compliant | needs_attention | not_compliant | unclear
+│   │     └── ChipRow ...................... Client  (follow-up questions, by status)
 │   └── ErrorFallback ...................... Client  (API failure + retry)
 │
 ├── AssistantPage  (app/assistant/page.tsx) ─ Client
-│   ├── QuickChips ......................... Client  (example questions, FR2.5)
+│   ├── TopicExplorer ...................... Client  (welcome-screen topic cards, FR2.5)
+│   ├── SuggestedQuestions ................. Client  (example questions, FR2.5)
 │   ├── ChatBubble (×N) .................... Client  (user | assistant variants)
 │   │     └── SourceReference .............. Client  (cited rule, FR2.2 — assistant bubbles only)
 │   ├── LoadingSpinner ..................... Client  ("assistant is typing")
 │   ├── ErrorFallback ...................... Client  (API failure + retry)
+│   ├── ChipRow ............................ Client  (follow-up questions above the composer)
 │   └── ChatInput (inline in page) ......... Client  (textarea + send)
 │
 ├── AboutPage  (app/about/page.tsx) ─ Server
@@ -437,8 +444,10 @@ Shared types (`VisionResult`, `ChatResponse`, `Lang`, `ChatMessage`, `Rule`) are
 | **AssistantPage** | Client | route (no props) | **Owns chat state**: `messages: ChatMessage[]` + `status: 'idle'\|'loading'\|'error'` via `useState`/`useReducer` (§7). Preserves in-session history (FR2.4). |
 | **ChatBubble** | Client | `{ role: 'user'\|'assistant'; content: string; source?: string; grounded?: boolean }` | Stateless; styles by `role`. Renders `SourceReference` only for assistant bubbles with a source. |
 | **SourceReference** | Client | `{ source: string; grounded: boolean }` | Stateless. Shows the cited rule (FR2.2); if `grounded === false`, shows a subtle "no official source" note (FR2.1). |
-| **QuickChips** | Client | `{ chips: string[]; onPick: (q: string) => void; disabled?: boolean }` | Stateless; chips fill the input/submit (FR2.5). |
+| **TopicExplorer** | Client | `{ onSelect: (prompt: string) => void; disabled?: boolean }` | Stateless; a card sends its topic prompt (FR2.5). |
+| **SuggestedQuestions** | Client | `{ onSelect: (q: string) => void; disabled?: boolean; site?: SiteContext \| null }` | Stateless; a row sends its question, which is about the carried Site when one is set (FR2.5). |
 | **ChatInput** (inline) | Client | `{ value; onChange; onSend; disabled }` | Controlled input; local `useState` in page. |
+| **ChipRow** | Client | `{ chips: Chip[]; onPick: (chip: Chip) => void; disabled?: boolean; label: string }` | Stateless; renders nothing for an empty list. `Chip` is `{ id, label, question }` — `label` is what it says, `question` what it sends. Which chips appear is decided by `lib/follow-up.ts`, not here. The page owns `usedChips` so a tapped chip is not offered twice. |
 
 #### About (`/about`)
 
@@ -492,7 +501,7 @@ Response contract per PRD §11: `status ∈ {compliant, needs_attention, not_com
  USER            CLIENT (/assistant)              BFF (/api/chat, server)         KB + GEMINI
   │                     │                                  │                          │
   │ type question       │                                  │                          │
-  │ (or tap QuickChip)  │                                  │                          │
+  │ (or tap a topic)    │                                  │                          │
   ├────────────────────►│ append user msg to history       │                          │
   │                     │ status=loading                   │                          │
   │                     │ POST /api/chat                   │                          │
@@ -560,6 +569,64 @@ CLIENT ─message─► /api/chat ─► retrieveRules() returns [] (no keyword 
                                       source:null, grounded:false }
 CLIENT: assistant ChatBubble (grounded=false) → SourceReference shows neutral note; NO invented rule
 ```
+
+---
+
+### 5.4 Follow-up chip selection (`lib/follow-up.ts`)
+
+Which follow-up questions appear under an answer is a decision, not a render.
+It lives in `lib/follow-up.ts` so it can be tested without a renderer, and it
+returns **copy keys** rather than sentences — the caller resolves them with
+`t()`. `ChipRow` only draws what it is handed.
+
+Two properties hold throughout:
+
+- **A chip sends a whole question.** Whatever the chip says on its face, what it
+  submits names its own subject and never says "that" or "here". It is sent
+  `standalone`, with no history, because `chat.ts` caches first-turn questions
+  only — a chip that cannot be cached spends a Gemini call to save typing.
+- **A chip is deterministic.** The same conversation offers the same chips in
+  the same order every time. A question whose text changes per render is one the
+  cache is never asked for twice.
+
+`followUpChips(messages, used)` — at most `CHIP_LIMIT` (3):
+
+```
+last message is an assistant answer?            no ──► []  (no strip)
+   │ yes
+   ▼
+answer's tier is `none` or `places`?            yes ─► []  (no strip)
+   │ no                                                 `none` = "no official information", and
+   │                                                    offering more to ask under it reads as
+   │                                                    deflection; `places` costs an uncached
+   ▼                                                    map lookup per follow-up
+answer cites a Rule whose category is known?
+   │ no ──► the three general chips (the welcome screen's own questions,
+   │        reused because their answers are the likeliest to be cached)
+   │ yes
+   ▼
+[ "why" chip for the cited category ]  +  [ one chip per category not yet
+        first, the only chip about       discussed anywhere in this conversation ]
+        what was just read
+   │
+   ▼
+drop any chip in `used`, take the first 3
+every category already discussed ──► []  (the strip retires rather than
+                                          repeating answered questions)
+```
+
+`checkFollowUpChips(status)` is the Situation Check's own list, keyed by
+`VisionStatus` and deliberately not shared with the assistant's: the card hands
+the check's result over with the question, so a chip there may point at "this
+result". `unclear` returns nothing — the card already offers a retake, which is
+the only move that helps.
+
+Categories come from `data/rule-categories.ts`, a slugged mirror of
+`category_en` in `backend/src/data/rules.json`. It is a copy, so it is not
+trusted by hand: `__tests__/rule-categories.test.ts` reads `rules.json` and
+fails on an unknown id, a missing Rule, or a disagreeing category. Only the
+filing label is mirrored, never the Rule text — nothing a visitor acts on is
+duplicated there.
 
 ---
 

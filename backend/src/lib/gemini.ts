@@ -25,6 +25,7 @@ import type {
   ChatResponse,
   Lang,
   PhotoMeta,
+  Proximity,
   SiteContext,
   VisionContext,
   VisionResult,
@@ -183,6 +184,8 @@ export interface ChatRequestContext {
    * named in it that resolved, and no Site attached to the request.
    */
   unanchoredPlaceQuery?: boolean;
+  /** Where the visitor is standing relative to `site`, when they told us. */
+  proximity?: Proximity;
   /**
    * The full knowledge base, when `rules` is the narrowed selection actually
    * sent. Only a refusal uses it, to name topics beyond this question's slice.
@@ -209,6 +212,7 @@ export async function askQuestion(
     placesArea,
     unanchoredPlaceQuery = false,
     allRules = rules,
+    proximity,
   }: ChatRequestContext = {},
 ): Promise<AnsweredQuestion> {
   const started = Date.now();
@@ -228,6 +232,7 @@ export async function askQuestion(
         siteRules,
         places,
         placesArea,
+        proximity,
       }),
       turns: contents,
       temperature: 0.3,

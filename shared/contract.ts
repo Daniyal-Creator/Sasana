@@ -47,6 +47,47 @@ export interface SiteContext {
   lng?: number;
 }
 
+/** Where a visitor stands relative to a Site, in the terms `lib/geo.ts` uses. */
+export type ProximityState = "outside" | "approach" | "zone";
+
+/**
+ * Where the visitor is standing, at the moment they ask.
+ *
+ * `SiteContext` answers "which place is this", which is stable enough to keep
+ * in storage and read back later. This answers "where am I", which is true for
+ * about ten seconds. The two therefore travel side by side in the request
+ * rather than nested, and this one is never written to storage: a stored
+ * distance is a sentence that was true once and is read back as though it still
+ * were. Keeping them apart is what makes that a shape rather than a rule
+ * somebody has to remember.
+ *
+ * Optional, like everything else the client may know. A visitor who asks from
+ * the menu instead of from Explore simply sends none, and the answer is exactly
+ * the answer this app already gives.
+ *
+ * Two things follow for whoever consumes it. It does not introduce a `ChatKind`
+ * - the Customs an answer stands on, its `ruleIds` and its `source`, are
+ * unchanged by where the visitor happens to be standing, and a fifth tier would
+ * make every consumer handle a branch whose provenance is identical. And an
+ * answer shaped by it must not be stored: "you are 640 m from the gate" is true
+ * for one person, and the cache serves later visitors (ADR-0016). The existing
+ * `lookedUp` flag in the chat route is the pattern - decided from what the
+ * server received, never from what the answer says.
+ */
+export interface Proximity {
+  /** Outside the Approach, inside it, or inside the Zone itself. */
+  state: ProximityState;
+  /** Metres from the Site's centre. */
+  distanceM: number;
+  /**
+   * The fix's own accuracy, in metres. Not optional, and that is the point:
+   * a phone on a road routinely reports 300-1500 m while a Zone is 250-500 m,
+   * so a distance quoted without it reads as a precision the device never had.
+   * Anything phrasing an answer around `distanceM` has to be able to hedge it.
+   */
+  accuracyM: number;
+}
+
 /**
  * What the visitor's device knows about the photo, beyond its pixels.
  *

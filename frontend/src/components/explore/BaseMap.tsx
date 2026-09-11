@@ -57,6 +57,11 @@ interface BaseMapProps {
   leftInset: number;
   /** Somewhere to look that is not the visitor. Set a new object to move. */
   focus: { center: LatLng; zoom: number } | null;
+  /**
+   * Coordinates to frame entirely inside the visible map area, adjusting zoom
+   * and center so all points are visible (e.g. navigation route polylines).
+   */
+  bounds?: [number, number][] | null;
   /** Off for a map that is being shown rather than used, as on the Guide. */
   interactive?: boolean;
   /** Off when there is no position to centre on and the button would only be a
@@ -67,6 +72,12 @@ interface BaseMapProps {
   onTileError: () => void;
   children?: React.ReactNode;
 }
+
+type FramedTarget =
+  | { kind: "focus"; center: LatLng; zoom: number }
+  | { kind: "bounds"; bounds: [number, number][] };
+
+const ROUTE_PADDING_PX = 36;
 
 /**
  * Owns the Leaflet instance: loading it without breaking SSR, the tile layer,
@@ -85,6 +96,7 @@ export function BaseMap({
   bottomInset,
   leftInset,
   focus,
+  bounds = null,
   interactive = true,
   showLocate = true,
   onUserPan,
@@ -105,7 +117,7 @@ export function BaseMap({
   // Where the camera was last pointed on purpose, and whether the visitor has
   // taken it over since. Together they let the map re-frame when the panel
   // changes size without ever yanking it back from someone who has panned away.
-  const framedOn = useRef<{ center: LatLng; zoom: number } | null>(null);
+  const framedOn = useRef<FramedTarget | null>(null);
   const userMoved = useRef(false);
 
   // Read once, at construction. Putting them in the effect's deps would tear
@@ -228,7 +240,7 @@ export function BaseMap({
   useEffect(() => {
     if (!map || !follow || !position) return;
     const zoom = map.getZoom();
-    framedOn.current = { center: position, zoom };
+    framedOn.current = { kind: "focus", center: position, zoom };
     userMoved.current = false;
     programmatic.current = true;
     map.setView(centreFor(map, position, zoom), zoom, { animate: true });
@@ -238,11 +250,39 @@ export function BaseMap({
   // tapped on the map.
   useEffect(() => {
     if (!map || !focus) return;
-    framedOn.current = focus;
+    framedOn.current = { kind: "focus", center: focus.center, zoom: focus.zoom };
     userMoved.current = false;
     programmatic.current = true;
     map.setView(centreFor(map, focus.center, focus.zoom), focus.zoom, { animate: true });
   }, [map, focus, centreFor]);
+
+  const insetsRef = useRef({ bottomInset, leftInset });
+  insetsRef.current = { bottomInset, leftInset };
+
+  // Framing a bounding box (e.g. the navigation polyline between visitor and destination).
+  useEffect(() => {
+    if (!map) return;
+    if (!bounds || bounds.length < 2) {
+      if (framedOn.current?.kind === "bounds") {
+        framedOn.current = focus
+          ? { kind: "focus", center: focus.center, zoom: focus.zoom }
+          : position
+            ? { kind: "focus", center: position, zoom: map.getZoom() }
+            : null;
+      }
+      return;
+    }
+    framedOn.current = { kind: "bounds", bounds };
+    userMoved.current = false;
+    programmatic.current = true;
+    const { bottomInset: bInset, leftInset: lInset } = insetsRef.current;
+    map.fitBounds(bounds, {
+      paddingTopLeft: [lInset + ROUTE_PADDING_PX, ROUTE_PADDING_PX],
+      paddingBottomRight: [ROUTE_PADDING_PX, bInset + ROUTE_PADDING_PX],
+      maxZoom: 16,
+      animate: true,
+    });
+  }, [map, bounds, focus, position]);
 
   /**
    * The panel changed size, so the strip of map the visitor can see did too.
@@ -257,7 +297,16 @@ export function BaseMap({
     const target = framedOn.current;
     if (!map || !target || userMoved.current) return;
     programmatic.current = true;
-    map.setView(centreFor(map, target.center, target.zoom), target.zoom, { animate: false });
+    if (target.kind === "bounds") {
+      map.fitBounds(target.bounds, {
+        paddingTopLeft: [leftInset + ROUTE_PADDING_PX, ROUTE_PADDING_PX],
+        paddingBottomRight: [ROUTE_PADDING_PX, bottomInset + ROUTE_PADDING_PX],
+        maxZoom: 16,
+        animate: false,
+      });
+    } else {
+      map.setView(centreFor(map, target.center, target.zoom), target.zoom, { animate: false });
+    }
     // centreFor is derived from the insets, so listing it here would be the
     // same trigger twice.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -268,6 +317,8 @@ export function BaseMap({
     const instance = mapRef.current;
     if (!instance || !position) return;
     const zoom = Math.max(instance.getZoom(), 14);
+    userMoved.current = false;
+    framedOn.current = { kind: "focus", center: position, zoom };
     programmatic.current = true;
     instance.setView(centreFor(instance, position, zoom), zoom, { animate: true });
   }, [onRecenter, position, centreFor]);

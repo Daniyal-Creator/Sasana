@@ -1,6 +1,13 @@
 import { imageTooLarge, invalidInput, unsupportedMedia } from "@/lib/errors";
 import type { Lang } from "@shared/contract";
-import type { ChatMessage, PhotoCoords, PhotoMeta, SiteContext, VisionContext } from "@shared/contract";
+import type {
+  ChatMessage,
+  PhotoCoords,
+  PhotoMeta,
+  Proximity,
+  SiteContext,
+  VisionContext,
+} from "@shared/contract";
 
 export const MESSAGE_MAX_CHARS = 1000;
 export const HISTORY_LIMIT = 6;
@@ -86,6 +93,58 @@ export function validateSiteContext(raw: unknown): SiteContext | undefined {
   return site;
 }
 
+const PROXIMITY_STATES = new Set<Proximity["state"]>(["outside", "approach", "zone"]);
+
+/**
+ * Half the earth's circumference: the largest great-circle distance there is.
+ * Anything past it is not a distance between two points on this planet, so it
+ * is noise rather than a visitor a very long way from a temple.
+ */
+const MAX_DISTANCE_M = 20_037_500;
+
+/**
+ * Where the visitor is standing, when the client measured it.
+ *
+ * Dropped rather than rejected, like `site` and `photo`: losing it costs the
+ * answer its timing and nothing else.
+ *
+ * Deliberately NOT checked against the Site's radius, which would be the
+ * obvious way to catch a `state` that disagrees with its `distanceM`. The Site
+ * catalogue lives in the frontend bundle, and ADR-0015 already declined to keep
+ * a second copy here to resolve coordinates against; a copy kept only to
+ * validate radii would be the same copy with the same drift. The blast radius
+ * is the same shape as the one recorded for `lat`/`lng`: a crafted pair gets an
+ * answer phrased for somewhere the visitor is not standing, built out of
+ * Customs that are real either way.
+ *
+ * Sub-metre precision is rounded off. The client computes a haversine and sends
+ * what floating point gives it - 250.00000000003513 was measured - and those
+ * digits describe arithmetic rather than a visitor.
+ */
+export function validateProximity(raw: unknown): Proximity | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const p = raw as Record<string, unknown>;
+
+  if (typeof p.state !== "string" || !PROXIMITY_STATES.has(p.state as Proximity["state"])) {
+    return undefined;
+  }
+
+  const distanceM = typeof p.distanceM === "number" ? p.distanceM : NaN;
+  if (!Number.isFinite(distanceM) || distanceM < 0 || distanceM > MAX_DISTANCE_M) return undefined;
+
+  // Zero or negative accuracy is not a very good fix, it is a fix with no
+  // accuracy attached. Without one the distance cannot be hedged, and an
+  // unhedged distance is the false precision this field exists to prevent.
+  const accuracyM = typeof p.accuracyM === "number" ? p.accuracyM : NaN;
+  if (!Number.isFinite(accuracyM) || accuracyM <= 0 || accuracyM > MAX_ACCURACY_M) return undefined;
+
+  return {
+    state: p.state as Proximity["state"],
+    distanceM: Math.round(distanceM),
+    accuracyM: Math.round(accuracyM),
+  };
+}
+
 // Local wall clock as `buildPhotoMeta` writes it. Seconds optional, no zone:
 // EXIF does not record one, so neither does the field.
 const PHOTO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/;
@@ -164,9 +223,22 @@ export function validatePhotoMeta(raw: unknown): PhotoMeta | undefined {
 
 export interface ValidatedChatRequest {
   message: string;
+  /**
+   * The words the visitor actually typed, when `message` is not them.
+   *
+   * A follow-up to a photo check sends `message` as the vision result plus the
+   * question stitched together, so the model can answer without the image
+   * being re-uploaded. That block is prose the server wrote in the photo
+   * check's own language, and it outweighs a short question by word count -
+   * asked in Indonesian after an English photo check, the reply followed the
+   * photo check instead of the question. `question` is only ever the
+   * visitor's own words, which is what deciding the reply's language needs.
+   */
+  question?: string;
   lang: Lang;
   history: ChatMessage[];
   site?: SiteContext;
+  proximity?: Proximity;
 }
 
 export function validateChatRequest(body: Record<string, unknown>): ValidatedChatRequest {
@@ -181,11 +253,16 @@ export function validateChatRequest(body: Record<string, unknown>): ValidatedCha
     throw invalidInput("`message` must not be empty");
   }
 
+  const question =
+    typeof body.question === "string" ? sanitizeText(body.question) : "";
+
   return {
     message,
+    question: question.length > 0 ? question : undefined,
     lang: body.lang === "id" ? "id" : "en",
     history: normalizeHistory(body.history),
     site: validateSiteContext(body.site),
+    proximity: validateProximity(body.proximity),
   };
 }
 

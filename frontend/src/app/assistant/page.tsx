@@ -16,7 +16,10 @@ import { MobileTopicChips } from "@/components/assistant/MobileTopicChips";
 import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
-import { readActiveSite, siteContextNamed } from "@/lib/site-context";
+import { readActiveSite, siteContextNamed, writeActiveSite } from "@/lib/site-context";
+import { SiteContextCard } from "@/components/assistant/SiteContextCard";
+import type { Proximity, SiteContext } from "@shared/contract";
+import { freshProximity, PROXIMITY_TTL_MS, type TimedProximity } from "@/lib/assistant-handoff";
 import { t } from "@/lib/i18n";
 import type { ChatMessage, ChatResponse } from "@shared/contract";
 
@@ -33,6 +36,23 @@ export default function AssistantPage() {
   const [failed, setFailed] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const handoffCheckedRef = useRef(false);
+  /**
+   * Where the visitor stood when they left Explore, with the moment it was
+   * measured. Never written to storage from here: it arrived through a payload
+   * that is read once and cleared, and it expires on its own timestamp.
+   */
+  const carriedProximity = useRef<TimedProximity | null>(null);
+  /**
+   * The same two things again, for the screen rather than for the request.
+   *
+   * `carriedProximity` stays the authority on what gets sent - `send` reads it
+   * through `freshProximity` on every call - and these only decide what is
+   * drawn. They are separate because the ref must not trigger a render and the
+   * card must, and because the card has to be able to disappear on a timer
+   * without the sending path depending on that timer having fired.
+   */
+  const [contextSite, setContextSite] = useState<SiteContext | null>(null);
+  const [contextFix, setContextFix] = useState<Proximity | null>(null);
 
   const chips = [
     t(lang, "assistant.chip.shorts"),
@@ -61,6 +81,12 @@ export default function AssistantPage() {
           // If an enriched message with Vision context was provided, send that
           // to the API instead. The user's bubble still shows the original text.
           message: opts?.apiMessage ?? question,
+          // The visitor's own words, sent alongside an enriched `message` so
+          // the server can tell the two apart. A photo-check follow-up's
+          // `message` is mostly the check's own English prose; answering in
+          // the language of that prose rather than of this question is
+          // exactly the bug this field exists to avoid.
+          ...(opts?.apiMessage ? { question } : {}),
           lang,
           history: history.map(({ role, content }) => ({ role, content })),
           // Read per send, not once on mount: a visitor can pick a different
@@ -69,7 +95,14 @@ export default function AssistantPage() {
           // "here" has to mean here. Omitted entirely when neither applies.
           ...(() => {
             const site = readActiveSite() ?? siteContextNamed(question);
-            return site ? { site } : {};
+            if (!site) return {};
+            // A position with no place attached is a number with nothing to be
+            // a distance from, so it only travels when the Site does. And it is
+            // re-checked on every send rather than once on arrival: a visitor
+            // can sit on this page, and a fix that was true when they crossed
+            // the Approach is not evidence of where they are ten minutes later.
+            const fix = freshProximity(carriedProximity.current);
+            return fix ? { site, proximity: fix } : { site };
           })(),
         }),
       });
@@ -98,7 +131,19 @@ export default function AssistantPage() {
     handoffCheckedRef.current = true;
 
     const payload = consumeHandoffPayload();
-    if (payload && payload.question) {
+    if (!payload) return;
+
+    // Kept before the question is looked at, because the two arrive together
+    // but are not the same errand: Explore's "ask about this place" button
+    // carries a position and no question at all, and reading it only on the
+    // question's branch would throw the position away for exactly the visitor
+    // it was measured for. Held in a ref rather than state: nothing renders
+    // from it, and `send` needs the current value without waiting for a
+    // re-render.
+    carriedProximity.current = payload.proximity ?? null;
+    setContextFix(freshProximity(payload.proximity));
+
+    if (payload.question) {
       // Build an enriched message that includes the Vision analysis context
       // so the LLM can answer follow-up questions about the photo result,
       // without re-sending the actual image (no extra image token cost).
@@ -123,6 +168,53 @@ export default function AssistantPage() {
     }
   }, [consumeHandoffPayload]);
 
+  /**
+   * The Site the visitor is carrying, read once for the screen.
+   *
+   * `send` still reads it again per message, and deliberately: somebody can
+   * pick a different Site in another tab, and the answer has to follow where
+   * they are now. This one only decides what the card says on arrival, which is
+   * a different job with a different failure - a card that lags by one
+   * navigation costs nothing, an answer that lags by one is about the wrong
+   * temple.
+   */
+  useEffect(() => {
+    setContextSite(readActiveSite());
+  }, []);
+
+  /**
+   * Drops the distance from the card at the same instant `send` stops sending
+   * it. Scheduled off the fix's own timestamp rather than off a fresh two
+   * minutes, so the card and the request cannot disagree about whether the
+   * visitor is still where they were.
+   */
+  useEffect(() => {
+    const carried = carriedProximity.current;
+    if (!contextFix || !carried) return;
+    const remaining = carried.at + PROXIMITY_TTL_MS - Date.now();
+    if (remaining <= 0) {
+      setContextFix(null);
+      return;
+    }
+    const timer = setTimeout(() => setContextFix(null), remaining);
+    return () => clearTimeout(timer);
+  }, [contextFix]);
+
+  /**
+   * Lets go of the place, everywhere at once.
+   *
+   * The stored Site goes too, not just the card. `send` reads storage on every
+   * message, so clearing only what is drawn would leave the Site riding along
+   * on every question with nothing on screen admitting it - a card whose close
+   * button hides the evidence rather than changing the behaviour.
+   */
+  function clearContext() {
+    writeActiveSite(null);
+    carriedProximity.current = null;
+    setContextSite(null);
+    setContextFix(null);
+  }
+
   const isEmpty = messages.length === 0;
 
   return (
@@ -135,6 +227,17 @@ export default function AssistantPage() {
       </div>
 
       <ChatLayout sidebar={<GuideSidebar onTopicSelect={send} disabled={sending} />}>
+        {/* Above the fork on purpose: the screen a visitor lands on from
+            Explore is the empty one, and that is the screen that used to say
+            nothing about where they had come from. It sits in the same place
+            once the conversation starts, so the answer's context does not
+            vanish the moment it starts mattering. */}
+        {contextSite && (
+          <div className="pt-4">
+            <SiteContextCard site={contextSite} proximity={contextFix} onClear={clearContext} />
+          </div>
+        )}
+
         {isEmpty ? (
           /* ── Welcome state ── */
           <div className="flex flex-1 flex-col py-8 lg:py-12">
@@ -165,7 +268,7 @@ export default function AssistantPage() {
 
             {/* Suggested questions */}
             <div className="mt-8">
-              <SuggestedQuestions onSelect={send} disabled={sending} />
+              <SuggestedQuestions onSelect={send} disabled={sending} site={contextSite} />
             </div>
 
             {/* Quick chips fallback — visible only if topic cards above aren't enough */}

@@ -226,59 +226,137 @@ every place on both sides that has to follow.
 
 ## Deployment
 
-**Vercel for both services, Supabase for the answer cache.** The reasoning, and
-what the choice costs, is [ADR-0018](docs/adr/0018-deploy-to-vercel-answer-cache-to-postgres.md).
-There is no VPS and no container in production; `docker-compose.yml` is for
-laptops only.
+**One school server, `103.139.192.14`, behind nginx.** All three subdomains
+point at it. Deploys are performed by hand on that machine by the project
+supervisor or the school's IT; merging to `main` publishes nothing on its own.
 
 ```
-frontend/  ──▶  Vercel project  ──▶  sasana.smkwikrama.sch.id
-backend/   ──▶  Vercel project  ──▶  sasana-be.smkwikrama.sch.id
-                     │
-                     └────────────▶  Supabase Postgres (answer cache)
+frontend/  ──▶  sasana.smkwikrama.sch.id      ┐
+backend/   ──▶  sasana-api.smkwikrama.sch.id  ┘ 103.139.192.14, nginx
 ```
 
-### First time
+This section used to describe two Vercel projects and a Supabase database, and
+that deployment was never carried out. What it costs to have found that out the
+slow way, and the two things still not written down, are in
+[ADR-0023](docs/adr/0023-production-is-one-school-server-behind-nginx.md).
+`docker-compose.yml` is for laptops only and is not how that server runs.
 
-**1. Supabase.** Create a project, then apply the migration in
-`supabase/migrations/` — either `supabase db push` with the CLI, or by pasting
-the file into the dashboard's SQL editor. Copy the **transaction pooler**
-connection string (Connect → Transaction pooler, port **6543**). The direct
-connection on 5432 will run out of connections under serverless.
+`sasana-be.smkwikrama.sch.id` appears in older documents and is a dead name: it
+resolves, and it serves nothing.
 
-**2. Two Vercel projects, both importing this repository**, differing only in
-Root Directory:
+### How nginx must serve the frontend export
 
-| Project | Root Directory | Framework | Environment |
-| --- | --- | --- | --- |
-| frontend | `frontend/` | Next.js (detected) | `NEXT_PUBLIC_API_URL` = the backend's URL |
-| backend | `backend/` | Hono (detected) | `GEMINI_API_KEY`, `DATABASE_URL`, `ALLOWED_ORIGINS` |
+`out/` is a static export with **no server behind it**, so how nginx resolves a
+path is the whole of the frontend's routing.
 
-`ALLOWED_ORIGINS` must contain the frontend's own origin or every request is
-refused by CORS, with the failure visible only in the visitor's console.
+**What was running on 2026-09-10 resolved almost nothing.** Measured from
+outside the machine that day:
 
-`NEXT_PUBLIC_API_URL` is inlined into the browser bundle at build time, not read
-at run time. Changing it needs a redeploy of the frontend, not a restart.
+| Request | Response |
+| --- | --- |
+| `/check` | `200`, 82122 bytes |
+| `/about` | `200`, 82122 bytes |
+| `/favicon.ico` | `200`, 82122 bytes |
+| `/definitely-not-a-real-path-xyz123` | `200`, 82122 bytes |
+| `/check.html` | `200`, 23054 bytes — the real page |
 
-**3. Point the subdomains** at Vercel with a CNAME each, and add both as domains
-on their respective projects. TLS is issued automatically.
+Four different paths returned a byte-identical document: `out/index.html`, the
+landing page, under a `200`. Anything that was not a file on disk fell back to
+it. So **every route except `/` was broken on reload, on a shared link, and on
+anything arriving from search** — the visitor landed on the landing page while
+the address bar still read `/check`, and the console carried React error #418,
+because `Header` renders one tree for `/` and a different one everywhere else
+and the two cannot be reconciled. Clicking back into the page did nothing: the
+router already believed it was there. Navigating from the landing page worked,
+which is why this survived — the client router never asks the server.
 
-### Every deploy after that
+**The export no longer depends on that being fixed.** `trailingSlash: true` in
+`next.config.mjs` makes the build write `out/check/index.html` rather than
+`out/check.html`, and a directory with an `index.html` in it is something the
+host already resolves — that is how it served the directory listings below. A
+deploy of the current `out/` is enough to make the routes work again.
 
-Merge to `main`. Vercel builds and promotes both projects on its own; there is
-nothing to run by hand.
+The block is still what the server should be, and two of its lines fix things
+the export cannot reach:
 
-The exception is a change under `supabase/migrations/`: **apply the migration
-before the code that needs it goes live**, or the first request will look for a
-table that does not exist yet.
+```nginx
+server {
+    server_name sasana.smkwikrama.sch.id;
+    root /path/to/out;                        # wherever the export is copied
+
+    autoindex off;                            # was on — see below
+
+    location / {
+        try_files $uri $uri.html $uri/ =404;  # was a fallback to /index.html
+    }
+
+    error_page 404 /404.html;                 # out/404.html ships and is never served
+}
+```
+
+Nothing in the app needs a catch-all. Every route is pre-rendered to its own
+file, `/explore/[siteId]` included, so a path that matches nothing genuinely is
+a 404 — and with the fallback gone it says so, instead of quietly serving the
+landing page. `$uri.html` is belt and braces: it keeps a flat export working if
+`trailingSlash` is ever turned back off.
+
+`autoindex` was on: `/sites/`, `/explore/` and `/_next/` returned directory
+listings, including files like `sites/README.md` that were never meant to be
+served. That one no rebuild can fix, only the server.
+
+**Not verified:** the directives above describe behaviour measured from outside,
+not a config file anybody has read. Whoever performs this edit should write the
+real `location` block and the real document root into this section, and correct
+it if the running config reaches the same result another way.
+
+Check the routes landed:
+
+```bash
+curl -sL https://sasana.smkwikrama.sch.id/check | grep -q heroBg.webp && echo BROKEN || echo OK
+```
+
+`heroBg.webp` belongs to the landing page and to nothing else, so finding it
+under `/check` means the fallback is still answering.
+
+### Every deploy
+
+Merge to `main`, then **ask for the deploy**. It does not happen by itself.
+
+The frontend is the exception in one direction only: `out/` is committed
+(ADR-0019), so rebuilding and merging it is what publishes the site. The backend
+has no equivalent, which is why the two can drift apart — a merged frontend
+change and an unmerged-to-the-server backend change look, from the outside, like
+a broken feature rather than a missing deploy.
+
+Nothing else is needed for an ordinary backend change: no new dependencies, no
+new environment variables, no migration. A change under `supabase/migrations/`
+is the one exception, and it must be applied **before** the code that reads it
+goes live.
+
+### Checking a deploy landed
+
+Run this from anywhere. It distinguishes old code from new by the response
+alone, so the person who performs the deploy does not have to have read the
+change:
+
+```bash
+curl -s -D - -X POST https://sasana-api.smkwikrama.sch.id/api/chat -H "content-type: application/json" -d '{"message":"apa yang harus saya siapkan sebelum masuk?","lang":"id","site":{"id":"pura-tirta-empul","name":"Pura Tirta Empul","ruleIds":["temple-attire"],"lat":-8.4156,"lng":115.3153},"proximity":{"state":"approach","distanceM":640,"accuracyM":25}}'
+```
+
+A situated question must never be served from the cache. `x-cache: HIT`, or an
+answer that names no distance, means the running code predates
+[#50](https://github.com/Daniyal-Creator/Sasana/pull/50).
 
 ### Secrets
 
 `.env` files are never deployed and never committed — they are git-ignored and
-local to your machine. Production values live in each Vercel project's
-environment settings. `DATABASE_URL` and `GEMINI_API_KEY` belong to the backend
-project only; anything named `NEXT_PUBLIC_*` is compiled into the browser bundle
-and is readable by every visitor, so nothing secret may ever be given that name.
+local to your machine. Production values live on the server. `DATABASE_URL` and
+`GEMINI_API_KEY` belong to the backend only; anything named `NEXT_PUBLIC_*` is
+compiled into the browser bundle and is readable by every visitor, so nothing
+secret may ever be given that name.
+
+Do not run `docker compose config` on a machine that holds real values: it
+prints every interpolated secret to the terminal.
 
 ---
 

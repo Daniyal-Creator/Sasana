@@ -9,8 +9,11 @@
 # otherwise quietly point at a different set of them, and a developer's cached
 # answers would look lost when they are merely somewhere else.
 #
-# There is no production compose file to keep apart from any more: production is
-# Vercel, and there is no container in it (ADR-0018). This file is for laptops.
+# There is no production compose file to keep apart from any more. That is still
+# true, but the reason recorded here was wrong: it said production is Vercel with
+# no container in it, and production is one school server behind nginx
+# (ADR-0023). This file is for laptops either way, and it is not evidence about
+# how that server runs.
 name: sasana-dev
 
 services:

@@ -167,8 +167,16 @@ export const SITES: Site[] = [
     region: "Badung, Bali",
     areaLabel: { en: "Clifftop sacred area", id: "Kawasan suci di atas tebing" },
     description: {
-      en: "A cliff-edge temple on the southern tip of Bali, overlooking the Indian Ocean. The site hosts the nightly kecak dance performance at sunset.",
-      id: "Pura di tepi tebing ujung selatan Bali, menghadap Samudra Hindia. Lokasi ini menyelenggarakan pertunjukan tari kecak setiap sore menjelang matahari terbenam.",
+      // This used to read "hosts the nightly kecak dance performance at sunset".
+      // Nothing sourced that, and a schedule is exactly the class of fact
+      // ADR-0004 and the volatility fence in ADR-0014 keep out: a performance
+      // that stops running, or moves for a ceremony, leaves a sentence that
+      // sends somebody up a cliff at the wrong hour. The stage is a thing that
+      // is there, which is what a description can say. When the ceremony ever
+      // acquires a source, it comes back in the Significance layer that carries
+      // one (`.scratch/pariwisata/spec.md`), not here.
+      en: "A cliff-edge temple on the southern tip of Bali, overlooking the Indian Ocean. A kecak dance stage stands on the clifftop beside it.",
+      id: "Pura di tepi tebing ujung selatan Bali, menghadap Samudra Hindia. Sebuah panggung tari kecak berdiri di atas tebing di sampingnya.",
     },
     lat: -8.8291,
     lng: 115.0849,

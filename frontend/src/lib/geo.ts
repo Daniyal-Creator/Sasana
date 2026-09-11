@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/i18n";
 import type { Site } from "@/data/sites";
+import type { Proximity } from "@shared/contract";
 
 export interface LatLng {
   lat: number;
@@ -88,6 +89,27 @@ export function hasEnteredApproach(pos: LatLng, accuracyM: number, site: Site): 
  */
 export function hasExitedApproach(pos: LatLng, accuracyM: number, site: Site): boolean {
   return haversineMeters(pos, site) - accuracyM > approachRadiusM(site) + EXIT_BUFFER_M;
+}
+
+/**
+ * Where the visitor stands relative to a Site, in the shape the assistant is
+ * sent (`Proximity` in `shared/contract.ts`).
+ *
+ * Deliberately the plain geometric test rather than `hasEnteredApproach`. That
+ * gate exists because the notice interrupts somebody who asked for nothing, so
+ * it must be sure before it fires. Here the visitor has pressed a button about
+ * a Site the app already knows they are inspecting; nothing is being claimed
+ * about which place they are at. This is the same reasoning `siteContextNear`
+ * records for the Situation Check.
+ *
+ * The uncertainty does not vanish, it travels: `accuracyM` rides along so
+ * whatever phrases the answer can hedge a distance the device was never sure of.
+ */
+export function proximityTo(pos: LatLng, accuracyM: number, site: Site): Proximity {
+  const distanceM = haversineMeters(pos, site);
+  const state: Proximity["state"] =
+    distanceM <= site.radiusM ? "zone" : distanceM <= approachRadiusM(site) ? "approach" : "outside";
+  return { state, distanceM, accuracyM };
 }
 
 /**

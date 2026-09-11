@@ -37,3 +37,31 @@ describe("detectLang — falls back to the toggle when the question has no signa
     expect(detectLang("", "id")).toBe("id");
   });
 });
+
+// The bug this guards: the lists above hold function words only, which is the
+// right shape for a sentence and useless for a phrase. "rekomendasi kegiatan"
+// is unmistakably Indonesian to any reader and scored zero on both lists, so
+// the toggle broke the tie and an Indonesian question came back in English.
+// Reported from the live app with the toggle on EN.
+
+describe("detectLang — reads content words, not just function words", () => {
+  it.each([
+    "rekomendasi kegiatan",
+    "aturan pakaian",
+    "penginapan terdekat",
+    "kegiatan wisata",
+    "informasi upacara",
+    "pertanyaan tentang pura",
+  ])("calls Indonesian even when the toggle is English: %s", (message) => {
+    expect(detectLang(message, "en")).toBe("id");
+  });
+
+  it.each([
+    "temple recommendations",
+    "clothing regulations",
+    "nearby accommodation",
+    "photography restrictions",
+  ])("calls English even when the toggle is Indonesian: %s", (message) => {
+    expect(detectLang(message, "id")).toBe("en");
+  });
+});

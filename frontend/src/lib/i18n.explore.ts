@@ -303,6 +303,10 @@ const dict = {
   "explore.detail.why": { en: "Why this matters", id: "Kenapa ini penting" },
   "explore.detail.source": { en: "Source: {source}", id: "Sumber: {source}" },
   "explore.detail.checkPhoto": { en: "Check my photo here", id: "Cek foto saya di sini" },
+  // Names the place, not the feature. A visitor standing outside a gate is
+  // asking about *here*, and "Ask the assistant" would send them to a screen
+  // that does not obviously know that.
+  "explore.detail.ask": { en: "Ask about this place", id: "Tanya tentang tempat ini" },
   "explore.detail.simulate": {
     en: "View as if I am here",
     id: "Lihat seolah-olah saya di sini",

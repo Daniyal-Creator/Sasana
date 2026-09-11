@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   MapPinOff,
   SearchX,
@@ -46,7 +46,9 @@ import {
   hasExitedApproach,
   approachRadiusM,
   nearestSite,
+  proximityTo,
 } from "@/lib/geo";
+import { useAssistant } from "@/lib/assistant-context";
 import { SITES } from "@/data/sites";
 import type { Site } from "@/data/sites";
 import {
@@ -324,6 +326,8 @@ export default function ExplorePage() {
 
 function ExploreInner() {
   const { lang } = useLang();
+  const router = useRouter();
+  const { setHandoffPayload } = useAssistant();
   const searchParams = useSearchParams();
   const simulateId = searchParams.get("simulate");
   const siteParam = searchParams.get("site");
@@ -540,6 +544,41 @@ function ExploreInner() {
     const here = approachSite ?? allSites.find((s) => s.id === panelSiteId) ?? null;
     writeActiveSite(here ? siteContextFrom(here) : null);
   }, [allSites, approachSite, panelSiteId]);
+
+  /**
+   * Takes a question to the Assistant with where the visitor is standing
+   * attached, so "what should I do here" can be answered from here rather than
+   * from temples in general.
+   *
+   * The Site itself travels the way it always has, through `writeActiveSite`
+   * above. Only the position rides in the handoff, because the two have
+   * different lifetimes: a Site survives the walk from the map to the chat and
+   * back, a distance is true for about ten seconds.
+   *
+   * No fix, or a fix with no accuracy, sends no position rather than a guessed
+   * one. The Assistant then behaves exactly as it does for somebody who opened
+   * it from the menu.
+   *
+   * A Dummy Site sends none either. Its name and position are invented and
+   * ADR-0012 keeps it away from the backend; `writeActiveSite` already drops the
+   * Site for one, and a distance to an imaginary temple would be the same
+   * failure with a number attached to it.
+   */
+  const askAbout = useCallback(
+    (site: Site) => {
+      const measurable = !isDummySite(site) && position !== null && accuracyM !== null;
+      setHandoffPayload({
+        // No question: this button carries a place, not a sentence. The
+        // Assistant's auto-send only fires on a question, so an empty one
+        // leaves the visitor on an open prompt, which is what they pressed for.
+        question: "",
+        lang,
+        proximity: measurable ? { fix: proximityTo(position, accuracyM, site), at: Date.now() } : null,
+      });
+      router.push("/assistant");
+    },
+    [accuracyM, lang, position, router, setHandoffPayload],
+  );
 
   useEffect(() => {
     dummySitesRef.current = dummySites;
@@ -911,6 +950,13 @@ function ExploreInner() {
     return () => clearTimeout(id);
   }, [bannerSite]);
 
+  const hideRoute = useCallback(() => {
+    routeRequest.current += 1;
+    setRouteView({ status: "idle" });
+    setRouteFrom(null);
+    setRouteTarget(null);
+  }, []);
+
   /**
    * One Site, chosen. The marker on the map and the row in the list are two
    * doors into the same thing, so they do the same thing: the camera goes
@@ -918,6 +964,9 @@ function ExploreInner() {
    */
   const selectSite = useCallback((siteId: string) => {
     siteChosenByHand.current = true;
+    if (routeTarget?.kind === "site" && routeTarget.id !== siteId) {
+      hideRoute();
+    }
     setSelectedSiteId(siteId);
     setPanelSiteId(siteId);
     // Read by the Approach view, ignored everywhere else. Set unconditionally
@@ -930,7 +979,7 @@ function ExploreInner() {
     const site = allSites.find((s) => s.id === siteId);
     if (site) setFocus({ center: { lat: site.lat, lng: site.lng }, zoom: SITE_ZOOM });
     setSheetStage("full");
-  }, [allSites]);
+  }, [allSites, hideRoute, routeTarget]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
 
@@ -963,13 +1012,6 @@ function ExploreInner() {
     setFocus({ center: { lat: chosen.lat, lng: chosen.lng }, zoom: DESTINATION_ZOOM });
   }, []);
 
-  const hideRoute = useCallback(() => {
-    routeRequest.current += 1;
-    setRouteView({ status: "idle" });
-    setRouteFrom(null);
-    setRouteTarget(null);
-  }, []);
-
   const clearDestination = useCallback(() => {
     writeAmenityDestination(null);
     setDestination(null);
@@ -995,11 +1037,14 @@ function ExploreInner() {
       setRouteFrom(from);
       setRouteTarget(target);
       setRouteView({ status: "loading" });
+      setFollow(false);
+      setFocus(null);
 
       const { route, straightM } = await fetchRoute(from, { lat: target.lat, lng: target.lng });
       // A later request, or a hidden route, has already moved on.
       if (routeRequest.current !== request) return;
       setRouteView(route ? { status: "ready", route } : { status: "straight", straightM });
+      setSheetStage("peek");
     },
     [position],
   );
@@ -1147,6 +1192,7 @@ function ExploreInner() {
         bottomInset={isDesktop ? 0 : sheetInset}
         leftInset={isDesktop ? panelInset : 0}
         focus={focus}
+        bounds={routeLine ? routeLine.points : null}
         onUserPan={() => setFollow(false)}
         onRecenter={() => setFollow(true)}
         onTileError={() => setTilesFailed(true)}
@@ -1209,6 +1255,7 @@ function ExploreInner() {
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              onAsk={() => askAbout(panelSite)}
               {...routePropsFor(panelSite)}
             />
           ) : (
@@ -1334,6 +1381,7 @@ function ExploreInner() {
             // they need; only from there does it leave for the list. Sending
             // them straight out would drop the notice on the way past.
             onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
+            onAsk={() => askAbout(sheetSite)}
             {...routePropsFor(sheetSite)}
             backLabel={
               detourSite
@@ -1379,6 +1427,7 @@ function ExploreInner() {
               site={panelSite}
               distanceM={position ? haversineMeters(position, panelSite) : null}
               onBack={closePanelSite}
+              onAsk={() => askAbout(panelSite)}
               {...routePropsFor(panelSite)}
             />
           ) : (

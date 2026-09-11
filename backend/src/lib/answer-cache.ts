@@ -8,9 +8,13 @@
 // The choice is made by whether DATABASE_URL is set rather than by a NODE_ENV
 // check, because the question is not "is this production" but "is there a
 // database to talk to". That keeps the local container, a developer's laptop
-// and CI on SQLite by default while Vercel, where the variable is set, gets
-// Postgres - and it lets anybody point their own checkout at a scratch Supabase
+// and CI on SQLite by default, hands Postgres to any deployment that sets the
+// variable, and lets anybody point their own checkout at a scratch Supabase
 // project just by setting one variable.
+//
+// Which of the two production runs is not written down anywhere: ADR-0023 could
+// read `/api/stats` from outside and it does not say. The startup line below is
+// how you find out from a machine you can read.
 
 import { type AnswerStore, AnswerCache } from "@/lib/cache";
 import { PostgresAnswerCache } from "@/lib/cache-postgres";

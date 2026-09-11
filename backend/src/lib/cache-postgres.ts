@@ -93,9 +93,10 @@ export class PostgresAnswerCache implements AnswerStore {
       // connection. Leaving this on produces errors that appear only in
       // production, because a direct connection locally would work fine.
       prepare: false,
-      // One socket per instance. Vercel scales by running more instances, so a
-      // pool inside each one competes for the same pooler slots without
-      // serving any more traffic.
+      // One socket per instance. Sized for a host that scales by running more
+      // instances, where a pool inside each competes for the same pooler slots
+      // without serving any more traffic. For a single long-lived process it is
+      // merely conservative; raising it is a measurement away, not a guess.
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,

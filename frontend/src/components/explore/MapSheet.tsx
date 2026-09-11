@@ -170,51 +170,65 @@ export function MapSheet({
               : "pointer-events-auto scale-100 opacity-100"
           }`}
           style={{
-            transformOrigin: "24px calc(100% - 24px)",
+            transformOrigin: "28px calc(100% - 28px)",
           }}
         >
-          <div
-            ref={scrollRef}
-            data-lenis-prevent
-            className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pb-16"
-          >
-            {children}
-          </div>
-
-          {/* Hide button in bottom right corner of sidebar */}
-          <div className="pointer-events-none absolute bottom-3 right-3 z-10">
+          {/* Hide button in top right corner of sidebar */}
+          <div className="pointer-events-none absolute top-3.5 right-3.5 z-20">
             <button
               type="button"
               onClick={handleToggle}
               aria-label={tExplore(lang, "explore.sidebar.hide")}
               title={tExplore(lang, "explore.sidebar.hide")}
-              className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary shadow-sm transition-all duration-150 hover:bg-surface-sunken hover:text-text active:scale-95 focus-visible:shadow-focus"
+              className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface/95 backdrop-blur-xs text-text-secondary shadow-xs transition-all duration-150 hover:bg-surface hover:text-text active:scale-95 focus-visible:shadow-focus"
             >
               <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden />
             </button>
           </div>
+
+          <div
+            ref={scrollRef}
+            data-lenis-prevent
+            className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pr-12 pb-16"
+          >
+            {children}
+          </div>
         </div>
 
-        {/* Small circular button with Sasana logo at bottom-left */}
-        <button
-          type="button"
-          onClick={handleToggle}
-          aria-label={tExplore(lang, "explore.sidebar.show")}
-          title={tExplore(lang, "explore.sidebar.show")}
-          className={`pointer-events-auto absolute bottom-4 left-4 z-[500] flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface shadow-lg transition-all duration-300 ease-out-quart motion-reduce:transition-none hover:scale-105 active:scale-95 focus-visible:shadow-focus ${
+        {/* Sasana logo restore button at bottom-left when sidebar is hidden */}
+        <div
+          className={`pointer-events-auto absolute bottom-4 left-4 z-[500] transition-all duration-300 ease-out-quart motion-reduce:transition-none ${
             isHidden
               ? "scale-100 opacity-100"
               : "pointer-events-none scale-0 opacity-0"
           }`}
         >
-          <Image
-            src="/sasana-logo.png"
-            alt="SASANA"
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain"
+          {/* Radar ping & pulsing ring effect indicating interactivity */}
+          <span
+            className="absolute -inset-1.5 rounded-full bg-primary/25 animate-ping pointer-events-none opacity-75 motion-reduce:hidden"
+            aria-hidden
           />
-        </button>
+          <span
+            className="absolute -inset-1 rounded-full border-2 border-primary/40 animate-pulse pointer-events-none motion-reduce:hidden"
+            aria-hidden
+          />
+
+          <button
+            type="button"
+            onClick={handleToggle}
+            aria-label={tExplore(lang, "explore.sidebar.show")}
+            title={tExplore(lang, "explore.sidebar.show")}
+            className="relative flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface shadow-lg transition-all duration-150 hover:scale-105 active:scale-95 focus-visible:shadow-focus"
+          >
+            <Image
+              src="/sasana-logo.png"
+              alt="SASANA"
+              width={38}
+              height={38}
+              className="h-[38px] w-[38px] object-contain"
+            />
+          </button>
+        </div>
       </>
     );
   }

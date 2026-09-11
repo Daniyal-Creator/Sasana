@@ -34,3 +34,17 @@ describe("backing out of a temple read inside another's Approach", () => {
     }
   });
 });
+
+describe("explore sidebar toggle accessibility copy", () => {
+  it.each(["en", "id"] as const)("provides accessible labels for hide and show in %s", (lang) => {
+    const hideLabel = tExplore(lang, "explore.sidebar.hide");
+    const showLabel = tExplore(lang, "explore.sidebar.show");
+
+    expect(hideLabel).toBeTruthy();
+    expect(showLabel).toBeTruthy();
+    expect(hideLabel).not.toBe(showLabel);
+    expect(hideLabel).not.toContain("—");
+    expect(showLabel).not.toContain("—");
+  });
+});
+

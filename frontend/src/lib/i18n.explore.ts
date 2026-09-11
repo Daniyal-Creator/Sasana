@@ -246,7 +246,9 @@ const dict = {
   "explore.route.m.fork": { en: "At the fork", id: "Di percabangan" },
   "explore.route.m.exit": { en: "Take the exit", id: "Ambil jalan keluar" },
 
-
+  // Explore sidebar toggle controls
+  "explore.sidebar.hide": { en: "Hide sidebar", id: "Sembunyikan panel" },
+  "explore.sidebar.show": { en: "Show sidebar", id: "Tampilkan panel" },
 
   // Explore Mode: the notice arrives without taking the screen
 

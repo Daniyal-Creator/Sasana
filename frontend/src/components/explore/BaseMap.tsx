@@ -305,7 +305,7 @@ export function BaseMap({
         animate: false,
       });
     } else {
-      map.setView(centreFor(map, target.center, target.zoom), target.zoom, { animate: false });
+      map.setView(centreFor(map, target.center, target.zoom), target.zoom, { animate: true });
     }
     // centreFor is derived from the insets, so listing it here would be the
     // same trigger twice.

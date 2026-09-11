@@ -347,10 +347,14 @@ Legend: `[ ]` container/box · `(btn)` button · `<< >>` full-width · `▸` ico
 │  sites. I answer from the     │
 │  official rules.              │
 │                               │
+│  Explore a topic:             │
+│  [ Etiquette ] [ Customs  ]   │  ← TopicExplorer, 2x2 cards
+│  [ Sites     ] [ Photos   ]   │
+│                               │
 │  Try asking:                  │
-│  ( Can I wear shorts? )       │  ← QuickChips (3–5), pill, wrap
-│  ( Drone at Tanah Lot? )      │
-│  ( What is a canang? )        │
+│  ▸ Can I wear shorts?       › │  ← SuggestedQuestions, list rows
+│  ▸ Drone at Tanah Lot?      › │
+│  ▸ What is a canang?        › │
 │                               │
 │                               │
 │                        (grows)│  ← message list scroll area
@@ -381,11 +385,12 @@ Legend: `[ ]` container/box · `(btn)` button · `<< >>` full-width · `▸` ico
 
 - **Message list:** user bubbles right-aligned (`--color-primary` fill, `--color-primary-fg` text, `radius-lg` with the bottom-right corner squared to a tail); assistant bubbles left-aligned (`--color-surface`, `--color-text`, 1px `--color-border`, bottom-left corner squared) with a small circular **avatar** (prada mark on segara) preceding the first assistant bubble in a turn.
 - **SourceReference:** a divider + `Source: …` line inside assistant bubbles when `grounded === true` (FR2.2). When `grounded === false`, the bubble instead shows a subtle "No official rule found for this" note (FR2.1) and omits a source.
-- **QuickChips:** 3–5 example questions (FR2.5) shown in the empty state and again above the input once the chat is short; tapping fills + sends. They collapse (hide) once the conversation has several turns to save space.
+- **TopicExplorer:** a 2x2 grid of topic cards (Etiquette, Customs, Sites, Photos) at the top of the welcome state; tapping one sends that topic's prompt (FR2.5). Welcome state only — it goes away once the conversation starts.
+- **SuggestedQuestions:** a short list of example questions below the cards; tapping a row sends it (FR2.5). When the visitor arrived carrying a Site the questions are about that Site instead of temples in general. Welcome state only.
 - **Typing indicator:** three-dot pulse in an assistant-styled bubble while awaiting `/api/chat`.
 - **Error state:** an assistant-side `ErrorFallback` bubble: "I couldn't reach the assistant just now." + `(Try again)` re-sends the last message.
 - **Follow-up strip:** a `ChipRow` (§5.14) sits directly above the composer, offering up to three questions to ask next about the answer above it. Hidden while a reply is in flight — the chips belong to the message that is about to be replaced. Which questions appear, and when the strip retires, is specified in TS §5.4.
-- **Components:** `EmptyState`, `ChatBubble` (user/assistant), `SourceReference`, `QuickChip` (via `QuickChips`), `Button` (Send/icon), typing `LoadingSpinner` variant, `ErrorFallback`, `Header`, `LanguageSwitcher`.
+- **Components:** `EmptyState`, `ChatBubble` (user/assistant), `SourceReference`, `TopicExplorer`, `SuggestedQuestions`, `ChipRow`, `Button` (Send/icon), typing `LoadingSpinner` variant, `ErrorFallback`, `Header`, `LanguageSwitcher`.
 - **Responsive:** input bar is sticky bottom on mobile; at `md+` max-width 600px centered, input bar pinned to the bottom of the centered column. Avatar hidden below `sm` only if space-constrained (keep by default).
 
 ### 4.4 About (`/about`) — Server Component (TS §6)
@@ -559,21 +564,22 @@ interface ChatBubbleProps {
 - **A11y:** list of bubbles in a `<ul role="log" aria-live="polite" aria-relevant="additions">` so new messages are announced; each bubble labels its role for SR ("You said…", "Assistant said…") via SR-only text.
 - **Motion:** fade+rise in on mount (§9.5); reduced-motion → fade only.
 
-### 5.7 QuickChip — `components/assistant/QuickChips.tsx` (item within `QuickChips`)
+### 5.7 Welcome-screen prompts — `components/assistant/TopicExplorer.tsx` and `components/assistant/SuggestedQuestions.tsx`
 
 ```ts
-interface QuickChipProps {
-  label: string;
-  onSelect: (label: string) => void;
+interface TopicExplorerProps { onSelect: (prompt: string) => void; disabled?: boolean; }
+interface SuggestedQuestionsProps {
+  onSelect: (question: string) => void;
   disabled?: boolean;
+  site?: SiteContext | null;   // the place the visitor arrived with
 }
-interface QuickChipsProps { chips: string[]; onPick: (q: string) => void; disabled?: boolean; }
 ```
 
-- **Visual:** pill (`radius-full`), bg `--color-surface`, 1px `--color-border-strong`, `text-sm`, `--color-primary` label. Hover → bg `--color-primary-tint`. Height 40px (44px hit area with padding).
-- **States:** rest / hover / active (`scale .98`) / disabled (muted, while a request is in flight).
-- **A11y:** real `<button>`; group wrapped with `aria-label="Example questions"`; keyboard: Tab between chips, Enter/Space activates.
-- **Motion:** `transition-colors duration-150 ease-out`.
+- **TopicExplorer visual:** 2x2 grid of cards, `radius-lg`, bg `--color-surface`, 1px `--color-border`, `shadow-sm`; each card stacks a 20px `--color-primary` icon, a `text-sm` medium label, and a `text-xs --color-text-secondary` description. Hover → lifts 2px, border `--color-accent`, `shadow-md`.
+- **SuggestedQuestions visual:** one bordered `radius-lg` block of full-width rows divided by 1px `--color-border`; each row is a 16px `--color-primary` icon, the question in `text-sm`, and a muted chevron. Hover → bg `--color-primary-tint`.
+- **States:** rest / hover / active (`scale .98`) / disabled (`opacity-60`, while a request is in flight).
+- **A11y:** real `<button>`s; each group wrapped with an `aria-label` matching its heading; icons `aria-hidden`; keyboard: Tab between items, Enter/Space activates.
+- **Motion:** cards stagger in on mount (§9.10); colour transitions `duration-150 ease-out`. Reduced-motion → fade only.
 
 ### 5.8 SourceReference — `components/assistant/SourceReference.tsx`
 
@@ -652,7 +658,7 @@ interface EmptyStateProps {
   icon?: LucideIcon;
   title: string;
   description?: string;
-  children?: React.ReactNode;   // e.g. QuickChips or a CTA
+  children?: React.ReactNode;   // e.g. SuggestedQuestions or a CTA
 }
 ```
 
@@ -754,8 +760,8 @@ renders nothing at all — no heading, no empty box.
  Landing (/)
    │ tap "Ask the Assistant"
    ▼
- /assistant ── empty (welcome + QuickChips)
-   │ type a question  ─or─  tap a QuickChip (auto-fills + sends)   (FR2.5)
+ /assistant ── empty (welcome + TopicExplorer + SuggestedQuestions)
+   │ type a question  ─or─  tap a topic card or suggested question (sends)  (FR2.5)
    ▼ Send
  typing indicator ── POST /api/chat (retrieve rules → grounded prompt, TS §5.2)
    │

@@ -28,10 +28,11 @@ interface ChipRowProps {
 /**
  * A row of follow-up questions, offered above a composer.
  *
- * Deliberately NOT the pill from `QuickChips`. That one sits on the welcome
- * screen and means "here is somewhere to start"; this one sits under an answer
- * and means "here is something to say back", and two different meanings wearing
- * the same clothes is how an interface stops being read.
+ * Deliberately NOT the welcome screen's `TopicExplorer` card or
+ * `SuggestedQuestions` row. Those mean "here is somewhere to start"; this one
+ * sits under an answer and means "here is something to say back", and two
+ * different meanings wearing the same clothes is how an interface stops being
+ * read.
  *
  * So it is recessed rather than raised: `surface-sunken` against the page, with
  * secondary ink, under a composer that is `surface` with a shadow. The eye
@@ -56,8 +57,9 @@ export function ChipRow({ chips, onPick, disabled = false, label }: ChipRowProps
       // always wider than the screen and the last chip is always cut. The mask
       // is what stops that reading as a rendering fault: the cut edge fades
       // instead of stopping dead, which is the one thing that says "keep
-      // going". Alpha only, never hue (guardrail C1). It is dropped from `sm`
-      // up, where the row wraps and nothing is ever clipped.
+      // going". A mask, not a painted background, which is the scroll-edge
+      // mask DL1 names (Guardrails 2.2). It is dropped from `sm` up, where
+      // the row wraps and nothing is ever clipped.
       className={[
         "-mx-1 flex gap-2 overflow-x-auto px-1 pb-2",
         "[mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]",

@@ -183,8 +183,8 @@ export function MapSheet({
                 height={22}
                 className="h-[22px] w-[22px] object-contain"
               />
-              <span className="font-display text-sm font-bold tracking-wider text-text">
-                SASANA
+              <span className="font-sans text-sm font-semibold text-text">
+                {tExplore(lang, "explore.sidebar.title")}
               </span>
             </div>
             <button

@@ -46,5 +46,10 @@ describe("explore sidebar toggle accessibility copy", () => {
     expect(hideLabel).not.toContain("—");
     expect(showLabel).not.toContain("—");
   });
+
+  it("provides correct header titles in both languages", () => {
+    expect(tExplore("en", "explore.sidebar.title")).toBe("Explore sites");
+    expect(tExplore("id", "explore.sidebar.title")).toBe("Jelajahi situs");
+  });
 });
 

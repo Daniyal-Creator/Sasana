@@ -247,6 +247,7 @@ const dict = {
   "explore.route.m.exit": { en: "Take the exit", id: "Ambil jalan keluar" },
 
   // Explore sidebar toggle controls
+  "explore.sidebar.title": { en: "Explore sites", id: "Jelajahi situs" },
   "explore.sidebar.hide": { en: "Hide sidebar", id: "Sembunyikan panel" },
   "explore.sidebar.show": { en: "Show sidebar", id: "Tampilkan panel" },
 

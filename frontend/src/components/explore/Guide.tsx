@@ -664,7 +664,7 @@ export function Guide({ onStart }: GuideProps) {
                   </div>
                   <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
                     <Image
-                      src="/customs/canang-sari.jpg"
+                      src="/customs/canang-sari.png"
                       alt="Canang Sari Sesaji Bali"
                       fill
                       sizes="(max-width: 640px) 100vw, 25vw"
@@ -687,8 +687,8 @@ export function Guide({ onStart }: GuideProps) {
                   </div>
                   <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
                     <Image
-                      src="/customs/pura-kesakralan.jpg"
-                      alt={lang === "id" ? "Kompleks Pura dan Candi Bentar Bali" : "Balinese Sacred Temple Complex"}
+                      src="/customs/pura-kesakralan.png"
+                      alt={lang === "id" ? "Kompleks Pura dan Kesakralan Tempat Suci Bali" : "Balinese Sacred Temple Complex and Reverence"}
                       fill
                       sizes="(max-width: 640px) 100vw, 25vw"
                       className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"

@@ -17,8 +17,12 @@ interface MobileTopicChipsProps {
 }
 
 /**
- * Horizontal scrolling topic chips for mobile, replacing the sidebar.
- * Visible on <lg only (hidden on lg+).
+ * Horizontal scrolling topic chips for mobile, on the welcome screen only.
+ *
+ * Once a conversation starts these go, and so did the desktop sidebar that used
+ * to list the same four topics: from that point the follow-up strip above the
+ * composer is offering questions about the answer on screen, which is the more
+ * useful thing to tap and the only one that should be competing for the tap.
  */
 export function MobileTopicChips({ onSelect, disabled = false }: MobileTopicChipsProps) {
   const { lang } = useLang();
@@ -27,7 +31,7 @@ export function MobileTopicChips({ onSelect, disabled = false }: MobileTopicChip
     <div
       className="flex gap-2 overflow-x-auto pb-1 lg:hidden"
       role="group"
-      aria-label={t(lang, "assistant.sidebar.explore")}
+      aria-label={t(lang, "assistant.topics.label")}
       style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
     >
       {TOPICS.map(({ key, icon: Icon }) => (

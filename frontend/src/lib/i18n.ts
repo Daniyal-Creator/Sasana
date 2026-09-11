@@ -800,13 +800,7 @@ const dict = {
     en: "Suggested questions",
     id: "Pertanyaan yang disarankan",
   },
-  "assistant.sidebar.title": { en: "Sasana Guide", id: "Panduan Sasana" },
-  "assistant.sidebar.explore": { en: "Explore", id: "Jelajahi" },
-  "assistant.sidebar.about.title": { en: "About sources", id: "Tentang sumber" },
-  "assistant.sidebar.about.body": {
-    en: "Official rules cite their source. Cultural background and history do not, and are marked as such.",
-    id: "Aturan resmi mengutip sumbernya. Penjelasan budaya dan sejarah tidak, dan ditandai begitu.",
-  },
+  "assistant.topics.label": { en: "Explore", id: "Jelajahi" },
   "assistant.input.placeholder.long": {
     en: "Ask Sasana about Balinese customs\u2026",
     id: "Tanya Sasana tentang adat Bali\u2026",

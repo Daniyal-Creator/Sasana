@@ -9,7 +9,6 @@ import { ChipRow } from "@/components/ui/ChipRow";
 import { ErrorFallback } from "@/components/ui/ErrorFallback";
 import { DecorativeBackground } from "@/components/assistant/DecorativeBackground";
 import { ChatLayout } from "@/components/assistant/ChatLayout";
-import { GuideSidebar } from "@/components/assistant/GuideSidebar";
 import { TopicExplorer } from "@/components/assistant/TopicExplorer";
 import { SuggestedQuestions } from "@/components/assistant/SuggestedQuestions";
 import { MobileTopicChips } from "@/components/assistant/MobileTopicChips";
@@ -238,12 +237,20 @@ export default function AssistantPage() {
     <div className="relative flex min-h-0 flex-1 flex-col">
       <DecorativeBackground />
 
-      {/* Mobile topic chips — below header, above chat */}
-      <div className="relative z-[1] px-4 pt-3 sm:px-6 lg:hidden">
-        <MobileTopicChips onSelect={send} disabled={sending} />
-      </div>
+      {/* Topic chips, on the welcome screen only.
+          They say the same four things as the cards below them, which is why
+          they go once a conversation starts: at that point the follow-up strip
+          above the composer is offering questions about the answer on screen,
+          and two rows of chips meaning different things on one 375px screen is
+          how a visitor stops reading either. Desktop lost its sidebar for the
+          same reason, so both now end up in the same place. */}
+      {isEmpty && (
+        <div className="relative z-[1] mx-auto w-full max-w-assistant-main px-4 pt-3 sm:px-6 lg:hidden">
+          <MobileTopicChips onSelect={send} disabled={sending} />
+        </div>
+      )}
 
-      <ChatLayout sidebar={<GuideSidebar onTopicSelect={send} disabled={sending} />}>
+      <ChatLayout>
         {/* Above the fork on purpose: the screen a visitor lands on from
             Explore is the empty one, and that is the screen that used to say
             nothing about where they had come from. It sits in the same place

@@ -26,6 +26,7 @@ import {
   type SheetStage,
 } from "@/components/explore/MapSheet";
 import { SiteBrief } from "@/components/explore/SiteBrief";
+import { ZoneDuties } from "@/components/explore/ZoneDuties";
 import { PanelBack } from "@/components/explore/PanelBack";
 import { SiteSearch, matchesQuery } from "@/components/explore/SiteSearch";
 import { SiteThumb } from "@/components/explore/SiteThumb";
@@ -398,6 +399,23 @@ function ExploreInner() {
   const [detourSiteId, setDetourSiteId] = useState<string | null>(null);
 
   /**
+   * Whether the visitor has opened the full brief for the Site they are
+   * standing in.
+   *
+   * Inside an Approach the sheet is the Zone panel: what is being asked of you,
+   * here, now. The brief underneath it is the reading screen, and this is the
+   * one step between them.
+   *
+   * Not expressed by pointing `detourSiteId` at the Approach's own Site, which
+   * would have saved a piece of state. A detour is a Site the visitor went
+   * looking for while standing somewhere else, and the panel above reads that
+   * state to decide whether Back means "return to the Approach" or "leave it".
+   * Folding two different journeys into one flag is how a Back button starts
+   * pointing at the wrong place.
+   */
+  const [zoneDetailOpen, setZoneDetailOpen] = useState(false);
+
+  /**
    * The Amenity a visitor picked out of an assistant answer, if they did.
    *
    * Read once on mount rather than watched: it is written on the other screen,
@@ -644,6 +662,9 @@ function ExploreInner() {
     setView(next);
     setSheetStage("peek");
     setPanelSiteId(null);
+    // Every arrival in an Approach opens on the Zone panel, including a second
+    // arrival at a Site whose brief was left open on the first one.
+    setZoneDetailOpen(false);
     // A filter carried into another view is a list that looks broken for a
     // reason the visitor left behind on the last screen.
     setQuery("");
@@ -1386,6 +1407,15 @@ function ExploreInner() {
   if (view === "inside" && approachSiteLive) {
     // The sheet belongs to the Approach until the visitor says otherwise.
     const sheetSite = detourSite ?? approachSiteLive;
+    /**
+     * Whether the sheet is reading rather than instructing.
+     *
+     * Two different ways in and one way out of each. A detour is another Site
+     * entirely, and Back returns to the Approach; the brief is this Site read
+     * in full, and Back returns to the Zone panel. Both land somewhere the
+     * visitor still needs, which is why neither of them leaves for the list.
+     */
+    const readingBrief = detourSite !== null || zoneDetailOpen;
     return (
       <div data-lenis-prevent className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
         {mapSurface(sheetSite.id, sheetInsetNow)}
@@ -1411,24 +1441,35 @@ function ExploreInner() {
           onToggleDesktopHidden={toggleDesktopHidden}
         >
           {destinationPanel}
-          <SiteBrief
-            site={sheetSite}
-            distanceM={position ? haversineMeters(position, sheetSite) : null}
-            // Back unwinds one step at a time. From a detour it returns to the
-            // Approach the visitor is still standing in, which is the thing
-            // they need; only from there does it leave for the list. Sending
-            // them straight out would drop the notice on the way past.
-            onBack={detourSite ? () => setDetourSiteId(null) : restorePanel}
-            onAsk={() => askAbout(sheetSite)}
-            {...routePropsFor(sheetSite)}
-            backLabel={
-              detourSite
-                ? tExplore(lang, "explore.panel.backToApproach", {
-                    site: approachSiteLive.name,
-                  })
-                : undefined
-            }
-          />
+          {readingBrief ? (
+            <SiteBrief
+              site={sheetSite}
+              distanceM={position ? haversineMeters(position, sheetSite) : null}
+              // Back unwinds one step at a time. From a detour it returns to
+              // the Approach the visitor is still standing in, and from the
+              // brief to the Zone panel that sent them here; only from there
+              // does it leave for the list. Sending them straight out would
+              // drop the notice on the way past.
+              onBack={detourSite ? () => setDetourSiteId(null) : () => setZoneDetailOpen(false)}
+              onAsk={() => askAbout(sheetSite)}
+              {...routePropsFor(sheetSite)}
+              backLabel={
+                detourSite
+                  ? tExplore(lang, "explore.panel.backToApproach", {
+                      site: approachSiteLive.name,
+                    })
+                  : tExplore(lang, "explore.zone.backToZone")
+              }
+            />
+          ) : (
+            <ZoneDuties
+              site={approachSiteLive}
+              distanceM={position ? haversineMeters(position, approachSiteLive) : null}
+              onBack={restorePanel}
+              onDetail={() => setZoneDetailOpen(true)}
+              onAsk={() => askAbout(approachSiteLive)}
+            />
+          )}
         </MapSheet>
       </div>
     );

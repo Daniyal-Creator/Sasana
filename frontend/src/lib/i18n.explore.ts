@@ -284,6 +284,25 @@ const dict = {
   // button is not the way home and the screen has to offer one.
   "explore.panel.back": { en: "Back to the list", id: "Kembali ke daftar" },
 
+  // Inside a Zone. This panel asks rather than describes, so its copy is
+  // imperative where the brief's is informative. The three duty words are the
+  // load-bearing part: every line of the list carries one, and a line marked
+  // with the wrong one is an invented rule (W6). "Allowed, with limits" exists
+  // precisely so that a permission is never dressed as an obligation.
+  "explore.zone.overline": { en: "You are inside the zone", id: "Anda berada di dalam zona" },
+  "explore.zone.heading": {
+    en: "Follow all {count} of these while you are inside.",
+    id: "Patuhi {count} hal ini selama Anda di dalam.",
+  },
+  "explore.zone.duty.required": { en: "Required", id: "Wajib" },
+  "explore.zone.duty.forbidden": { en: "Not permitted", id: "Tidak diizinkan" },
+  "explore.zone.duty.conditional": { en: "Allowed, with limits", id: "Boleh, dengan batas" },
+  "explore.zone.detail": { en: "View site details", id: "Lihat detail situs" },
+  "explore.zone.backToZone": {
+    en: "Back to the zone summary",
+    id: "Kembali ke ringkasan zona",
+  },
+
   // Back out of a temple the visitor tapped while standing inside another's
   // Approach. It names where it goes, because it does not go to the list.
   "explore.panel.backToApproach": { en: "Back to {site}", id: "Kembali ke {site}" },

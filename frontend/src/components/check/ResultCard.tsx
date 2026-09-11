@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { ChipRow } from "@/components/ui/ChipRow";
+import { checkFollowUpChips } from "@/lib/follow-up";
 import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { t, type CopyKey } from "@/lib/i18n";
@@ -131,11 +133,17 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
     }, 600);
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const question = inputValue.trim();
-    if (!question) return;
-
+  /**
+   * Hands a question to the assistant with this check attached.
+   *
+   * The result travels with it, which is why the chips above the field are
+   * allowed to say "this result" where a chip in a fresh chat could not. It
+   * also means the answer will not be cached: the payload carries this photo's
+   * own wording, so no two visitors ever ask quite the same thing. That is the
+   * right trade here. The saving was never available on this path, and the
+   * visitor it was built for is standing outside in the sun with one hand free.
+   */
+  function ask(question: string) {
     setHandoffPayload({
       question,
       imageUrl: image?.previewUrl ?? null,
@@ -145,6 +153,13 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
     });
 
     router.push("/assistant");
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const question = inputValue.trim();
+    if (!question) return;
+    ask(question);
   }
 
   return (
@@ -202,6 +217,16 @@ export function ResultCard({ result, image, onReset }: ResultCardProps) {
             )
           )}
         </div>
+
+        <ChipRow
+          label={t(lang, "assistant.followup.group")}
+          chips={checkFollowUpChips(result.status).map((chip) => ({
+            id: chip.id,
+            label: t(lang, chip.short),
+            question: t(lang, chip.question),
+          }))}
+          onPick={(chip) => ask(chip.question)}
+        />
 
         <form
           onSubmit={handleSubmit}

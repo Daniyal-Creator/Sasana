@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -17,9 +17,46 @@ import { BenefitsSection } from "@/components/landing/BenefitsSection";
 import { useLang } from "@/lib/language";
 import { t } from "@/lib/i18n";
 import { useScrollFadeUp } from "@/lib/useScrollFadeUp";
+import { getLenis } from "@/components/providers/SmoothScroll";
 
 export default function LandingPage() {
   const { lang } = useLang();
+
+  // Handle URL hash navigation (e.g. /#how, /#sites, /#features, /#how-it-works from footer/header)
+  useEffect(() => {
+    const handleHash = () => {
+      const rawHash = window.location.hash.replace("#", "");
+      if (!rawHash) return;
+      const targetId = rawHash === "how-it-works" ? "how" : rawHash;
+      if (targetId === "hero") {
+        const lenis = getLenis();
+        if (lenis) {
+          lenis.scrollTo(0);
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+        return;
+      }
+      const el = document.getElementById(targetId);
+      if (el) {
+        setTimeout(() => {
+          const yOffset = -90;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          const lenis = getLenis();
+          if (lenis) {
+            lenis.scrollTo(y);
+          } else {
+            const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            window.scrollTo({ top: y, behavior: prefersReduced ? "auto" : "smooth" });
+          }
+        }, 150);
+      }
+    };
+
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, []);
 
   // Scroll-triggered fade-up animations (ADR-0009)
   const heroActionBarRef = useScrollFadeUp<HTMLDivElement>({
@@ -192,6 +229,7 @@ export default function LandingPage() {
 
         {/* How it works: Minimal Editorial Step Flow (ADR-0009 compliant) */}
         <section id="how" className="mx-auto max-w-container scroll-mt-24 px-4 pb-20 pt-12 sm:px-6 sm:pt-16 lg:px-8" ref={howSectionRef}>
+          <span id="how-it-works" className="sr-only" />
           <HowItWorksSection />
         </section>
       </div>

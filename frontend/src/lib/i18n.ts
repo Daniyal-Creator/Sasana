@@ -800,7 +800,6 @@ const dict = {
     en: "Suggested questions",
     id: "Pertanyaan yang disarankan",
   },
-  "assistant.topics.label": { en: "Explore", id: "Jelajahi" },
   "assistant.input.placeholder.long": {
     en: "Ask Sasana about Balinese customs\u2026",
     id: "Tanya Sasana tentang adat Bali\u2026",

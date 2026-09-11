@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { MapPin, ShieldCheck, Camera, Compass, Bell, ChevronDown, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { CustomIcon } from "@/components/explore/CustomIcon";
@@ -18,6 +19,14 @@ import type { Lang } from "@/lib/i18n";
 import type { Site, Odalan } from "@/data/sites";
 import { isDummySite } from "@/data/dummy-sites";
 import { MEANINGS } from "@/data/meanings";
+
+const CUSTOM_SIDEBAR_ICONS: Record<string, string> = {
+  dress: "/customs/dress.jpg",
+  offerings: "/customs/offerings.jpg",
+  photography: "/customs/photography.png",
+  drones: "/customs/drones.jpg",
+  quiet: "/customs/quiet.jpg",
+};
 
 const ODALAN_WINDOW_DAYS = 7;
 
@@ -197,9 +206,19 @@ export function SiteBrief({
                     tiles give the list a spine to scan. */}
                 <span
                   aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-border bg-surface text-primary"
+                  className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-[#F9F6F0] p-1 shadow-xs"
                 >
-                  <CustomIcon icon={custom.icon} size={20} />
+                  {CUSTOM_SIDEBAR_ICONS[custom.icon] ? (
+                    <Image
+                      src={CUSTOM_SIDEBAR_ICONS[custom.icon]}
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="h-full w-full rounded object-contain"
+                    />
+                  ) : (
+                    <CustomIcon icon={custom.icon} size={20} />
+                  )}
                 </span>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-text-muted">

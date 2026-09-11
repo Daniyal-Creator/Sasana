@@ -57,8 +57,9 @@ export function ChipRow({ chips, onPick, disabled = false, label }: ChipRowProps
       // always wider than the screen and the last chip is always cut. The mask
       // is what stops that reading as a rendering fault: the cut edge fades
       // instead of stopping dead, which is the one thing that says "keep
-      // going". Alpha only, never hue (guardrail C1). It is dropped from `sm`
-      // up, where the row wraps and nothing is ever clipped.
+      // going". A mask, not a painted background, which is the scroll-edge
+      // mask DL1 names (Guardrails 2.2). It is dropped from `sm` up, where
+      // the row wraps and nothing is ever clipped.
       className={[
         "-mx-1 flex gap-2 overflow-x-auto px-1 pb-2",
         "[mask-image:linear-gradient(to_right,#000_calc(100%-32px),transparent)]",

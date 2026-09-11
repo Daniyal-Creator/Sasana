@@ -5,7 +5,6 @@ import { Send, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChatBubble, SasanaAvatar } from "@/components/assistant/ChatBubble";
-import { QuickChips } from "@/components/assistant/QuickChips";
 import { ErrorFallback } from "@/components/ui/ErrorFallback";
 import { DecorativeBackground } from "@/components/assistant/DecorativeBackground";
 import { ChatLayout } from "@/components/assistant/ChatLayout";
@@ -53,13 +52,6 @@ export default function AssistantPage() {
    */
   const [contextSite, setContextSite] = useState<SiteContext | null>(null);
   const [contextFix, setContextFix] = useState<Proximity | null>(null);
-
-  const chips = [
-    t(lang, "assistant.chip.shorts"),
-    t(lang, "assistant.chip.drone"),
-    t(lang, "assistant.chip.canang"),
-    t(lang, "assistant.chip.photo"),
-  ];
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -269,11 +261,6 @@ export default function AssistantPage() {
             {/* Suggested questions */}
             <div className="mt-8">
               <SuggestedQuestions onSelect={send} disabled={sending} site={contextSite} />
-            </div>
-
-            {/* Quick chips fallback — visible only if topic cards above aren't enough */}
-            <div className="mt-6 hidden">
-              <QuickChips chips={chips} onPick={send} disabled={sending} />
             </div>
           </div>
         ) : (

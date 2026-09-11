@@ -95,9 +95,9 @@ Aplikasi ini hanya punya **4 route** (PRD §10), tapi menjadi **14 layar mockup*
                             ▼                 ▼
         ┌───────────────────────────┐   ┌──────────────────────────┐
         │  L3  /check  idle         │   │  L10  /assistant empty   │
-        │  pilih konteks + upload   │   │  sambutan + QuickChips   │
+        │  pilih konteks + upload   │   │  sambutan + topik/saran  │
         └───────────┬───────────────┘   └───────────┬──────────────┘
-                    │ foto dipilih                  │ ketik / tap chip
+                    │ foto dipilih                  │ ketik / tap saran
                     ▼                               ▼
         ┌───────────────────────────┐   ┌──────────────────────────┐
         │  L4  foto terpilih        │   │  typing indicator        │
@@ -690,7 +690,8 @@ trace, no "Error 500", no sad face illustration, no emoji.
 |---|---|
 | **Header** | Back + wordmark + language pill |
 | **Empty state** | Avatar bundar (mark emas di atas indigo), judul sambutan, deskripsi yang menjelaskan bahwa jawaban bersumber dari aturan resmi |
-| **QuickChips** | 4 pill pertanyaan contoh, wrap 2 baris |
+| **TopicExplorer** | Grid 2x2 kartu topik: Etiquette, Customs, Sites, Photos |
+| **SuggestedQuestions** | Daftar 3 baris pertanyaan contoh, ikon + chevron |
 | **Input bar** | Sticky bawah, text field + tombol kirim bundar, plus helper micro-copy |
 
 **Prompt:**
@@ -713,14 +714,25 @@ system as the other screens.
    about Balinese customs and sacred sites. I answer from the official
    rules."
 
-3. QUICK CHIPS, 32px top margin, left aligned with 24px side padding.
-   A 12px #8A8073 label "Try asking:" then four pill-shaped buttons that
-   wrap across two rows with an 8px gap. Each pill is 40px tall, fully
-   rounded, #FFFDF9 background, 1px #CBBFA8 border, 14px #1D4E89 label:
-   "Can I wear shorts at a temple?", "Can I fly a drone at Tanah Lot?",
-   "What is a canang offering?", "Is it okay to take photos inside?"
+3. TOPIC CARDS, 40px top margin, left aligned with 24px side padding.
+   A 14px #5C544A label "Explore a topic:" then a 2x2 grid of cards with
+   a 12px gap. Each card is #FFFDF9 with a 1px #E4DACB border, a 12px
+   radius and a soft shadow, 16px padding, and stacks three things left
+   aligned: a 20px #1D4E89 Lucide icon, a 14px #2A2520 medium-weight
+   label, and a 12px #5C544A description. The four cards are "Etiquette"
+   (landmark icon), "Customs" (book-open icon), "Sites" (map-pin icon)
+   and "Photos" (camera icon).
 
-4. INPUT BAR pinned to the bottom, #FFFDF9 with a 1px #E4DACB top border
+4. SUGGESTED QUESTIONS, 32px top margin, same side padding.
+   A 14px #5C544A label "Try asking:" then one rounded #FFFDF9 block with
+   a 1px #E4DACB border holding three full-width rows divided by 1px
+   #E4DACB lines. Each row is 16px vertical padding and contains a 16px
+   #1D4E89 Lucide icon, then the question in 14px #2A2520, then a 16px
+   #8A8073 chevron-right pushed to the right edge: "Can I wear shorts at
+   a temple?", "Can I fly a drone at Tanah Lot?", "What is a canang
+   offering?"
+
+5. INPUT BAR pinned to the bottom, #FFFDF9 with a 1px #E4DACB top border
    and 12px padding. A row containing a 48px tall text field with a
    #EFE8DC fill, a 12px radius, 16px horizontal padding, and the
    placeholder "Ask about a custom…" in #8A8073; then an 8px gap; then a

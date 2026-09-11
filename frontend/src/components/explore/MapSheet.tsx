@@ -164,7 +164,7 @@ export function MapSheet({
         <div
           ref={sheetRef}
           data-lenis-prevent
-          className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] rounded-xl border transition-all duration-300 ease-out-quart motion-reduce:transition-none ${
+          className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] overflow-hidden rounded-xl border transition-all duration-300 ease-out-quart motion-reduce:transition-none ${
             isHidden
               ? "pointer-events-none scale-0 opacity-0"
               : "pointer-events-auto scale-100 opacity-100"
@@ -173,23 +173,35 @@ export function MapSheet({
             transformOrigin: "28px calc(100% - 28px)",
           }}
         >
-          {/* Hide button in top right corner of sidebar */}
-          <div className="pointer-events-none absolute top-3.5 right-3.5 z-20">
+          {/* Dedicated Top Header Bar */}
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/sasana-logo.png"
+                alt="SASANA"
+                width={22}
+                height={22}
+                className="h-[22px] w-[22px] object-contain"
+              />
+              <span className="font-display text-sm font-bold tracking-wider text-text">
+                SASANA
+              </span>
+            </div>
             <button
               type="button"
               onClick={handleToggle}
               aria-label={tExplore(lang, "explore.sidebar.hide")}
               title={tExplore(lang, "explore.sidebar.hide")}
-              className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface/95 backdrop-blur-xs text-text-secondary shadow-xs transition-all duration-150 hover:bg-surface hover:text-text active:scale-95 focus-visible:shadow-focus"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary shadow-sm transition-all duration-150 hover:bg-surface-sunken hover:text-text active:scale-95 focus-visible:shadow-focus"
             >
-              <PanelLeftClose size={18} strokeWidth={1.75} aria-hidden />
+              <PanelLeftClose size={16} strokeWidth={1.75} aria-hidden />
             </button>
           </div>
 
           <div
             ref={scrollRef}
             data-lenis-prevent
-            className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pr-12 pb-16"
+            className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pb-16"
           >
             {children}
           </div>

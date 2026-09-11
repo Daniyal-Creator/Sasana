@@ -5,7 +5,7 @@ import { Send, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ChatBubble, SasanaAvatar } from "@/components/assistant/ChatBubble";
-import { QuickChips } from "@/components/assistant/QuickChips";
+import { ChipRow } from "@/components/ui/ChipRow";
 import { ErrorFallback } from "@/components/ui/ErrorFallback";
 import { DecorativeBackground } from "@/components/assistant/DecorativeBackground";
 import { ChatLayout } from "@/components/assistant/ChatLayout";
@@ -20,6 +20,7 @@ import { readActiveSite, siteContextNamed, writeActiveSite } from "@/lib/site-co
 import { SiteContextCard } from "@/components/assistant/SiteContextCard";
 import type { Proximity, SiteContext } from "@shared/contract";
 import { freshProximity, PROXIMITY_TTL_MS, type TimedProximity } from "@/lib/assistant-handoff";
+import { followUpChips } from "@/lib/follow-up";
 import { t } from "@/lib/i18n";
 import type { ChatMessage, ChatResponse } from "@shared/contract";
 
@@ -53,19 +54,35 @@ export default function AssistantPage() {
    */
   const [contextSite, setContextSite] = useState<SiteContext | null>(null);
   const [contextFix, setContextFix] = useState<Proximity | null>(null);
-
-  const chips = [
-    t(lang, "assistant.chip.shorts"),
-    t(lang, "assistant.chip.drone"),
-    t(lang, "assistant.chip.canang"),
-    t(lang, "assistant.chip.photo"),
-  ];
+  /**
+   * Follow-up chips this visitor has already tapped, by copy key.
+   *
+   * Offering a shortcut to a question somebody has had answered is not a
+   * shortcut, and the rule-derived chips cannot catch this on their own: a
+   * general-tier answer cites no Rule, so nothing about the reply records that
+   * the question was asked.
+   */
+  const [usedChips, setUsedChips] = useState<ReadonlySet<string>>(() => new Set());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, sending, failed]);
 
-  async function send(text: string, opts?: { imageUrl?: string | null; apiMessage?: string }) {
+  /**
+   * `standalone` sends the question with no history behind it.
+   *
+   * Only follow-up chips set it, and the reason is the whole point of them.
+   * `chat.ts` caches first-turn questions and nothing else, because a cached
+   * answer keyed on a question alone could land in a conversation it was never
+   * about. A chip is written to survive that: it names its own subject, so the
+   * history it gives up was carrying nothing it needed. What the visitor sees
+   * is untouched - the conversation above stays on screen, and their next typed
+   * message carries all of it again.
+   */
+  async function send(
+    text: string,
+    opts?: { imageUrl?: string | null; apiMessage?: string; standalone?: boolean },
+  ) {
     const question = text.trim();
     if (!question || sending) return;
     setFailed(null);
@@ -88,7 +105,7 @@ export default function AssistantPage() {
           // exactly the bug this field exists to avoid.
           ...(opts?.apiMessage ? { question } : {}),
           lang,
-          history: history.map(({ role, content }) => ({ role, content })),
+          history: opts?.standalone ? [] : history.map(({ role, content }) => ({ role, content })),
           // Read per send, not once on mount: a visitor can pick a different
           // Site in another tab, and the answer must follow where they are now.
           // Where the visitor is wins over the Site they merely named, because
@@ -270,11 +287,6 @@ export default function AssistantPage() {
             <div className="mt-8">
               <SuggestedQuestions onSelect={send} disabled={sending} site={contextSite} />
             </div>
-
-            {/* Quick chips fallback — visible only if topic cards above aren't enough */}
-            <div className="mt-6 hidden">
-              <QuickChips chips={chips} onPick={send} disabled={sending} />
-            </div>
           </div>
         ) : (
           /* ── Conversation state ── */
@@ -328,6 +340,25 @@ export default function AssistantPage() {
 
         {/* ── Floating composer ── */}
         <div className="sticky bottom-0 rounded-xl bg-bg py-4">
+          {/* Hidden while an answer is on its way. The chips belong to the
+              message above them, and that message is about to be replaced. */}
+          {!sending && (
+            <ChipRow
+              label={t(lang, "assistant.followup.group")}
+              chips={followUpChips(messages, usedChips).map((chip) => ({
+                id: chip.id,
+                label: t(lang, chip.short),
+                question: t(lang, chip.question),
+              }))}
+              onPick={(chip) => {
+                setUsedChips((prev) => new Set(prev).add(chip.id));
+                // The whole question, not the two words on the chip. It is what
+                // the bubble shows and what the server is asked, and with no
+                // history behind it there is nothing else to say what it means.
+                send(chip.question, { standalone: true });
+              }}
+            />
+          )}
           <form
             onSubmit={(e) => {
               e.preventDefault();

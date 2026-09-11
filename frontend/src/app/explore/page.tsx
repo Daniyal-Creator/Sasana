@@ -867,9 +867,23 @@ function ExploreInner() {
     const leg = simulateStep?.id === simulateId ? simulateStep.leg : 0;
     if (leg >= legs.length) return;
 
-    // This Site may already have spoken on this visit, which would keep the
-    // card from arriving at the end of a walk the visitor just asked for.
-    if (leg === 0) announced.current.delete(simulateId);
+    // Two things have to be put back before the first step, and both of them
+    // are consequences of where the walk is started from: the Site's own
+    // panel, which is the only place the button lives.
+    if (leg === 0) {
+      // This Site may already have spoken on this visit, which would keep the
+      // card from arriving at the end of a walk the visitor just asked for.
+      announced.current.delete(simulateId);
+      // And the panel is already open on this Site. Left that way, the sheet
+      // says the same thing on both sides of the line, so the one thing the
+      // walk exists to show - the panel handing itself over to the place you
+      // have arrived at - happens invisibly, and the card in the corner is
+      // the only sign anything happened at all. Returning the sheet to the
+      // list first gives the crossing something to change.
+      setPanelSiteId(null);
+      setDetourSiteId(null);
+      setSheetStage("peek");
+    }
 
     // Real fixes would otherwise keep arriving underneath the simulation and
     // argue with it about where the visitor is. Idempotent, so calling it once

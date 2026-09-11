@@ -1,1 +1,0 @@
-(self.webpackChunk_N_E=self.webpackChunk_N_E||[]).push([[778],{1212:(e,l,s)=>{"use strict";s.r(l),s.d(l,{default:()=>n});var a=s(5155);function n(e){let{children:l}=e;return(0,a.jsx)("div",{className:"flex flex-1 flex-col animate-fadeUp",children:l})}},5083:(e,l,s)=>{Promise.resolve().then(s.bind(s,1212))}},e=>{e.O(0,[441,255,358],()=>e(e.s=5083)),_N_E=e.O()}]);

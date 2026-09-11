@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { DUTY_BY_ICON, DUTY_LABEL, type Duty } from "@/lib/duty";
+import { CUSTOM_IMAGE } from "@/lib/custom-image";
 import { tExplore } from "@/lib/i18n.explore";
 import { SITES } from "@/data/sites";
-import { buildDummySites } from "@/data/dummy-sites";
+import { buildDummySites, isDummySite } from "@/data/dummy-sites";
 import type { Site } from "@/data/sites";
 
 const LANGS = ["en", "id"] as const;
@@ -105,6 +106,81 @@ describe("the sentences the Zone panel prints", () => {
         for (const lang of LANGS) {
           expect(custom.detail[lang].trim(), `${site.id} / ${custom.id} / ${lang}`).not.toBe("");
         }
+      }
+    }
+  });
+});
+
+/**
+ * What the panel says about the place itself.
+ *
+ * ADR-0014 lets the app state history and meaning, on the reasoning that a
+ * founding date is not a guideline and nobody behaves differently at a shrine
+ * because of one. The conditions it attaches are what these check: every claim
+ * is traceable, and the volatility fence stays up. A sentence about opening
+ * hours, prices, or when a ceremony next falls is out, whatever tier it claims.
+ */
+describe("the background the Zone panel prints", () => {
+  /**
+   * Deliberately narrow, in the spirit of `lib/volatility.ts`. A net wide
+   * enough to catch every volatile phrase would refuse correct sentences:
+   * "dibangun" and "membuka" are not opening hours.
+   */
+  const VOLATILE =
+    /(jam buka|jam operasional|tiket|harga masuk|biaya masuk|opening hours|ticket price|admission fee|buka pukul|tutup pukul)/i;
+
+  it.each(SITES.map((site) => [site.id, site] as const))(
+    "%s carries a sourced background",
+    (_id, site) => {
+      expect(site.background).toBeDefined();
+      const background = site.background!;
+      for (const lang of LANGS) {
+        expect(background.text[lang].trim().length).toBeGreaterThan(80);
+      }
+      expect(background.source.trim()).not.toBe("");
+      expect(background.sourceUrl).toMatch(/^https:\/\//);
+    },
+  );
+
+  it("states nothing that changes with the date", () => {
+    for (const site of SITES) {
+      for (const lang of LANGS) {
+        expect(site.background!.text[lang], `${site.id} / ${lang}`).not.toMatch(VOLATILE);
+      }
+    }
+  });
+
+  // Guardrail W1, in force inside the /explore carve-out.
+  it("uses no em dashes", () => {
+    for (const site of SITES) {
+      for (const lang of LANGS) {
+        expect(site.background!.text[lang]).not.toContain("—");
+      }
+    }
+  });
+
+  /**
+   * A Dummy Site is an invented place. History for one would be invented
+   * history, which is the failure ADR-0012 keeps away from every surface that
+   * reads like provenance.
+   */
+  it("gives a Dummy Site no history and no ceremony", () => {
+    for (const site of allSites.filter(isDummySite)) {
+      expect(site.background).toBeUndefined();
+      expect(site.odalan).toHaveLength(0);
+    }
+  });
+});
+
+describe("the illustrations the Zone panel prints", () => {
+  it("has one for every Custom that can reach the panel", () => {
+    for (const site of allSites) {
+      for (const custom of site.customs) {
+        const image = CUSTOM_IMAGE[custom.icon];
+        expect(image.src, `${site.id} / ${custom.id}`).toMatch(/^\/customs\//);
+        // Sampled from the drawing's own corners. A ground that drifts
+        // from the file shows as a seam down the side of a wide frame.
+        expect(image.ground).toMatch(/^#[0-9A-F]{6}$/);
       }
     }
   });

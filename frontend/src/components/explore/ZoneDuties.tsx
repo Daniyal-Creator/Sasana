@@ -1,6 +1,15 @@
 "use client";
 
-import { LocateFixed, MapPin, ShieldCheck, Camera, MessageCircle, ScrollText } from "lucide-react";
+import Image from "next/image";
+import {
+  LocateFixed,
+  MapPin,
+  ShieldCheck,
+  Camera,
+  MessageCircle,
+  ScrollText,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { PanelBack } from "@/components/explore/PanelBack";
 import { OdalanNotice } from "@/components/explore/OdalanNotice";
@@ -8,8 +17,40 @@ import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { formatDistance } from "@/lib/geo";
 import { DUTY_BY_ICON, DUTY_LABEL, type Duty } from "@/lib/duty";
+import { CUSTOM_IMAGE } from "@/lib/custom-image";
 import type { Site } from "@/data/sites";
 import { isDummySite } from "@/data/dummy-sites";
+
+/** The publication a link leads to, said in the shortest true way. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * A claim and the page it was read from, kept together.
+ *
+ * Every sentence on this panel that is not a Rule carries one of these. The
+ * app is allowed to say what a place is and how it came to be (ADR-0014), on
+ * the condition that anybody can go and check.
+ */
+function Provenance({ label, href }: { label: string; href: string }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-1.5 inline-flex items-start gap-1.5 text-xs text-text-muted underline decoration-border-strong underline-offset-2 transition-colors duration-150 hover:text-text-secondary hover:decoration-text-muted focus-visible:shadow-focus"
+    >
+      <ShieldCheck size={13} strokeWidth={1.75} aria-hidden className="mt-px shrink-0" />
+      <span>{label}</span>
+      <ExternalLink size={11} strokeWidth={2} aria-hidden className="mt-0.5 shrink-0" />
+    </a>
+  );
+}
 
 /**
  * Colour is never the only signal (guardrail C6, which survives the /explore
@@ -53,6 +94,9 @@ interface ZoneDutiesProps {
  */
 export function ZoneDuties({ site, distanceM, onBack, onDetail, onAsk }: ZoneDutiesProps) {
   const { lang } = useLang();
+  // Any entry will do: the anchor is the recurrence, and it is the same
+  // sentence whichever dated occurrence it was written down beside.
+  const odalanAnchor = site.odalan[0];
 
   return (
     <div>
@@ -84,6 +128,34 @@ export function ZoneDuties({ site, distanceM, onBack, onDetail, onAsk }: ZoneDut
         )}
       </p>
 
+      {/* What the place is, under its name, for somebody who has arrived
+          without ever reading about it. Set quieter than everything below it
+          on purpose: this panel is here to say what is being asked, and
+          history that outshouted the obligations would be the wrong screen. */}
+      {site.background && (
+        <div className="mt-4">
+          <p className="text-sm leading-relaxed text-text-secondary">
+            {site.background.text[lang]}
+          </p>
+          <Provenance label={site.background.source} href={site.background.sourceUrl} />
+        </div>
+      )}
+
+      {/* The one ceremony fact that can be stated without a calendar: how often
+          it comes round. Never when it next falls, which is a computed date and
+          the thing ADR-0004 keeps out. The dated notice below handles the case
+          where one is actually near. */}
+      {odalanAnchor && (
+        <div className="mt-3">
+          <p className="text-sm leading-relaxed text-text-secondary">
+            {tExplore(lang, "explore.zone.odalanAnchor", {
+              anchor: odalanAnchor.anchor[lang],
+            })}
+          </p>
+          <Provenance label={hostOf(odalanAnchor.sourceUrl)} href={odalanAnchor.sourceUrl} />
+        </div>
+      )}
+
       <OdalanNotice site={site} />
 
       {/* The instruction to the visitor about the list, rather than a label
@@ -97,8 +169,27 @@ export function ZoneDuties({ site, distanceM, onBack, onDetail, onAsk }: ZoneDut
         {site.customs.map((custom) => {
           const duty = DUTY_BY_ICON[custom.icon];
           return (
-            <li key={custom.id} className="py-4 first:pt-0">
-              <p className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <li key={custom.id} className="py-5 first:pt-0">
+              {/* Contained rather than cropped, on the ground the drawings are
+                  already painted on, so a square illustration fills a wide
+                  frame without losing the top of a kamen or the tip of a sash.
+                  Two Customs name an object a first-time visitor has never
+                  seen, and text cannot fix a failure of recognition
+                  (ADR-0013). */}
+              <div
+                className="relative aspect-[16/9] w-full overflow-hidden rounded-md border border-border"
+                style={{ backgroundColor: CUSTOM_IMAGE[custom.icon].ground }}
+              >
+                <Image
+                  src={CUSTOM_IMAGE[custom.icon].src}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 380px, 100vw"
+                  className="object-contain"
+                />
+              </div>
+
+              <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
                 <span
                   className={`inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[0.6875rem] font-semibold uppercase leading-none tracking-wide ${DUTY_CLASSES[duty]}`}
                 >

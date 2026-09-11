@@ -297,6 +297,13 @@ const dict = {
   "explore.zone.duty.required": { en: "Required", id: "Wajib" },
   "explore.zone.duty.forbidden": { en: "Not permitted", id: "Tidak diizinkan" },
   "explore.zone.duty.conditional": { en: "Allowed, with limits", id: "Boleh, dengan batas" },
+  // Background is history and meaning, never anything that changes with the
+  // date (ADR-0014's volatility fence, ADR-0004). The Odalan line names a
+  // recurrence read from a source, not a claim about today.
+  "explore.zone.odalanAnchor": {
+    en: "Odalan, the temple's anniversary ceremony: {anchor}.",
+    id: "Odalan, upacara ulang tahun pura: {anchor}.",
+  },
   "explore.zone.detail": { en: "View site details", id: "Lihat detail situs" },
   "explore.zone.backToZone": {
     en: "Back to the zone summary",

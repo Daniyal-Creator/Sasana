@@ -451,6 +451,7 @@ function ExploreInner() {
   // panel as a fraction of the width, so how much of the map either one hides
   // is only knowable at runtime.
   const isDesktop = useIsDesktop();
+  const [desktopHidden, setDesktopHidden] = useState(false);
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   useEffect(() => {
     const measure = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
@@ -979,6 +980,7 @@ function ExploreInner() {
     const site = allSites.find((s) => s.id === siteId);
     if (site) setFocus({ center: { lat: site.lat, lng: site.lng }, zoom: SITE_ZOOM });
     setSheetStage("full");
+    setDesktopHidden(false);
   }, [allSites, hideRoute, routeTarget]);
 
   const closePanelSite = useCallback(() => setPanelSiteId(null), []);
@@ -1132,6 +1134,18 @@ function ExploreInner() {
 
   const panelSite = panelSiteId ? allSites.find((s) => s.id === panelSiteId) : undefined;
 
+  const toggleDesktopHidden = useCallback(() => {
+    setDesktopHidden((prev) => !prev);
+    // If the sidebar is currently hidden, toggling it means it is now being shown.
+    // Re-center on the active site at zoom 16 if one is open in the panel.
+    if (desktopHidden && panelSite) {
+      setFocus({
+        center: { lat: panelSite.lat, lng: panelSite.lng },
+        zoom: 16,
+      });
+    }
+  }, [desktopHidden, panelSite]);
+
   /**
    * The Site being announced, looked up fresh rather than rendered from the
    * object that was captured when its Approach was crossed.
@@ -1248,7 +1262,12 @@ function ExploreInner() {
           />
         )}
 
-        <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+        <MapSheet
+          stage={sheetStage}
+          onStageChange={setSheetStage}
+          desktopHidden={desktopHidden}
+          onToggleDesktopHidden={toggleDesktopHidden}
+        >
           {destinationPanel}
           {panelSite ? (
             <SiteBrief
@@ -1371,7 +1390,12 @@ function ExploreInner() {
           />
         )}
 
-        <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+        <MapSheet
+          stage={sheetStage}
+          onStageChange={setSheetStage}
+          desktopHidden={desktopHidden}
+          onToggleDesktopHidden={toggleDesktopHidden}
+        >
           {destinationPanel}
           <SiteBrief
             site={sheetSite}
@@ -1420,7 +1444,12 @@ function ExploreInner() {
           />
         )}
 
-        <MapSheet stage={sheetStage} onStageChange={setSheetStage}>
+        <MapSheet
+          stage={sheetStage}
+          onStageChange={setSheetStage}
+          desktopHidden={desktopHidden}
+          onToggleDesktopHidden={toggleDesktopHidden}
+        >
           {destinationPanel}
           {panelSite ? (
             <SiteBrief

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { PanelLeftClose } from "lucide-react";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 
@@ -48,6 +50,8 @@ interface MapSheetProps {
   stage: SheetStage;
   onStageChange: (stage: SheetStage) => void;
   children: React.ReactNode;
+  desktopHidden?: boolean;
+  onToggleDesktopHidden?: () => void;
 }
 
 /**
@@ -64,12 +68,21 @@ interface MapSheetProps {
  * This component knows nothing about Sites, the map, or GPS. It owns position
  * and gesture; the caller owns content.
  */
-export function MapSheet({ stage, onStageChange, children }: MapSheetProps) {
+export function MapSheet({
+  stage,
+  onStageChange,
+  children,
+  desktopHidden,
+  onToggleDesktopHidden,
+}: MapSheetProps) {
   const { lang } = useLang();
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const isDesktop = useIsDesktop();
+  const [internalHidden, setInternalHidden] = useState(false);
+  const isHidden = desktopHidden ?? internalHidden;
+  const handleToggle = onToggleDesktopHidden ?? (() => setInternalHidden((prev) => !prev));
 
   // Live offset in px while a finger is down. null means "not dragging", which
   // is also what re-enables the snap transition.
@@ -147,19 +160,88 @@ export function MapSheet({ stage, onStageChange, children }: MapSheetProps) {
 
   if (isDesktop) {
     return (
-      <div
-        ref={sheetRef}
-        data-lenis-prevent
-        className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] rounded-xl border`}
-      >
+      <>
         <div
-          ref={scrollRef}
+          ref={sheetRef}
           data-lenis-prevent
-          className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6"
+          className={`${PANEL_CLASSES} absolute inset-y-4 left-4 w-[min(380px,38vw)] overflow-hidden rounded-xl border transition-all duration-300 ease-out-quart motion-reduce:transition-none ${
+            isHidden
+              ? "pointer-events-none scale-0 opacity-0"
+              : "pointer-events-auto scale-100 opacity-100"
+          }`}
+          style={{
+            transformOrigin: "28px calc(100% - 28px)",
+          }}
         >
-          {children}
+          {/* Dedicated Top Header Bar */}
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-surface px-4">
+            <div className="flex items-center gap-2.5">
+              <Image
+                src="/sasana-logo.png"
+                alt="SASANA"
+                width={22}
+                height={22}
+                className="h-[22px] w-[22px] object-contain"
+              />
+              <span className="font-sans text-sm font-semibold text-text">
+                {tExplore(lang, "explore.sidebar.title")}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggle}
+              aria-label={tExplore(lang, "explore.sidebar.hide")}
+              title={tExplore(lang, "explore.sidebar.hide")}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface text-text-secondary shadow-sm transition-all duration-150 hover:bg-surface-sunken hover:text-text active:scale-95 focus-visible:shadow-focus"
+            >
+              <PanelLeftClose size={16} strokeWidth={1.75} aria-hidden />
+            </button>
+          </div>
+
+          <div
+            ref={scrollRef}
+            data-lenis-prevent
+            className="sasana-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-6 pb-16"
+          >
+            {children}
+          </div>
         </div>
-      </div>
+
+        {/* Sasana logo restore button at bottom-left when sidebar is hidden */}
+        <div
+          className={`pointer-events-auto absolute bottom-4 left-4 z-[500] transition-all duration-300 ease-out-quart motion-reduce:transition-none ${
+            isHidden
+              ? "scale-100 opacity-100"
+              : "pointer-events-none scale-0 opacity-0"
+          }`}
+        >
+          {/* Radar ping & pulsing ring effect indicating interactivity */}
+          <span
+            className="absolute -inset-1.5 rounded-full bg-primary/25 animate-ping pointer-events-none opacity-75 motion-reduce:hidden"
+            aria-hidden
+          />
+          <span
+            className="absolute -inset-1 rounded-full border-2 border-primary/40 animate-pulse pointer-events-none motion-reduce:hidden"
+            aria-hidden
+          />
+
+          <button
+            type="button"
+            onClick={handleToggle}
+            aria-label={tExplore(lang, "explore.sidebar.show")}
+            title={tExplore(lang, "explore.sidebar.show")}
+            className="relative flex h-14 w-14 items-center justify-center rounded-full border border-border bg-surface shadow-lg transition-all duration-150 hover:scale-105 active:scale-95 focus-visible:shadow-focus"
+          >
+            <Image
+              src="/sasana-logo.png"
+              alt="SASANA"
+              width={38}
+              height={38}
+              className="h-[38px] w-[38px] object-contain"
+            />
+          </button>
+        </div>
+      </>
     );
   }
 

@@ -20,6 +20,18 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "SASANA",
   description: "Understand and respect Balinese customs, before you enter.",
+  // The tab and home-screen mark, all derived from `public/sasana-logo.png` so
+  // there is one drawing of the logo in the repository. `favicon.ico` carries
+  // 16/32/48 so a browser picks a size that was resized rather than one it
+  // squashes itself; the 256 PNG covers the larger slots a bookmark or a tab
+  // on a HiDPI screen asks for.
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48" },
+      { url: "/sasana-logo.png", type: "image/png", sizes: "256x256" },
+    ],
+    apple: { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+  },
 };
 
 export const viewport: Viewport = {

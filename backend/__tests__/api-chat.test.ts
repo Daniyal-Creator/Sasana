@@ -60,6 +60,7 @@ const EN_REFUSED = "I don't have an official rule for that yet.";
 const ID_REFUSED = "Saya belum punya aturan resmi soal itu.";
 const EN_VOLATILE = "I don't give opening times, prices, or ceremony dates.";
 const EN_ASK_THERE = "Ask at the place itself.";
+const ID_ASK_AREA = "Sebutkan daerahnya dan saya akan membacakan petanya.";
 
 beforeEach(async () => {
   vi.restoreAllMocks();
@@ -321,6 +322,58 @@ describe("POST /api/chat — volatility fence", () => {
     const res = await POST(post({ message: "Kapan boleh masuk area suci?", lang: "id", history: [] }));
 
     expect((await readBody(res)).kind).toBe("rule");
+  });
+});
+
+// Reported from the live app: the toggle was on EN, the question was two
+// Indonesian words, and the refusal came back in English. A refusal is the
+// worst place for this to happen - it is the server's own sentence, so the
+// model cannot rescue it, and it is what a visitor reads at the exact moment
+// the assistant has nothing else to offer.
+describe("POST /api/chat — a short question still carries its language", () => {
+  it.each([
+    "rekomendasi kegiatan",
+    "aturan pakaian",
+    "informasi upacara",
+  ])("refuses in Indonesian with the toggle on English: %s", async (message) => {
+    mockAnswer({ answer: "", kind: "none", ruleIds: [] });
+    const res = await POST(post({ message, lang: "en", history: [] }));
+
+    expect((await readBody(res)).answer).toContain(ID_REFUSED);
+  });
+
+  // The other refusal a short question can reach, and the one most likely to
+  // be typed without an area: it has to ask back in Indonesian too.
+  it("asks which area in Indonesian with the toggle on English", async () => {
+    mockAnswer({ answer: "", kind: "none", ruleIds: [] });
+    const res = await POST(post({ message: "penginapan terdekat", lang: "en", history: [] }));
+
+    expect((await readBody(res)).answer).toContain(ID_ASK_AREA);
+  });
+
+  it("refuses in English with the toggle on Indonesian", async () => {
+    mockAnswer({ answer: "", kind: "none", ruleIds: [] });
+    const res = await POST(post({ message: "temple recommendations", lang: "id", history: [] }));
+
+    expect((await readBody(res)).answer).toContain(EN_REFUSED);
+  });
+
+  // A photo-check follow-up decides its language on `question`, the visitor's
+  // own words, never on the English prose the server stitched into `message`.
+  it("reads the follow-up question rather than the check it follows", async () => {
+    mockAnswer({ answer: "", kind: "none", ruleIds: [] });
+    const res = await POST(
+      post({
+        message:
+          "Photo check result: needs_attention. Your shoulders are uncovered for temple grounds. " +
+          "Consider adding a sash before entering. Question: rekomendasi kegiatan",
+        question: "rekomendasi kegiatan",
+        lang: "en",
+        history: [],
+      }),
+    );
+
+    expect((await readBody(res)).answer).toContain(ID_REFUSED);
   });
 });
 

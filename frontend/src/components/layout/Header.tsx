@@ -668,7 +668,8 @@ function AboutHeader() {
    - Outline pill button for "About" and LanguageSwitcher.
    ─────────────────────────────────────────────────────────────────────────── */
 function AppHeader() {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname ? (rawPathname.replace(/\/+$/, "") || "/") : "/";
   const { lang } = useLang();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -844,7 +845,8 @@ function AppHeader() {
    - Others -> AppHeader (Core Tool Navigation: Check, Assistant, Explore)
    ─────────────────────────────────────────────────────────────────────────── */
 export function Header() {
-  const pathname = usePathname();
+  const rawPathname = usePathname();
+  const pathname = rawPathname ? (rawPathname.replace(/\/+$/, "") || "/") : "/";
 
   if (pathname === "/") {
     return <LandingHeader />;

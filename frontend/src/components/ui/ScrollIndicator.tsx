@@ -63,18 +63,28 @@ export function ScrollIndicator() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={scrollDown}
-      aria-label={t(lang, "check.scrollDown")}
+    <div
       className={[
-        "fixed bottom-6 left-1/2 z-50 flex h-11 w-11 -translate-x-1/2 items-center justify-center",
-        "rounded-full bg-primary shadow-md hover:bg-primary-hover active:scale-95",
-        "transition-[opacity,transform,background-color] duration-200 ease-out-quart",
+        "fixed bottom-6 left-1/2 z-50 -translate-x-1/2",
+        "transition-opacity duration-200 ease-out-quart",
         visible ? "opacity-100" : "pointer-events-none opacity-0",
       ].join(" ")}
     >
-      <ArrowDown size={20} strokeWidth={2} aria-hidden className="text-primary-fg" />
-    </button>
+      <div className="animate-float-gentle">
+        <button
+          type="button"
+          onClick={scrollDown}
+          aria-label={t(lang, "check.scrollDown")}
+          className={[
+            "flex h-11 w-11 items-center justify-center rounded-full bg-primary shadow-md",
+            "hover:bg-primary-hover active:scale-95",
+            "transition-[transform,background-color] duration-150 ease-out-quart",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2",
+          ].join(" ")}
+        >
+          <ArrowDown size={20} strokeWidth={2} aria-hidden className="text-primary-fg" />
+        </button>
+      </div>
+    </div>
   );
 }

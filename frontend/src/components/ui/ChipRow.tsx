@@ -28,10 +28,11 @@ interface ChipRowProps {
 /**
  * A row of follow-up questions, offered above a composer.
  *
- * Deliberately NOT the pill from `QuickChips`. That one sits on the welcome
- * screen and means "here is somewhere to start"; this one sits under an answer
- * and means "here is something to say back", and two different meanings wearing
- * the same clothes is how an interface stops being read.
+ * Deliberately NOT the welcome screen's `TopicExplorer` card or
+ * `SuggestedQuestions` row. Those mean "here is somewhere to start"; this one
+ * sits under an answer and means "here is something to say back", and two
+ * different meanings wearing the same clothes is how an interface stops being
+ * read.
  *
  * So it is recessed rather than raised: `surface-sunken` against the page, with
  * secondary ink, under a composer that is `surface` with a shadow. The eye

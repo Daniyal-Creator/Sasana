@@ -98,7 +98,7 @@ export function Footer({ className = "" }: FooterProps = {}) {
   };
 
   return (
-    <footer className={`relative overflow-hidden border-t border-border-strong bg-surface-sunken text-text ${className}`.trim()}>
+    <footer className={`relative overflow-hidden border-t border-border bg-surface-sunken text-text ${className}`.trim()}>
       {/* Decorative background image */}
       <div className="pointer-events-none absolute inset-0 select-none overflow-hidden" aria-hidden="true">
         <Image
@@ -106,7 +106,7 @@ export function Footer({ className = "" }: FooterProps = {}) {
           alt=""
           fill
           sizes="100vw"
-          className="object-cover object-bottom opacity-60 mix-blend-multiply"
+          className="object-cover object-bottom opacity-70 mix-blend-multiply"
         />
       </div>
 
@@ -118,10 +118,9 @@ export function Footer({ className = "" }: FooterProps = {}) {
             <Link
               href={isHome ? "#hero" : "/"}
               onClick={(e) => handleAnchorClick(e, "/")}
-              className="group inline-flex w-fit items-center gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+              className="group inline-flex w-fit items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
             >
-              <span className="inline-block h-2 w-2 rounded-full bg-accent" aria-hidden />
-              <span className="font-display text-xl font-normal tracking-wide text-text transition-colors duration-150 group-hover:text-primary">
+              <span className="font-display text-2xl font-bold tracking-tight text-text transition-colors duration-150 group-hover:text-primary sm:text-3xl">
                 SASANA
               </span>
             </Link>
@@ -220,7 +219,7 @@ export function Footer({ className = "" }: FooterProps = {}) {
                   <Link
                     href="/about#charter"
                     onClick={(e) => handleAnchorClick(e, "/about#charter")}
-                    className="inline-flex items-center text-text-secondary transition-all duration-150 hover:translate-x-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    className="inline-flex max-w-[180px] items-center text-text-secondary transition-all duration-150 hover:translate-x-0.5 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
                   >
                     {t(lang, "footer.nav.charter")}
                   </Link>
@@ -230,25 +229,25 @@ export function Footer({ className = "" }: FooterProps = {}) {
           </nav>
         </div>
 
-        {/* Middle: Horizontal Trust & Legal Strip */}
+        {/* Bottom: Horizontal Trust & Legal + Copyright Strip */}
         <hr className="my-8 border-border" />
-        <div data-footer-block className="flex flex-col gap-4 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <Link
-            href="/about#privacy"
-            onClick={(e) => handleAnchorClick(e, "/about#privacy")}
-            className="group flex items-center gap-2 font-medium text-text transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-          >
-            <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
-            <span className="group-hover:underline">{t(lang, "footer.privacy")}</span>
-          </Link>
-          <p className="text-text-muted">{t(lang, "footer.disclaimer")}</p>
-        </div>
+        <div data-footer-block className="flex flex-col gap-4 text-xs">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Link
+              href="/about#privacy"
+              onClick={(e) => handleAnchorClick(e, "/about#privacy")}
+              className="group flex items-center gap-2 font-medium text-text transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            >
+              <ShieldCheck size={16} strokeWidth={1.75} aria-hidden className="shrink-0 text-accent-strong" />
+              <span className="group-hover:underline">{t(lang, "footer.privacy")}</span>
+            </Link>
+            <p className="text-text-muted">{t(lang, "footer.disclaimer")}</p>
+          </div>
 
-        {/* Bottom: Copyright & Micro-Copy */}
-        <hr className="my-6 border-border" />
-        <div data-footer-block className="flex flex-col gap-2 text-xs text-text-muted sm:flex-row sm:items-center sm:justify-between">
-          <span>{`\u00A9 ${currentYear} SASANA`}</span>
-          <span className="text-text-secondary">{t(lang, "footer.closing_copy")}</span>
+          <div className="flex flex-col gap-2 text-text-muted sm:flex-row sm:items-center sm:justify-between">
+            <span>{`\u00A9 ${currentYear} SASANA`}</span>
+            <span className="text-text-secondary">{t(lang, "footer.closing_copy")}</span>
+          </div>
         </div>
       </div>
     </footer>

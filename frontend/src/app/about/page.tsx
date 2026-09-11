@@ -911,7 +911,7 @@ export default function AboutPage() {
             id="story"
             ref={storyRef}
             aria-labelledby="story-heading"
-            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24 scroll-mt-24"
           >
             <div className="relative z-10 rounded-2xl border border-border bg-surface-sunken/40 p-5 sm:p-8 lg:p-10">
               <StackedTimelineDeck />
@@ -926,7 +926,7 @@ export default function AboutPage() {
             id="principles"
             ref={principlesRef}
             aria-labelledby="principles-heading"
-            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24 scroll-mt-24"
           >
             <div className="principle-animate">
               <span className="block text-[11px] font-bold uppercase tracking-widest text-accent-strong sm:text-xs">
@@ -1222,7 +1222,7 @@ export default function AboutPage() {
             id="team"
             ref={teamRef}
             aria-labelledby="team-heading"
-            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24"
+            className="relative overflow-hidden pt-8 pb-16 sm:pt-12 sm:pb-20 lg:pt-16 lg:pb-24 scroll-mt-24"
           >
             <div className="relative z-10 team-animate">
               <span className="block text-[11px] font-bold uppercase tracking-widest text-accent-strong sm:text-xs">

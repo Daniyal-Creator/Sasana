@@ -304,3 +304,32 @@
 .sasana-scroll::-webkit-scrollbar-corner {
   display: none;
 }
+
+/* Floating scroll indicator gentle bob animation (Guardrail §7 M1, M2, M5).
+ * Uses transform-only translation with calm ease-in-out cadence, pauses on
+ * hover and focus-within, and disables under prefers-reduced-motion. */
+@keyframes floatGentle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+.animate-float-gentle {
+  animation: floatGentle 2s ease-in-out infinite;
+}
+
+.animate-float-gentle:hover,
+.animate-float-gentle:focus-within {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-gentle {
+    animation: none;
+  }
+}
+

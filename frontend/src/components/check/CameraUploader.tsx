@@ -75,34 +75,45 @@ export function CameraUploader({ image, onImageReady, onClear, disabled = false 
           handleFile(e.dataTransfer.files[0], "upload");
         }}
         className={[
-          "flex min-h-56 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center",
+          "flex min-h-64 flex-col items-center justify-center rounded-2xl border-2 border-dashed p-8 sm:p-10 text-center",
           "transition-colors duration-150 ease-out",
-          dragOver ? "border-primary bg-primary-tint" : "border-border-strong bg-transparent",
+          dragOver ? "border-primary bg-primary-tint" : "border-border bg-surface/60 shadow-sm",
         ].join(" ")}
       >
-        <ImageIcon size={30} strokeWidth={1.5} aria-hidden className="text-text-muted" />
-        <div>
-          <p className="text-sm font-semibold text-text sm:text-base">{t(lang, "check.upload.prompt")}</p>
-          <p className="mt-0.5 text-xs text-text-muted">{t(lang, "check.upload.hint")}</p>
+        {/* Circular badge with accent Camera icon */}
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-surface-sunken shadow-sm">
+          <Camera size={28} strokeWidth={1.75} aria-hidden className="text-accent-strong" />
         </div>
-        <div className="mt-1 flex flex-wrap justify-center gap-3">
+
+        {/* Title & Hint */}
+        <div className="mt-4">
+          <h2 className="font-display text-xl font-bold tracking-tight text-text sm:text-2xl">
+            {t(lang, "check.upload.prompt")}
+          </h2>
+          <p className="mt-1 text-xs text-text-muted sm:text-sm">
+            {t(lang, "check.upload.hint")}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             icon={Camera}
             disabled={disabled}
             onClick={() => setCameraOpen(true)}
-            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium shadow-sm hover:bg-surface-sunken"
+            className="h-11 rounded-2xl border-border bg-surface px-5 text-sm font-medium shadow-sm hover:bg-surface-sunken"
           >
             {t(lang, "check.upload.take")}
           </Button>
           <Button
             variant="secondary"
-            size="sm"
+            size="md"
             icon={Upload}
             disabled={disabled}
             onClick={() => galleryInput.current?.click()}
-            className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium shadow-sm hover:bg-surface-sunken"
+            className="h-11 rounded-2xl border-border bg-surface px-5 text-sm font-medium shadow-sm hover:bg-surface-sunken"
           >
             {t(lang, "check.upload.pick")}
           </Button>

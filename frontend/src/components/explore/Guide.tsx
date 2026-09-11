@@ -594,10 +594,10 @@ export function Guide({ onStart }: GuideProps) {
         </section>
 
         {/* The payoff: Proportional, rich bento section with cultural pillars and live mobile notice preview */}
-        <section className="rounded-xl border border-border bg-surface-sunken p-6 md:col-span-6 md:p-8 shadow-sm">
-          <div className="grid items-stretch gap-8 lg:grid-cols-12 lg:gap-10">
+        <section className="rounded-xl border border-border bg-surface-sunken p-4 sm:p-6 md:col-span-6 md:p-8 shadow-sm">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:items-stretch lg:gap-10">
             {/* Left Column: Context, Circular Authority Seal, and 3 Cultural Object Pillars */}
-            <div className="flex h-full flex-col space-y-5 lg:col-span-7">
+            <div className="flex flex-col space-y-5 lg:col-span-7 lg:h-full">
               <div className="shrink-0">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-accent-strong">
                   {lang === "id" ? "PANDUAN RESMI & TERVERIFIKASI" : "VERIFIED OFFICIAL GUIDELINES"}
@@ -626,8 +626,8 @@ export function Guide({ onStart }: GuideProps) {
               </div>
 
               {/* 3 Cultural Object Pillars Grid filling container height */}
-              <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:flex-1">
+                <div className="group flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md sm:h-full">
                   <div className="shrink-0">
                     <span className="inline-block rounded bg-primary-tint px-2 py-0.5 text-[11px] font-semibold text-primary">
                       {lang === "id" ? "Tata Busana" : "Attire"}
@@ -639,7 +639,7 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Menutup bahu & lutut" : "Shoulders & knees"}
                     </p>
                   </div>
-                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                  <div className="relative mt-2.5 h-36 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2] sm:h-auto sm:min-h-[140px] sm:flex-1">
                     <Image
                       src="/customs/kamen-selendang.png"
                       alt={lang === "id" ? "Kamen dan Selendang Adat Bali" : "Balinese Kamen and Sash Attire"}
@@ -650,7 +650,7 @@ export function Guide({ onStart }: GuideProps) {
                   </div>
                 </div>
 
-                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+                <div className="group flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md sm:h-full">
                   <div className="shrink-0">
                     <span className="inline-block rounded bg-status-ok-bg px-2 py-0.5 text-[11px] font-semibold text-status-ok-fg">
                       {lang === "id" ? "Sesaji" : "Offerings"}
@@ -662,7 +662,7 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Berjalan memutarinya" : "Walk around gently"}
                     </p>
                   </div>
-                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                  <div className="relative mt-2.5 h-36 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2] sm:h-auto sm:min-h-[140px] sm:flex-1">
                     <Image
                       src="/customs/canang-sari.png"
                       alt="Canang Sari Sesaji Bali"
@@ -673,7 +673,7 @@ export function Guide({ onStart }: GuideProps) {
                   </div>
                 </div>
 
-                <div className="group flex h-full flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md">
+                <div className="group flex flex-col justify-between rounded-lg border border-border bg-surface p-3.5 shadow-sm transition-all duration-200 hover:shadow-md sm:h-full">
                   <div className="shrink-0">
                     <span className="inline-block rounded bg-status-warn-bg px-2 py-0.5 text-[11px] font-semibold text-status-warn-fg">
                       {lang === "id" ? "Kekhidmatan" : "Sacredness"}
@@ -685,7 +685,7 @@ export function Guide({ onStart }: GuideProps) {
                       {lang === "id" ? "Jaga kesakralan" : "Reverent conduct"}
                     </p>
                   </div>
-                  <div className="relative mt-2.5 min-h-[140px] flex-1 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2]">
+                  <div className="relative mt-2.5 h-36 w-full overflow-hidden rounded-md border border-border/60 bg-[#FAF7F2] sm:h-auto sm:min-h-[140px] sm:flex-1">
                     <Image
                       src="/customs/pura-kesakralan.png"
                       alt={lang === "id" ? "Kompleks Pura dan Kesakralan Tempat Suci Bali" : "Balinese Sacred Temple Complex and Reverence"}
@@ -699,7 +699,7 @@ export function Guide({ onStart }: GuideProps) {
             </div>
 
             {/* Right Column: Mobile Approach Notice Preview */}
-            <div className="h-full lg:col-span-5">
+            <div className="w-full lg:col-span-5 lg:h-full">
               <NoticePreview />
             </div>
           </div>

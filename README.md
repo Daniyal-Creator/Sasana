@@ -15,28 +15,21 @@ and Rafli Halomoan.
 
 ---
 
-## Live
-
-**<https://sasana.smkwikrama.sch.id>**
-
-Public, and nothing to install. Every route in the table below is a page on it:
-<https://sasana.smkwikrama.sch.id/check> is the Situation Check,
-<https://sasana.smkwikrama.sch.id/explore> is the map. Open it on a phone — that
-is the device it was designed at.
-
----
-
 ## Features
 
-| Route | Feature | What it does |
-| --- | --- | --- |
-| `/` | Landing | The three doors — Situation Check, Assistant, Explore — and what the app is for. |
-| `/check` | **Situation Check** | Reads the visitor's own photo and says how it stands against custom: a verdict, the reason behind it, and what to do instead. |
-| `/assistant` | **Custom Assistant** | Answers free-form questions about Balinese custom, and shows what each answer stands on. |
-| `/explore` | **Explore** | A map of the Sites and their Zones, and the notice that rises when a visitor crosses an Approach. |
-| `/explore/<site-id>` | Site link | Opens the map on one Site — `/explore/pura-tirta-empul` is a link you can hand to somebody. |
-| `/about` | About | The mission, the team, and the Circular the Rules cite. |
-| `/stats` | Cache readings | What the answer cache has saved. A maintenance screen, deliberately not in the header. |
+| Route | Feature | What it does | Live |
+| --- | --- | --- | --- |
+| `/` | Landing | The three doors — Situation Check, Assistant, Explore — and what the app is for. | [Open](https://sasana.smkwikrama.sch.id/) |
+| `/check` | **Situation Check** | Reads the visitor's own photo and says how it stands against custom: a verdict, the reason behind it, and what to do instead. | [Open](https://sasana.smkwikrama.sch.id/check) |
+| `/assistant` | **Custom Assistant** | Answers free-form questions about Balinese custom, and shows what each answer stands on. | [Open](https://sasana.smkwikrama.sch.id/assistant) |
+| `/explore` | **Explore** | A map of the Sites and their Zones, and the notice that rises when a visitor crosses an Approach. | [Open](https://sasana.smkwikrama.sch.id/explore) |
+| `/explore/<site-id>` | Site link | Opens the map on one Site — a link you can hand to somebody. | [Open](https://sasana.smkwikrama.sch.id/explore/pura-tirta-empul) |
+| `/about` | About | The mission, the team, and the Circular the Rules cite. | [Open](https://sasana.smkwikrama.sch.id/about) |
+| `/stats` | Cache readings | What the answer cache has saved. A maintenance screen, deliberately not in the header. | [Open](https://sasana.smkwikrama.sch.id/stats) |
+
+Every **Live** link opens the running site, <https://sasana.smkwikrama.sch.id>
+— public, nothing to install, and best on a phone, which is the device it was
+designed at.
 
 Everything works in **Indonesian and English** — the interface, the answers, the
 written directions, and the refusals.

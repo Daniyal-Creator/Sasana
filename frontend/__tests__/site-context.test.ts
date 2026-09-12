@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import {
+  adoptSiteOnArrival,
   SITE_STORAGE_KEY,
   readActiveSite,
   siteContextFrom,
@@ -159,5 +160,42 @@ describe("siteContextNear", () => {
 
   it("names no Site for a photo taken somewhere else entirely", () => {
     expect(siteContextNear({ lat: -6.2, lng: 106.8 })).toBeNull();
+  });
+});
+
+describe("adoptSiteOnArrival", () => {
+  it("inherits the stored Site when the arrival carried a handoff", () => {
+    writeActiveSite(siteContextFrom(realSite));
+
+    expect(adoptSiteOnArrival(true)?.id).toBe(realSite.id);
+  });
+
+  it("leaves the stored Site alone for an arrival that carried one", () => {
+    writeActiveSite(siteContextFrom(realSite));
+    adoptSiteOnArrival(true);
+
+    expect(readActiveSite()?.id).toBe(realSite.id);
+  });
+
+  it("inherits nothing when the arrival carried no handoff", () => {
+    writeActiveSite(siteContextFrom(realSite));
+
+    expect(adoptSiteOnArrival(false)).toBeNull();
+  });
+
+  it("lets the Site go rather than hiding it, so no later question carries it", () => {
+    // The bug this exists for: a visitor asks about a Site through Explore,
+    // leaves, and opens the Assistant again from the home page. Returning null
+    // for the card while storage kept the Site would leave every question
+    // riding to the server attached to a temple nobody named.
+    writeActiveSite(siteContextFrom(realSite));
+    adoptSiteOnArrival(false);
+
+    expect(readActiveSite()).toBeNull();
+  });
+
+  it("has nothing to inherit when no Site was ever stored", () => {
+    expect(adoptSiteOnArrival(true)).toBeNull();
+    expect(adoptSiteOnArrival(false)).toBeNull();
   });
 });

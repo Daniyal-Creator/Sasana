@@ -9,6 +9,12 @@ prevented before they happen rather than discovered afterwards.
 _Sasana_ is Balinese for "code of conduct". It also reads as an acronym:
 **S**mart **A**dat & **S**acred-site **A**wareness **NA**vigator.
 
+Based on **Bali Governor Circular (SE) No. 7 of 2025** — the provincial code of
+conduct for foreign tourists — and on documented Balinese Hindu custom (_adat_).
+Every Custom a visitor is shown traces back to a Rule that carries its own
+source, and where nothing covers the question the app says so rather than
+inventing an answer.
+
 Built for **Bali AI Tech Fest 2026** (AI Web Innovation Challenge) by the SASANA
 Group of SMK Wikrama Bogor: Daniyal Hafiidz Prasetyo, Manu Caimpiyana Bhimasena,
 and Rafli Halomoan.

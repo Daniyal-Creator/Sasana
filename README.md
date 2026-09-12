@@ -15,6 +15,17 @@ and Rafli Halomoan.
 
 ---
 
+## Live
+
+**<https://sasana.smkwikrama.sch.id>**
+
+Public, and nothing to install. Every route in the table below is a page on it:
+<https://sasana.smkwikrama.sch.id/check> is the Situation Check,
+<https://sasana.smkwikrama.sch.id/explore> is the map. Open it on a phone — that
+is the device it was designed at.
+
+---
+
 ## Features
 
 | Route | Feature | What it does |

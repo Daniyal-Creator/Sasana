@@ -14,7 +14,12 @@ import { SuggestedQuestions } from "@/components/assistant/SuggestedQuestions";
 import { useLang } from "@/lib/language";
 import { useAssistant } from "@/lib/assistant-context";
 import { apiUrl } from "@/lib/api";
-import { readActiveSite, siteContextNamed, writeActiveSite } from "@/lib/site-context";
+import {
+  adoptSiteOnArrival,
+  readActiveSite,
+  siteContextNamed,
+  writeActiveSite,
+} from "@/lib/site-context";
 import { SiteContextCard } from "@/components/assistant/SiteContextCard";
 import type { Proximity, SiteContext } from "@shared/contract";
 import { freshProximity, PROXIMITY_TTL_MS, type TimedProximity } from "@/lib/assistant-handoff";
@@ -146,6 +151,15 @@ export default function AssistantPage() {
     handoffCheckedRef.current = true;
 
     const payload = consumeHandoffPayload();
+
+    /**
+     * Whether this arrival is still about a place, decided before anything is
+     * drawn. A handoff is the only thing that carries one here, so an arrival
+     * without one starts on an empty conversation and an empty context, and the
+     * Site it would otherwise have inherited is let go of rather than hidden.
+     */
+    setContextSite(adoptSiteOnArrival(payload !== null));
+
     if (!payload) return;
 
     // Kept before the question is looked at, because the two arrive together
@@ -182,20 +196,6 @@ export default function AssistantPage() {
       });
     }
   }, [consumeHandoffPayload]);
-
-  /**
-   * The Site the visitor is carrying, read once for the screen.
-   *
-   * `send` still reads it again per message, and deliberately: somebody can
-   * pick a different Site in another tab, and the answer has to follow where
-   * they are now. This one only decides what the card says on arrival, which is
-   * a different job with a different failure - a card that lags by one
-   * navigation costs nothing, an answer that lags by one is about the wrong
-   * temple.
-   */
-  useEffect(() => {
-    setContextSite(readActiveSite());
-  }, []);
 
   /**
    * Drops the distance from the card at the same instant `send` stops sending

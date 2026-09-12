@@ -131,3 +131,35 @@ export function siteContextNear(pos: LatLng): SiteContext | null {
   if (!site || distanceM > approachRadiusM(site)) return null;
   return siteContextFrom(site);
 }
+
+/**
+ * The Site an arrival at the Assistant inherits, and the Site it lets go of.
+ *
+ * A stored Site outlives one navigation on purpose: a visitor picks Tirta Empul
+ * on the map, checks a photo, asks a follow-up, checks another photo, and the
+ * place has to survive all of it. What it must not outlive is the errand. Only
+ * Explore's "ask about this place" and the check result's follow-up hand a
+ * question to the Assistant, so a handoff is exactly the evidence that this
+ * arrival is still about a place. Opening the Assistant from the home page or
+ * the header is not; it is somebody starting over, on an empty conversation,
+ * and a card there claiming answers will be about Ulun Danu Beratan is the app
+ * asserting a place the visitor never named.
+ *
+ * So a placeless arrival drops the Site rather than merely hiding it. Hiding it
+ * would leave the card silent and the request unchanged, which is the split the
+ * card's own close button exists to avoid: every question would still ride to
+ * the server attached to a temple, with nothing on screen admitting it.
+ *
+ * Dropping it costs nothing that cannot be recovered. Explore rewrites the Site
+ * whenever a visitor crosses an Approach or opens a panel, the check reads a
+ * photo's own coordinates through `siteContextNear`, and `send` re-reads storage
+ * on every message, so a Site picked in another tab still reaches an Assistant
+ * that arrived without one.
+ */
+export function adoptSiteOnArrival(carriedHandoff: boolean): SiteContext | null {
+  if (!carriedHandoff) {
+    writeActiveSite(null);
+    return null;
+  }
+  return readActiveSite();
+}

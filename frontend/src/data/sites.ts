@@ -15,6 +15,31 @@ export interface Custom {
   ruleIds: string[];
 }
 
+/**
+ * What this place is and how it came to be, for a visitor who is standing in
+ * front of it.
+ *
+ * Carried with its own citation for the same reason a Custom is: the app
+ * asserts it, so somebody has to be able to check it. ADR-0014 is what makes
+ * this sayable at all. It relaxes W6 exactly here and nowhere else, on the
+ * grounds that history is not a guideline: nobody behaves differently at a
+ * shrine because of when it was founded, which is the harm W6 exists to stop.
+ *
+ * The fence that stays up is volatility. This field may say what something
+ * means and what has happened. It may never say what is happening: no opening
+ * hours, no prices, no ceremony dates, no performance times. ADR-0004 forbids
+ * the first of those for Sites specifically, and the reasoning reaches all of
+ * them.
+ */
+export interface SiteBackground {
+  /** Two or three sentences. History, dedication, meaning. Nothing dated. */
+  text: Localized;
+  /** The publication it was read from. */
+  source: string;
+  /** The page it was read from, so the next person can re-check it. */
+  sourceUrl: string;
+}
+
 export interface Site {
   id: string;
   name: string;
@@ -29,6 +54,8 @@ export interface Site {
   customs: Custom[];
   source: string;
   odalan: Odalan[];
+  /** Absent until somebody has read a source worth citing for this Site. */
+  background?: SiteBackground;
 }
 
 /**
@@ -76,6 +103,14 @@ export const SITES: Site[] = [
     radiusM: 400,
     image: "/sites/pura-tanah-lot.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "A sea temple associated with the 16th-century priest Dang Hyang Nirartha, and one of the seven sea temples ringing Bali's south-west coast. It honours Baruna, the god of the sea. More than a third of the rock it stands on is artificial, rebuilt in the 1980s to stop the outcrop crumbling into the water.",
+        id: "Pura laut yang dikaitkan dengan pendeta abad ke-16 Dang Hyang Nirartha, dan satu dari tujuh pura laut yang mengelilingi pesisir barat daya Bali. Pura ini memuja Baruna, dewa laut. Lebih dari sepertiga batu karang tempatnya berdiri adalah buatan, dibangun ulang pada 1980-an agar karang itu tidak runtuh ke laut.",
+      },
+      source: "Wikipedia: Tanah Lot",
+      sourceUrl: "https://en.wikipedia.org/wiki/Tanah_Lot",
+    },
     odalan: [
       {
         date: "2027-01-27",
@@ -183,6 +218,14 @@ export const SITES: Site[] = [
     radiusM: 400,
     image: "/sites/pura-luhur-uluwatu.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "Expanded in the 11th century by the Javanese sage Empu Kuturan, and added to by Dang Hyang Nirartha in the 16th. It is dedicated to Sang Hyang Widhi Wasa in the form of Rudra, and it is the only Balinese sea temple that is also one of the island's directional temples.",
+        id: "Diperluas pada abad ke-11 oleh pendeta Jawa Empu Kuturan, lalu dilengkapi Dang Hyang Nirartha pada abad ke-16. Pura ini dipersembahkan kepada Sang Hyang Widhi Wasa dalam wujud Rudra, dan satu-satunya pura laut di Bali yang sekaligus menjadi pura penjaga arah mata angin.",
+      },
+      source: "Wikipedia: Uluwatu Temple",
+      sourceUrl: "https://en.wikipedia.org/wiki/Uluwatu_Temple",
+    },
     odalan: [
       {
         date: "2027-02-02",
@@ -268,6 +311,14 @@ export const SITES: Site[] = [
     radiusM: 500,
     image: "/sites/pura-besakih.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "The largest and holiest temple of Balinese Hinduism: twenty-three temples on the slope of Mount Agung. Hindu use is documented from 1284, and stone terraces on the site resemble megalithic work far older than that. Its principal sanctuary is Pura Penataran Agung, which the whole terraced complex faces.",
+        id: "Pura terbesar dan tersuci dalam Hindu Bali: dua puluh tiga pura di lereng Gunung Agung. Penggunaannya sebagai pura Hindu tercatat sejak 1284, dan teras batu di situs ini menyerupai bangunan megalitik yang jauh lebih tua. Pura utamanya adalah Pura Penataran Agung, yang dihadapi seluruh kompleks berteras ini.",
+      },
+      source: "Wikipedia: Besakih Temple",
+      sourceUrl: "https://en.wikipedia.org/wiki/Besakih_Temple",
+    },
     // Ida Bhatara Turun Kabeh, on Purnama Sasih Kadasa each year. The 2026
     // ceremony ran 2 to 23 April (dpma.baliprov.go.id). No 2027 date has been
     // published yet, and a past date is worse than none, so this stays empty.
@@ -359,6 +410,14 @@ export const SITES: Site[] = [
     radiusM: 250,
     image: "/sites/pura-batu-bolong.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "Tradition ties this temple to Dang Hyang Nirartha's journey through Bali in 1489, and to seven freshwater springs said to have risen in the sea along that route. Four of them are held to lie in front of this temple. It is a place of worship for Ida Batara Segara, who rules the sea.",
+        id: "Tradisi mengaitkan pura ini dengan perjalanan Dang Hyang Nirartha di Bali pada 1489, dan dengan tujuh mata air tawar yang diyakini muncul di laut sepanjang jalur itu. Empat di antaranya diyakini berada di depan pura ini. Pura ini menjadi tempat pemujaan Ida Batara Segara, penguasa laut.",
+      },
+      source: "Bali Express, Jawa Pos",
+      sourceUrl: "https://baliexpress.jawapos.com/balinese/2502240010/pura-batu-bolong-canggu-diyakini-petilasan-dang-hyang-nirartha-ada-mata-air-tawar-di-tengah-laut",
+    },
     // No odalan date found from a source worth citing. Leave empty until one is.
     odalan: [],
     customs: [
@@ -420,6 +479,14 @@ export const SITES: Site[] = [
     radiusM: 300,
     image: "/sites/pura-tirta-empul.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "Founded around 962, under the Warmadewa dynasty, around a spring that rises out of the ground. The name means the holy spring that wells up. Its pools are used for melukat, the rite of purification, and the bathing spouts stand in the middle of three courtyards.",
+        id: "Didirikan sekitar tahun 962, pada masa dinasti Warmadewa, mengelilingi mata air yang menyembur dari tanah. Namanya berarti mata air suci yang muncul dari bumi. Kolamnya dipakai untuk melukat, ritual penyucian, dan pancurannya berdiri di tengah tiga halaman pura.",
+      },
+      source: "Wikipedia: Tirta Empul",
+      sourceUrl: "https://en.wikipedia.org/wiki/Tirta_Empul",
+    },
     odalan: [
       {
         date: "2026-09-28",
@@ -503,6 +570,14 @@ export const SITES: Site[] = [
     radiusM: 350,
     image: "/sites/Pura_Ulun_Batu_Beratan.jpg",
     source: "Bali Governor Circular No. 7/2025",
+    background: {
+      text: {
+        en: "Built in 1633 on the shore of Lake Beratan and dedicated to Dewi Danu, goddess of water, lakes and rivers. The lake feeds the subak irrigation of central Bali, and the smaller water temples downstream belong to individual subak associations. Its eleven-tiered meru is dedicated to Shiva and Parvati.",
+        id: "Dibangun pada 1633 di tepi Danau Beratan dan dipersembahkan kepada Dewi Danu, dewi air, danau, dan sungai. Danau ini mengairi subak di Bali tengah, dan pura-pura air yang lebih kecil di hilirnya milik masing-masing perkumpulan subak. Meru bertingkat sebelasnya dipersembahkan kepada Siwa dan Parwati.",
+      },
+      source: "Wikipedia: Pura Ulun Danu Bratan",
+      sourceUrl: "https://en.wikipedia.org/wiki/Pura_Ulun_Danu_Bratan",
+    },
     // No odalan date found from a source worth citing. Leave empty until one is.
     odalan: [],
     customs: [

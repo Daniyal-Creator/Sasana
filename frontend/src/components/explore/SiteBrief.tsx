@@ -2,66 +2,22 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MapPin, ShieldCheck, Camera, Compass, Bell, ChevronDown, MessageCircle } from "lucide-react";
+import { MapPin, ShieldCheck, Camera, Compass, ChevronDown, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { CustomIcon } from "@/components/explore/CustomIcon";
 import { CustomVisual } from "@/components/explore/CustomVisual";
 import { PanelBack } from "@/components/explore/PanelBack";
 import { SiteThumb } from "@/components/explore/SiteThumb";
 import { ZoneDiagram } from "@/components/explore/ZoneDiagram";
 import { RouteActions } from "@/components/explore/RouteActions";
-import { useSearchParams } from "next/navigation";
+import { OdalanNotice } from "@/components/explore/OdalanNotice";
 import { useLang } from "@/lib/language";
 import { tExplore } from "@/lib/i18n.explore";
 import { formatDistance, type LatLng } from "@/lib/geo";
 import type { RouteView } from "@/lib/route";
-import type { Lang } from "@/lib/i18n";
-import type { Site, Odalan } from "@/data/sites";
+import type { Site } from "@/data/sites";
 import { isDummySite } from "@/data/dummy-sites";
 import { MEANINGS } from "@/data/meanings";
-
-const CUSTOM_SIDEBAR_ICONS: Record<string, string> = {
-  dress: "/customs/dress.jpg",
-  offerings: "/customs/offerings.jpg",
-  photography: "/customs/photography.png",
-  drones: "/customs/drones.jpg",
-  quiet: "/customs/quiet.jpg",
-};
-
-const ODALAN_WINDOW_DAYS = 7;
-
-function daysUntil(dateStr: string): number {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const target = new Date(y, m - 1, d);
-  const now = new Date();
-  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  return Math.round((target.getTime() - midnight.getTime()) / 86_400_000);
-}
-
-function formatOdalanDate(dateStr: string, lang: Lang): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Intl.DateTimeFormat(lang === "id" ? "id-ID" : "en-GB", {
-    day: "numeric",
-    month: "long",
-  }).format(new Date(y, m - 1, d));
-}
-
-/**
- * The ceremony worth mentioning, if there is one inside the window.
- *
- * `force` is the demo switch that used to live on the detail route, moved here
- * with it: `?odalan=1` shows the notice for the nearest recorded ceremony
- * whatever its date. It exists so the notice can be seen without waiting for a
- * real one, which is the only alternative that does not involve typing a date
- * that is not true (ADR-0004).
- */
-function upcomingOdalan(site: Site, force: boolean): Odalan | undefined {
-  if (force) return site.odalan[0];
-  return site.odalan.find((entry) => {
-    const days = daysUntil(entry.date);
-    return days >= 0 && days <= ODALAN_WINDOW_DAYS;
-  });
-}
+import { CUSTOM_IMAGE } from "@/lib/custom-image";
 
 interface SiteBriefProps {
   site: Site;
@@ -118,13 +74,11 @@ export function SiteBrief({
   onAsk,
 }: SiteBriefProps) {
   const { lang } = useLang();
-  const searchParams = useSearchParams();
 
   // Inside the Zone the visitor has arrived, and a route to where somebody is
   // already standing is not a direction. The panel says so and drops the
   // button rather than offering a journey of nought metres.
   const insideZone = distanceM !== null && distanceM <= site.radiusM;
-  const odalan = upcomingOdalan(site, searchParams.get("odalan") === "1");
   const [expandedCustoms, setExpandedCustoms] = useState<Record<string, boolean>>({});
 
   function toggleCustom(id: string) {
@@ -170,19 +124,7 @@ export function SiteBrief({
 
       <ZoneDiagram site={site} />
 
-      {odalan && (
-        <div className="mt-4 rounded-md border border-status-warn-border bg-status-warn-bg p-3">
-          <p className="flex items-start gap-2 text-sm font-medium text-status-warn-fg">
-            <Bell size={16} strokeWidth={1.75} aria-hidden className="mt-0.5 shrink-0" />
-            {tExplore(lang, "explore.detail.odalan.title", {
-              date: formatOdalanDate(odalan.date, lang),
-            })}
-          </p>
-          <p className="mt-1 pl-6 text-sm text-status-warn-fg">
-            {tExplore(lang, "explore.detail.odalan.body")}
-          </p>
-        </div>
-      )}
+      <OdalanNotice site={site} />
 
       <h3 className="mt-6 text-xs font-medium uppercase tracking-wide text-text-muted">
         {tExplore(lang, "explore.detail.customsTitle")}
@@ -206,19 +148,16 @@ export function SiteBrief({
                     tiles give the list a spine to scan. */}
                 <span
                   aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-border bg-[#F9F6F0] p-1 shadow-xs"
+                  className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border border-border p-1 shadow-xs"
+                  style={{ backgroundColor: CUSTOM_IMAGE[custom.icon].ground }}
                 >
-                  {CUSTOM_SIDEBAR_ICONS[custom.icon] ? (
-                    <Image
-                      src={CUSTOM_SIDEBAR_ICONS[custom.icon]}
-                      alt=""
-                      width={32}
-                      height={32}
-                      className="h-full w-full rounded object-contain"
-                    />
-                  ) : (
-                    <CustomIcon icon={custom.icon} size={20} />
-                  )}
+                  <Image
+                    src={CUSTOM_IMAGE[custom.icon].src}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="h-full w-full rounded object-contain"
+                  />
                 </span>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <p className="text-xs font-medium uppercase tracking-wide text-text-muted">
